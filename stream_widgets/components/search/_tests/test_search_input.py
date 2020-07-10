@@ -2,7 +2,7 @@ from ..search_input import SearchInput
 
 
 def test_instantiation():
-    s = SearchInput()
+    SearchInput()
 
 
 def test_since():
