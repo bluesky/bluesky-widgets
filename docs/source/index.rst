@@ -10,6 +10,7 @@ stream-widgets Documentation
    :maxdepth: 2
 
    installation
+   goals
    usage
    release-history
    min_versions
