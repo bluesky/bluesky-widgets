@@ -1,17 +1,23 @@
-from qtpy.QtWidgets import QWidget
+from qtpy.QtWidgets import QWidget, QVBoxLayout
 
 from stream_widgets.qt import Window
+from stream_widgets.components.search.search_input import SearchInput
+from stream_widgets.qt.search_input import QtSearchInput
 
 
 class QtViewer(QWidget):
     def __init__(self, model, *args, **kwargs):
-        self.viewer = model
         super().__init__(*args, **kwargs)
+        self.viewer = model
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        layout.addWidget(QtSearchInput(model.search_input))
 
 
 class ViewerModel:
     def __init__(self, title):
         self.title = title
+        self.search_input = SearchInput()
         super().__init__()
 
 
