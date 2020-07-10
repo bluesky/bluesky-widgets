@@ -52,12 +52,13 @@ For more information see http://github.com/vispy/vispy/wiki/API_Events
 
 """
 
-from __future__ import division
-
 from collections import OrderedDict
 import inspect
+import logging
 import traceback
 import weakref
+
+logger = logging.getLogger(__name__)
 
 
 class Event(object):
@@ -522,13 +523,8 @@ class EventEmitter(object):
         try:
             cb(event)
         except Exception:
-            # TODO Define this.
-            _handle_exception(
-                self.ignore_callback_errors,
-                self.print_callback_errors,
-                self,
-                cb_event=(cb, event),
-            )
+            logger.exception("Error in callback %r processing Event %r",
+                             cb, event)
 
     def _prepare_event(self, *args, **kwargs):
         # When emitting, this method is called to create or otherwise alter
