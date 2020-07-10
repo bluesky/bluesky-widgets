@@ -1,36 +1,23 @@
-import os
-import sys
 from contextlib import contextmanager
-from os.path import dirname, join
 
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QPixmap
-from qtpy.QtWidgets import QApplication, QSplashScreen
+from qtpy.QtWidgets import QApplication
 
 
-_config = {'logopath': None, 'app_name': ''}
+_our_app_name = None
 
 
-def set_logo(logopath):
-    _config['logopath'] = logopath
-
-
-def set_app_name(app_name):
-    _config['app_name'] = app_name
-
-
-def get_app_name():
-    return _config['app_name']
+def get_our_app_name():
+    return _our_app_name
 
 
 @contextmanager
-def gui_qt(*, startup_logo=False):
+def gui_qt(app_name):
     """Start a Qt event loop in which to run the application.
 
     Parameters
     ----------
-    startup_logo : bool
-        Show a splash screen with a logo during startup.
+    app_name: str
 
     Notes
     -----
@@ -39,7 +26,6 @@ def gui_qt(*, startup_logo=False):
     IPython with the Qt GUI event loop enabled by default by using
     ``ipython --gui=qt``.
     """
-    splash_widget = None
     app = QApplication.instance()
     if not app:
         # automatically determine monitor DPI.
@@ -47,22 +33,14 @@ def gui_qt(*, startup_logo=False):
         QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         # if this is the first time the Qt app is being instantiated, we set
         # the name, so that we know whether to raise_ in Window.show()
-        app = QApplication([_config['app_name']])
-        if startup_logo and _config['logopath'] is not None:
-            logopath = _config['logopath']
-            pm = QPixmap(logopath).scaled(
-                360, 360, Qt.KeepAspectRatio, Qt.SmoothTransformation
-            )
-            splash_widget = QSplashScreen(pm)
-            splash_widget.show()
-            app._splash_widget = splash_widget
+        app = QApplication([app_name])
+        global _our_app_name
+        _our_app_name = app_name
     else:
         app._existed = True
     yield app
     # if the application already existed before this function was called,
     # there's no need to start it again.  By avoiding unnecessary calls to
     # ``app.exec_``, we avoid blocking.
-    if app.applicationName() == _config['app_name']:
-        if splash_widget and startup_logo:
-            splash_widget.close()
+    if app.applicationName() == app_name:
         app.exec_()

@@ -15,7 +15,7 @@ from qtpy.QtWidgets import (  # noqa: E402
 )
 from qtpy.QtCore import Qt  # noqa: E402
 
-from .event_loop import get_app_name
+from .event_loop import get_our_app_name
 
 
 class Window:
@@ -100,7 +100,7 @@ class Window:
         # gui_qt(). isActiveWindow() will be True if it is the second time a
         # _qt_window has been created. See #732
         app_name = QApplication.instance().applicationName()
-        if app_name != get_app_name() or self._qt_window.isActiveWindow():
+        if app_name != get_our_app_name() or self._qt_window.isActiveWindow():
             self._qt_window.raise_()  # for macOS
             self._qt_window.activateWindow()  # for Windows
 

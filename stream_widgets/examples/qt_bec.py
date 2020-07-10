@@ -1,6 +1,6 @@
 from qtpy.QtWidgets import QWidget
 
-from stream_widgets._qt.qt_main_window import Window
+from stream_widgets.qt import Window
 
 
 class QtViewer(QWidget):
@@ -32,8 +32,9 @@ class Viewer(ViewerModel):
 
 
 def main():
-    from stream_widgets._qt.event_loop import gui_qt
-    with gui_qt():
+    from stream_widgets.qt import gui_qt
+
+    with gui_qt("Example Aplication"):
         Viewer()
 
 
