@@ -35,3 +35,11 @@ def test_until():
     assert len(events) == 1
     assert "time" in s.query
     assert "$lt" in s.query["time"]
+
+
+def test_clearing():
+    s = SearchInput()
+
+    s.until = 5
+    s.until = None
+    assert "time" not in s.query
