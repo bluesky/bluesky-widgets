@@ -12,7 +12,7 @@ This is a young project. Here we articulate its design principles and goals.
    applications, or by integrating some of these widgets into an existing
    application.
 #. Anything you can do with a mouse, you can do with code through a
-   programmatic interface. This widgets are intended to be run alongside an
+   programmatic interface. These widgets are intended to be run alongside an
    embedded IPython console or launched within IPython or Jupyter (but they
    don't *have* to be).
 #. GUI frameworks come and go faster than underlying business and science
