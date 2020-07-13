@@ -15,6 +15,9 @@ class _SearchResultsModel(QAbstractTableModel):
         self.model.events.reset.connect(self.on_entries_changed)
 
     def on_entries_changed(self, event):
+        # TODO Maybe expose to signals out of the model, one that is emitted
+        # before it starts breaking its internal state and one after the new
+        # state is ready.
         self.beginResetModel()
         self.endResetModel()
 
