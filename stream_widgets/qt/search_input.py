@@ -46,6 +46,14 @@ class QtSearchInput(QWidget):
         layout.addWidget(until_layout_widget)
         self.setLayout(layout)
 
+        # Initialize values.
+        qdatetime = QDateTime()
+        qdatetime.setSecsSinceEpoch(self.model.since)
+        self.since_widget.setDateTime(qdatetime)
+        qdatetime = QDateTime()
+        qdatetime.setSecsSinceEpoch(self.model.until)
+        self.until_widget.setDateTime(qdatetime)
+
         # Changes to the GUI update the model.
         self.since_widget.dateTimeChanged.connect(self.on_since_view_changed)
         self.until_widget.dateTimeChanged.connect(self.on_until_view_changed)

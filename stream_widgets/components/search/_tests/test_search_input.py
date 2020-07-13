@@ -42,4 +42,5 @@ def test_clearing():
 
     s.until = 5
     s.until = None
+    s.since = None
     assert "time" not in s.query

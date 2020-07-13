@@ -1,6 +1,11 @@
-from .queries import TimeRange
+from datetime import datetime, timedelta
 
+import tzlocal
+
+from .queries import TimeRange, InvertedRange, normalize_human_friendly_time
 from ...utils.event import EmitterGroup, Event
+
+TIMEZONE = tzlocal.get_localzone().zone
 
 
 class SearchInput:
@@ -15,6 +20,10 @@ class SearchInput:
             since=Event,
             until=Event,
         )
+        # Initialize defaults. Some front ends (e.g. Qt) cannot have a null
+        # state, so we pick an arbitrary range.
+        self.since = datetime.now() - timedelta(days=365)
+        self.until = datetime.now() + timedelta(days=365)
 
     def __repr__(self):
         return f"<SearchInput {self._query!r}>"
@@ -41,6 +50,7 @@ class SearchInput:
 
     @since.setter
     def since(self, since):
+        since = normalize_human_friendly_time(since, tz=TIMEZONE)
         if since == self.since:
             return
         self._since = since
@@ -55,13 +65,19 @@ class SearchInput:
 
     @until.setter
     def until(self, until):
+        until = normalize_human_friendly_time(until, tz=TIMEZONE)
         if until == self.until:
             return
         self._until = until
         self.events.until(date=until)
 
     def on_since(self, event):
-        tr = TimeRange(since=event.date, until=self._until)
+        try:
+            tr = TimeRange(since=event.date, until=self._until)
+        except InvertedRange:
+            # Move 'until' as well to create a valid (though empty) interval.
+            self.until = event.date
+            return
         if tr:
             self._query.update(tr)
         else:
@@ -69,7 +85,12 @@ class SearchInput:
         self.events.query(query=self._query)
 
     def on_until(self, event):
-        tr = TimeRange(since=self._since, until=event.date)
+        try:
+            tr = TimeRange(since=self._since, until=event.date)
+        except InvertedRange:
+            # Move 'since' as well to create a valid (though empty) interval.
+            self.since = event.date
+            return
         if tr:
             self._query.update(tr)
         else:

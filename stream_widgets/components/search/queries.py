@@ -6,6 +6,10 @@ import collections.abc
 from datetime import datetime
 
 
+class InvertedRange(ValueError):
+    ...
+
+
 class Query(collections.abc.Mapping):
     """
     This represents a MongoDB query.
@@ -97,7 +101,7 @@ class TimeRange(Query):
         self._until_raw = until
         if since is not None and until is not None:
             if self._since_normalized > self._until_normalized:
-                raise ValueError("since must not be greater than until.")
+                raise InvertedRange("since must not be greater than until.")
 
     @property
     def kwargs(self):

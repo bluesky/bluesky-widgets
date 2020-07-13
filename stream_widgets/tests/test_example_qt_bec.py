@@ -22,5 +22,4 @@ def make_test_viewer(qtbot, request):
 
 
 def test_viewer(make_test_viewer):
-    viewer = make_test_viewer()
-    assert viewer.search_input.since is None
+    make_test_viewer()
