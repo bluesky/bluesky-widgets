@@ -5,7 +5,25 @@ from stream_widgets.components.search.search_input import SearchInput
 from stream_widgets.qt.search_input import QtSearchInput
 
 
+class ViewerModel:
+    """
+    Compose various models (search input, search results, ...) into one object.
+    """
+    def __init__(self, title):
+        self.title = title
+        self.search_input = SearchInput()
+        super().__init__()
+
+
 class QtViewer(QWidget):
+    """
+    A Qt-based front-end to ViewerModel
+
+    Take a ViewerModel and wrap each component in a correspdong QWidget, and
+    arrange the widgets in a layout.
+
+    This may be embedded in some other application's Main Window.
+    """
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.viewer = model
@@ -14,15 +32,16 @@ class QtViewer(QWidget):
         layout.addWidget(QtSearchInput(model.search_input))
 
 
-class ViewerModel:
-    def __init__(self, title):
-        self.title = title
-        self.search_input = SearchInput()
-        super().__init__()
-
-
 class Viewer(ViewerModel):
+    """
+    The user-facing Qt-based Viewer.
 
+    Compose the model with QtViewer and a Qt Main Window, so the user has just
+    one object to handle.
+
+    This cannot be embedded in another application's Main Window. Use QtViewer
+    to do that.
+    """
     def __init__(self, *, show=True, title=""):
         super().__init__(title=title)
         qt_viewer = QtViewer(self)
