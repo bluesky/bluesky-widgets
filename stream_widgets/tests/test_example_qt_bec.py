@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from ..examples.qt_bec import Viewer
 
@@ -23,3 +25,10 @@ def make_test_viewer(qtbot, request):
 
 def test_viewer(make_test_viewer):
     make_test_viewer()
+
+
+def test_manipulating_times(make_test_viewer):
+    viewer = make_test_viewer()
+    viewer.search_input.since = 0
+    viewer.search_input.since = datetime(1985, 11, 15)
+    viewer.search_input.until = datetime(1985, 11, 15)
