@@ -63,5 +63,5 @@ class QtSearchResults(QTableView):
         self.verticalHeader().setVisible(False)
         self.horizontalHeader().setDefaultAlignment(Qt.AlignHCenter)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.setAlternatingRowColors(True)
+        # self.setAlternatingRowColors(True)
         self.setModel(_SearchResultsModel(model))
