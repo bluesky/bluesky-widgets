@@ -1,5 +1,4 @@
 from stream_widgets.components.search.searches import Search
-from stream_widgets.examples.utils.generate_msgpack_data import get_catalog
 
 headings = (
     'Unique ID',
@@ -40,12 +39,14 @@ columns = (headings, extract_results_row_from_run)
 
 
 class AddSearchMixin:
-    """Provide an add_search method that makes a Search with some defaults.
+    """Provide an add_search method that makes a Search.
+
+    This purpose is to provide a top-level method that has a default column layout.
     """
 
-    def add_search(self):
-        search = Search(
-            get_catalog(),
-            columns=(headings, extract_results_row_from_run),
-        )
+    def add_search(self, catalog, columns=extract_results_row_from_run):
+        """
+        Add a new Search form.
+        """
+        search = Search(catalog, columns=(headings, extract_results_row_from_run))
         self.searches.append(search)

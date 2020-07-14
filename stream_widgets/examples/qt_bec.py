@@ -1,7 +1,8 @@
 from stream_widgets.qt import Window
+from stream_widgets.qt import gui_qt
 from stream_widgets.examples.viewer_model import ViewerModel
 from stream_widgets.examples.qt_viewer import QtViewer
-from stream_widgets.qt import gui_qt
+from stream_widgets.examples.utils.generate_msgpack_data import get_catalog
 
 
 class Viewer(ViewerModel):
@@ -18,7 +19,12 @@ class Viewer(ViewerModel):
         super().__init__(title=title)
         qt_viewer = QtViewer(self)
         self.window = Window(qt_viewer, show=show)
-        self.add_search()
+
+        # Initialize with a two search tabs: one with some generated example
+        # data and one list any and all catalogs discovered on the system.
+        self.add_search(get_catalog())
+        from databroker import catalog
+        self.add_search(catalog)
 
     def show(self):
         """Resize, show, and raise the viewer window."""

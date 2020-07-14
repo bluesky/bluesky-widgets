@@ -90,7 +90,7 @@ class QtSearches(QTabWidget):
         self._model.events.removed.connect(self.on_removed)
 
     def on_added(self, event):
-        self.insertTab(event.index, QtSearch(event.item), "Search __")
+        self.insertTab(event.index, QtSearch(event.item), f"Search {event.item.name}")
 
     def on_removed(self, event):
         self.close_tab(event.index)

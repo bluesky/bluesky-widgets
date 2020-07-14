@@ -1,3 +1,5 @@
+import itertools
+
 from .search_input import SearchInput
 from .search_results import SearchResults
 from ...utils.event import EmitterGroup, Event
@@ -28,7 +30,12 @@ class Search:
     """
     Model for digging into potentially nested catalogs and ending at a catalog of runs.
     """
-    def __init__(self, root_catalog, *, columns):
+    _name_counter = itertools.count(1)
+
+    def __init__(self, root_catalog, *, name=None, columns):
+        if name is None:
+            name = self.get_default_name()
+        self._name = name
         self._subcatalogs = []
         self._root_catalog = root_catalog
         self._columns = columns
@@ -48,6 +55,14 @@ class Search:
                 search_input=self._search.search_input,
                 search_results=self._search.search_results
             )
+
+    @classmethod
+    def get_default_name(cls):
+        return next(cls._name_counter)
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def run_search(self):
