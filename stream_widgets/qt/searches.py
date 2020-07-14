@@ -39,7 +39,6 @@ class QtSearch(QWidget):
 
     def on_enter(self, event=None):
         names = list(event.catalog)
-        print(types(names), names)
         self._initialize_run_search(names)
 
     def _initialize_selector(self, names):
