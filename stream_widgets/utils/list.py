@@ -38,7 +38,15 @@ class ListModel:
         self.__internal_list.append(obj)
         self.events.added(item=obj, index=len(self) - 1)
 
-    def pop(self, index):
+    def pop(self, index=-1):
         obj = self.__internal_list.pop(index)
         self.events.removed(item=obj, index=index)
         return obj
+
+    def clear(self):
+        while True:
+            try:
+                obj = self.__internal_list.pop()
+            except IndexError:
+                break
+            self.events.removed(item=obj, index=-1)
