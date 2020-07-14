@@ -37,7 +37,6 @@ class ListModel:
     def append(self, obj):
         self.__internal_list.append(obj)
         self.events.added(item=obj, index=len(self) - 1)
-        print('append!')
 
     def pop(self, index):
         obj = self.__internal_list.pop(index)

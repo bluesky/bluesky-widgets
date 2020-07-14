@@ -14,7 +14,6 @@ class QtSearch(QWidget):
         self.on_catalog()
 
     def on_catalog(self, event=None):
-        print('on_catalog')
         if self._model.catalog_has_runs:
             self.layout.addWidget(QtSearchInput(self._model.input))
             self.layout.addWidget(QtSearchResults(self._model._search_results))
