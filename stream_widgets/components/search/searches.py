@@ -5,7 +5,7 @@ from ...utils.list import ListModel
 
 
 class Search:
-    def __init__(self, *, columns, root_catalog):
+    def __init__(self, root_catalog, *, columns):
         self.input = SearchInput()
         self._search_results = SearchResults(columns)
         self._breadcrumbs = []
@@ -24,7 +24,14 @@ class Search:
 
     def down(self, name):
         old = self._catalog
-        self._catalog = self._catalog[name]
+        new = self._catalog[name]
+
+        # Touch an attribute that will trigger a connection attempt. (It's here
+        # that an error would be raised if, say, a database is unreachable.)
+        new.metadata
+
+        # If we get this far, it worked.
+        self._catalog = new
         self._breadcrumbs.append(old)
         self.events.catalog(self._catalog)
 
@@ -32,11 +39,16 @@ class Search:
         self._catalog = self._breadcrumbs.pop()
         self.events.catalog(self._catalog)
 
-    @property
-    def catalog_has_runs(self):
+    @staticmethod
+    def _has_runs(catalog):
+        "Is this a catalog BlueskyRuns, or a Catalog of Catalogs?"
         # HACK!
         from databroker.v2 import Broker
-        return isinstance(self._catalog, Broker)
+        return isinstance(catalog, Broker)
+
+    @property
+    def catalog_has_runs(self):
+        return self._has_runs(self._catalog)
 
     @property
     def results(self):

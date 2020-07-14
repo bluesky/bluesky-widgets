@@ -45,6 +45,7 @@ class AddSearchMixin:
 
     def add_search(self):
         search = Search(
+            get_catalog(),
             columns=(headings, extract_results_row_from_run),
-            root_catalog=get_catalog())
+        )
         self.searches.append(search)

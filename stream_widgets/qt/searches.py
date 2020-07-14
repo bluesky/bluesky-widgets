@@ -1,41 +1,13 @@
-from qtpy import QtCore
+from qtpy.QtCore import QStringListModel
 from qtpy.QtWidgets import QComboBox, QTabWidget, QVBoxLayout, QWidget
 from .search_input import QtSearchInput
 from .search_results import QtSearchResults
 
 
-class _QtSubcatalogModel(QtCore.QStringListModel):
-    def __init__(self, model, *args, **kwargs):
-        self._model = model
-        super().__init__(*args, **kwargs)
-        self._items = []
-
-        # TODO Be lazy about this, as we already are for SearchResults.
-        self._items.extend(list(self._model.catalog))
-        print(self._items)
-
-    def rowCount(self, parent=None):
-        return len(self._model.catalog)
-
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        if not index.isValid():  # does > 0 bounds check
-            return QtCore.QVariant()
-        if index.row() >= self.rowCount():
-            return QtCore.QVariant()
-        if role == QtCore.Qt.DisplayRole:
-            item = self._items[index.row()]
-            print('item', item)
-            return item
-        else:
-            return QtCore.QVariant()
-
-    # TODO When selected, poke self.model.down(name).
-
-
 class QtSubcatalogSelector(QComboBox):
-    def __init__(self, catalog, *args, **kwargs):
+    def __init__(self, names, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setModel(_QtSubcatalogModel(catalog))
+        self.setModel(QStringListModel(names))
 
 
 class QtSearch(QWidget):
@@ -53,8 +25,14 @@ class QtSearch(QWidget):
             self.layout.addWidget(QtSearchInput(self._model.input))
             self.layout.addWidget(QtSearchResults(self._model._search_results))
         else:
-            # TODO
-            self.layout.addWidget(QtSubcatalogSelector(self._model))
+            names = list(self._model.catalog)
+            selector = QtSubcatalogSelector(names)
+
+            def on_selection(index):
+                self._model.down(names[index])
+
+            selector.activated.connect(on_selection)
+            self.layout.addWidget(selector)
 
 
 class QtSearches(QTabWidget):
