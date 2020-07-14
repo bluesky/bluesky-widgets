@@ -35,7 +35,12 @@ class SearchResults:
         self._columns = columns
         self._headings, self._row_factory = columns
 
-    def set_results(self, catalog):
+    @property
+    def catalog(self):
+        return self._catalog
+
+    @catalog.setter
+    def catalog(self, catalog):
         self._row_cache.clear()
         self._catalog = catalog
         self._iterator = iter(catalog)
