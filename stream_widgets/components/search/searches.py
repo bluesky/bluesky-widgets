@@ -92,7 +92,7 @@ class Search:
             self._subcatalogs.append(new)
             self.events.enter(catalog=new)
         else:
-            self._search = RunSearch(self._root_catalog, self._columns)
+            self._search = RunSearch(new, self._columns)
             self.events.run_search_ready(
                 search_input=self._search.search_input,
                 search_results=self._search.search_results
