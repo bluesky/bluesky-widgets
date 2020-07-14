@@ -37,7 +37,8 @@ class Viewer(ViewerModel):
 
 def main():
     with gui_qt("Example Aplication"):
-        Viewer()
+        viewer = Viewer()
+        print(viewer)
 
 
 if __name__ == "__main__":
