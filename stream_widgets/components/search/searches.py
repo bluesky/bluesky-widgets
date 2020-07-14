@@ -12,6 +12,8 @@ class Search:
         self._root_catalog = self._catalog = root_catalog
         self._results = None
         self.input.events.query.connect(self._on_query)
+        # Initialize the results with the initial state of SearchInput.
+        self.input.events.query(query=self.input.query)
         self.events = EmitterGroup(
             source=self,
             auto_connect=True,
