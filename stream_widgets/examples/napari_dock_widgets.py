@@ -1,9 +1,18 @@
 import napari
 
-from stream_widgets.components.search.search_input import SearchInput
-from stream_widgets.qt.search_input import QtSearchInput
+from stream_widgets.components.search.searches import SearchList
+from stream_widgets.qt.searches import QtSearches
+from stream_widgets.examples.viewer_model import AddSearchMixin
+
+
+class Viewer(napari.Viewer, AddSearchMixin):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.searches = SearchList()
+
 
 with napari.gui_qt():
-    viewer = napari.Viewer()
+    viewer = Viewer()
     viewer.grid_view()  # Place images side by side, not stacked.
-    viewer.window.add_dock_widget(QtSearchInput(SearchInput()), area="right")
+    viewer.window.add_dock_widget(QtSearches(viewer.searches), area="right")
+    viewer.add_search()
