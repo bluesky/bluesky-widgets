@@ -1,7 +1,11 @@
+import logging
+
 from qtpy.QtCore import QStringListModel
 from qtpy.QtWidgets import QComboBox, QTabWidget, QVBoxLayout, QWidget
 from .search_input import QtSearchInput
 from .search_results import QtSearchResults
+
+logger = logging.getLogger(__name__)
 
 
 class QtSubcatalogSelector(QComboBox):
@@ -29,7 +33,14 @@ class QtSearch(QWidget):
             selector = QtSubcatalogSelector(names)
 
             def on_selection(index):
-                self._model.down(names[index])
+                name = names[index]
+                try:
+                    self._model.down(name)
+                except Exception:
+                    logger.exception("Failed to select %r", name)
+                    self.setCurrentIndex(-1)
+                else:
+                    selector.setEnabled(False)
 
             selector.activated.connect(on_selection)
             self.layout.addWidget(selector)
