@@ -69,11 +69,20 @@ class Search:
         return self._search
 
     @property
+    def root_catalog(self):
+        return self._root_catalog
+
+    @property
     def current_catalog(self):
         if self._subcatalogs:
             return self._subcatalogs[-1]
         else:
             return self._root_catalog
+
+    @property
+    def breadcrumbs(self):
+        "Names of subcatalogs tranversed"
+        return [catalog.name for catalog in self._subcatalogs]
 
     @property
     def input(self):
@@ -102,9 +111,9 @@ class Search:
         new.metadata
 
         # If we get this far, it worked.
+        self._subcatalogs.append(new)
         if not self._has_runs(new):
             # Step through another subcatalog.
-            self._subcatalogs.append(new)
             self.events.enter(catalog=new)
         else:
             self._search = RunSearch(new, self._columns)
@@ -114,12 +123,13 @@ class Search:
             )
 
     def go_back(self):
+        if self.root_catalog is self.current_catalog:
+            raise RuntimeError("We are the root catalog.")
         if self._search is not None:
-            self.run_search_cleared()
             self._search = None
-        else:
-            self._subcatalogs.pop()
-            self.events.go_back()
+            self.events.run_search_cleared()
+        self._subcatalogs.pop()
+        self.events.go_back()
 
     @staticmethod
     def _has_runs(catalog):
