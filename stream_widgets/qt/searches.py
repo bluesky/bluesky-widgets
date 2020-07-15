@@ -86,8 +86,8 @@ class QtSearch(QWidget):
         "Move up the tree of subcatalogs by one step."
         breadcrumbs = self._model.breadcrumbs
         while len(self._selector_widgets) > len(breadcrumbs) + 1:
-            w = self._selector_widgets.pop()
-            w.close()
+            widget = self._selector_widgets.pop()
+            widget.close()
         self._selector_widgets[-1].setEnabled(True)
         if not breadcrumbs:
             # This is the last widget. Disable back button.
@@ -125,14 +125,26 @@ class QtSearches(QTabWidget):
         self.tabCloseRequested.connect(self.close_tab)
 
         self._model = model
+        self._tabs = {}  # map internal model to tab
         self._model.events.added.connect(self.on_added)
         self._model.events.removed.connect(self.on_removed)
 
     def on_added(self, event):
-        self.insertTab(event.index, QtSearch(event.item), f"Search {event.item.name}")
+        tab = QtSearch(event.item)
+        self._tabs[event.item] = tab
+        self.insertTab(event.index, tab, f"Search {event.item.name}")
 
     def on_removed(self, event):
-        self.close_tab(event.index)
+        if event.item in self._tabs:
+            widget = self._tabs[event.item]
+            index = self.indexOf(widget)
+            self.removeTab(index)
+            del self._tabs[event.item]
+        # Else we are being notified the removal of a tab/model that we
+        # initiated in close_tab().
 
     def close_tab(self, index):
+        widget = self.widget(index)
         self.removeTab(index)
+        del self._tabs[widget._model]
+        self._model.remove(widget._model)

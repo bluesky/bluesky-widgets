@@ -21,7 +21,7 @@ class ListModel:
 
     def __delitem__(self, index):
         obj = self.__internal_list.pop(index)
-        self.removed(item=obj, index=index)
+        self.events.removed(item=obj, index=index)
 
     def __setitem__(self, index, obj):
         self.__internal_list[index] = obj
@@ -42,6 +42,11 @@ class ListModel:
         obj = self.__internal_list.pop(index)
         self.events.removed(item=obj, index=index)
         return obj
+
+    def remove(self, obj):
+        index = self.__internal_list.index(obj)
+        obj = self.__internal_list.remove(obj)
+        self.events.removed(item=obj, index=index)
 
     def clear(self):
         while True:
