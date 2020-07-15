@@ -4,8 +4,9 @@ Goals
 
 This is a young project. Here we articulate its design principles and goals.
 
-#. This is a library of GUI widgets, not an extensible application. There is no
-   plugin architecture; there are no configuration files.
+#. This is a library of Graphic User Interface (GUI) components, not an
+   extensible application. There is no plugin architecture; there are no
+   configuration files.
 #. It ships with some runnable example applications, but it's presumed that in
    order to build something really useful to users, someone will need to write
    Python GUI code---perhaps starting by copy/pasting one of those example
@@ -17,9 +18,6 @@ This is a young project. Here we articulate its design principles and goals.
    don't *have* to be).
 #. There is a need for both web- and desktop-based solutions, and the space of
    GUI frameworks is ever-changing, especially on the web. From the start, we
-   are building in support for multiple frameworks: Qt, Jupyter, and Xi-CAM (a
-   Qt-based application with a plugin system). This ensures that the core logic
-   is not tied to a specific GUI. Like the software projects vispy, matplotlib,
-   and napari, we achieve this by applying the model--view pattern and relying
-   on our own Event-handling system within models, rather than coupling to (for
-   example) Qt signals and slots or IPython traitlets.
+   are building in front-ends for Qt and Jupyter with examples of how to embed
+   these components in the existing Qt applications Xi-CAM, napari, and PyDM,
+   using their respective extension points.
