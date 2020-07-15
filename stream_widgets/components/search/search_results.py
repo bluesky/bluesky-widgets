@@ -56,6 +56,7 @@ class SearchResults:
         self._catalog = catalog
         self._iterator = iter(catalog)
         self._uids = []
+        self._selected_rows.clear()
         self.events.reset()
 
     def get_length(self):
