@@ -56,7 +56,7 @@ class QtSearchResults(QTableView):
     """
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._model = model
+        self.model = model
 
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setSortingEnabled(False)
@@ -72,16 +72,16 @@ class QtSearchResults(QTableView):
         self.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         # Update the view to changes in the model.
-        self._model.selected_rows.events.added(self.on_row_added)
-        self._model.selected_rows.events.removed(self.on_row_removed)
+        self.model.selected_rows.events.added(self.on_row_added)
+        self.model.selected_rows.events.removed(self.on_row_removed)
 
     def on_selection_changed(self, selected, deselected):
         # One would expect we could ask Qt directly for the rows, as opposed to
         # using set() here, but I cannot find such a method.
         for row in set(index.row() for index in deselected.indexes()):
-            self._model.selected_rows.remove(row)
+            self.model.selected_rows.remove(row)
         for row in set(index.row() for index in selected.indexes()):
-            self._model.selected_rows.append(row)
+            self.model.selected_rows.append(row)
 
     def on_row_added(self, event):
         # TODO

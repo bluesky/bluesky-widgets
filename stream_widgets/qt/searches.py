@@ -24,7 +24,7 @@ class QtSearch(QWidget):
     """
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._model = model
+        self.model = model
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -36,10 +36,10 @@ class QtSearch(QWidget):
         self._back_button.clicked.connect(model.go_back)
 
         # Hook up model Events to Qt Slots.
-        self._model.events.enter.connect(self.on_enter)
-        self._model.events.go_back.connect(self.on_go_back)
-        self._model.events.run_search_ready.connect(self.on_run_search_ready)
-        self._model.events.run_search_cleared.connect(self.on_run_search_cleared)
+        self.model.events.enter.connect(self.on_enter)
+        self.model.events.go_back.connect(self.on_go_back)
+        self.model.events.run_search_ready.connect(self.on_run_search_ready)
+        self.model.events.run_search_cleared.connect(self.on_run_search_cleared)
 
         self._selector_widgets = []  # QComboBoxes
         self._run_search_widgets = []  # The SearchInput and SearchOutput widgets
@@ -72,7 +72,7 @@ class QtSearch(QWidget):
         def on_selection(index):
             name = names[index]
             try:
-                self._model.enter(name)
+                self.model.enter(name)
             except Exception:
                 logger.exception("Failed to select %r", name)
                 selector.setCurrentIndex(-1)
@@ -84,7 +84,7 @@ class QtSearch(QWidget):
 
     def on_go_back(self, event):
         "Move up the tree of subcatalogs by one step."
-        breadcrumbs = self._model.breadcrumbs
+        breadcrumbs = self.model.breadcrumbs
         while len(self._selector_widgets) > len(breadcrumbs) + 1:
             widget = self._selector_widgets.pop()
             widget.close()
@@ -125,11 +125,11 @@ class QtSearches(QTabWidget):
         self.tabCloseRequested.connect(self.close_tab)
         self.currentChanged.connect(self.on_current_changed)
 
-        self._model = model
+        self.model = model
         self._tabs = {}  # map internal model to tab
-        self._model.events.added.connect(self.on_added)
-        self._model.events.removed.connect(self.on_removed)
-        self._model.events.active.connect(self.on_active_changed)
+        self.model.events.added.connect(self.on_added)
+        self.model.events.removed.connect(self.on_removed)
+        self.model.events.active.connect(self.on_active_changed)
 
     # These methods update the view in response to the SearchList model.
 
@@ -158,7 +158,7 @@ class QtSearches(QTabWidget):
         widget = self.widget(index)
         for model, tab in self._tabs.items():
             if tab is widget:
-                widget._model.active = True
+                widget.model.active = True
                 break
 
     def close_tab(self, index):
@@ -166,5 +166,5 @@ class QtSearches(QTabWidget):
         # model from the SearchList model.
         widget = self.widget(index)
         self.removeTab(index)
-        del self._tabs[widget._model]
-        self._model.remove(widget._model)
+        del self._tabs[widget.model]
+        self.model.remove(widget._model)

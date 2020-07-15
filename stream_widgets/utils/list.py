@@ -1,5 +1,5 @@
 """
-This is a simplified version of napari.utils.list._model until I understand why
+This is a simplified version of napari.utils.list.model until I understand why
 I would need the more complicated Typed and MultiIndexed aspects.
 """
 from .event import EmitterGroup, Event
