@@ -98,6 +98,16 @@ class Search:
         if self._search is not None:
             return self._search.search_results.catalog
 
+    @property
+    def selected_uids(self):
+        if self._search is not None:
+            return self._search.search_results.selected_uids
+
+    @property
+    def selection_as_catalog(self):
+        if self._search is not None:
+            return self._search.search_results.selection_as_catalog
+
     def enter(self, name):
         if self._search is not None:
             raise RuntimeError("Already all the way into a Catalog of Runs")
