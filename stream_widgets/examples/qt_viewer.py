@@ -14,7 +14,7 @@ class QtViewer(QWidget):
     """
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.viewer = model
+        self.model = model
         layout = QVBoxLayout()
         self.setLayout(layout)
         layout.addWidget(QtSearches(model.searches))
