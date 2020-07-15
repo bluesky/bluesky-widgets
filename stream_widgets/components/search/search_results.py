@@ -24,14 +24,6 @@ class SearchResults:
         )
 
     @property
-    def selected_rows(self):
-        return self._selected_rows
-
-    @property
-    def selected_uids(self):
-        return [self.get_uid_by_row(row) for row in self._selected_rows]
-
-    @property
     def headings(self):
         return self._headings
 
@@ -87,3 +79,16 @@ class SearchResults:
             for _ in range(row - cache_length + 1):
                 self._uids.append(next(self._iterator))
         return self._uids[row]
+
+    @property
+    def selected_rows(self):
+        return self._selected_rows
+
+    @property
+    def selected_uids(self):
+        return [self.get_uid_by_row(row) for row in self._selected_rows]
+
+    @property
+    def selection_as_catalog(self):
+        "A Catalog containing the selected rows"
+        return self.catalog.search({"uid": {"$in": self.selected_uids}})
