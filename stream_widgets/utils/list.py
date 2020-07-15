@@ -45,7 +45,7 @@ class ListModel:
 
     def remove(self, obj):
         index = self.__internal_list.index(obj)
-        obj = self.__internal_list.remove(obj)
+        self.__internal_list.remove(obj)
         self.events.removed(item=obj, index=index)
 
     def clear(self):

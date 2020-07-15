@@ -50,3 +50,10 @@ class AddSearchMixin:
         """
         search = Search(catalog, columns=(headings, extract_results_row_from_run))
         self.searches.append(search)
+
+    @property
+    def active_search(self):
+        """
+        Convenience for accessing the currently-active Search form.
+        """
+        return self.searches.active

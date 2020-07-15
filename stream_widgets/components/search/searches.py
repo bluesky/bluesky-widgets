@@ -40,6 +40,7 @@ class Search:
         self._root_catalog = root_catalog
         self._columns = columns
         self._search = None
+        self._active = False
         self.events = EmitterGroup(
             source=self,
             auto_connect=True,
@@ -47,6 +48,8 @@ class Search:
             go_back=Event,
             run_search_ready=Event,
             run_search_cleared=Event,
+            active=Event,
+            inactive=Event,
         )
 
         if self._has_runs(root_catalog):
@@ -131,6 +134,20 @@ class Search:
         self._subcatalogs.pop()
         self.events.go_back()
 
+    @property
+    def active(self):
+        return self._active
+
+    @active.setter
+    def active(self, active):
+        if active == self.active:
+            return
+        self._active = active
+        if active:
+            self.events.active()
+        else:
+            self.events.inactive()
+
     @staticmethod
     def _has_runs(catalog):
         "Is this a catalog BlueskyRuns, or a Catalog of Catalogs?"
@@ -143,4 +160,30 @@ class SearchList(ListModel):
     """
     Model for a list of Search models
     """
-    ...
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.events.add(active=Event)
+        self.events.added.connect(self._connect_enforce_mutually_exclusive_activation)
+        self.events.removed.connect(self._disconnect_enforce_mutually_exclusive_activation)
+
+    # Ensure that whenever an item in this list become "active" all others are
+    # not active.
+
+    def _connect_enforce_mutually_exclusive_activation(self, event):
+        event.item.events.active.connect(self._enforce_mutually_exclusive_activation)
+
+    def _disconnect_enforce_mutually_exclusive_activation(self, event):
+        event.item.events.active.disconnect(self._enforce_mutually_exclusive_activation)
+
+    def _enforce_mutually_exclusive_activation(self, event):
+        for item in self:
+            if item is not event.source:
+                item.active = False
+        self.events.active(item=event.source)
+
+    @property
+    def active(self):
+        "The active item in the list, if any"
+        for item in self:
+            if item.active:
+                return item
