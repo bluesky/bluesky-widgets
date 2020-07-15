@@ -22,9 +22,6 @@ class RunSearch:
         results = self.catalog.search(event.query)
         self.search_results.catalog = results
 
-    def destroy(self, name):
-        self.events.destroy()
-
 
 class Search:
     """

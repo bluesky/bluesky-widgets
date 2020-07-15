@@ -56,6 +56,8 @@ class QtSearchResults(QTableView):
     """
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._model = model
+
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setSortingEnabled(False)
         self.setSelectionBehavior(QTableView.SelectRows)
@@ -65,3 +67,12 @@ class QtSearchResults(QTableView):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         # self.setAlternatingRowColors(True)
         self.setModel(_SearchResultsModel(model))
+
+        # Notify model of changes to selection.
+        self.selectionModel().selectionChanged.connect(self.on_selection_changed)
+
+    def on_selection_changed(self, selected, deselected):
+        for row in set(index.row() for index in deselected.indexes()):
+            self._model.selected_rows.remove(row)
+        for row in set(index.row() for index in selected.indexes()):
+            self._model.selected_rows.append(row)

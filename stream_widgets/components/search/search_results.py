@@ -1,4 +1,5 @@
 from ...utils.event import EmitterGroup, Event
+from ...utils.list import ListModel
 
 
 class SearchResults:
@@ -14,12 +15,21 @@ class SearchResults:
     def __init__(self, columns):
         self._catalog = {}
         self._row_cache = {}
+        self._selected_rows = ListModel()
         self.columns = columns
         self.events = EmitterGroup(
             source=self,
             auto_connect=True,
             reset=Event
         )
+
+    @property
+    def selected_rows(self):
+        return self._selected_rows
+
+    @property
+    def selected_uids(self):
+        return [self.get_uid_by_row(row) for row in self._selected_rows]
 
     @property
     def headings(self):
@@ -37,6 +47,7 @@ class SearchResults:
 
     @property
     def catalog(self):
+        "Catalog of current results"
         return self._catalog
 
     @catalog.setter
@@ -54,12 +65,7 @@ class SearchResults:
         """
         Get data for one item of the display table.
         """
-        assert row < len(self._catalog)
-        cache_length = len(self._uids)
-        if row >= cache_length:
-            for _ in range(row - cache_length + 1):
-                self._uids.append(next(self._iterator))
-        uid = self._uids[row]
+        uid = self.get_uid_by_row(row)
         # To save on function calls, format one whole row in one step and cache
         # the result.
         try:
@@ -70,3 +76,13 @@ class SearchResults:
             self._row_cache[uid] = row_content
         item_content = row_content[column]  # content for one cell of the grid
         return item_content
+
+    def get_uid_by_row(self, row):
+        if row > len(self._catalog):
+            raise ValueError(
+                f"Cannot get row {row}. Catalog has {len(self._catalog)} rows.")
+        cache_length = len(self._uids)
+        if row >= cache_length:
+            for _ in range(row - cache_length + 1):
+                self._uids.append(next(self._iterator))
+        return self._uids[row]
