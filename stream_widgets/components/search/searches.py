@@ -98,7 +98,8 @@ class Search:
         # For convenience in console, having in mind usage like
         # >>> viewer.active_search.results
         # to get the catalog.
-        return self._search.search_results.catalog
+        if self._search is not None:
+            return self._search.search_results.catalog
 
     def enter(self, name):
         if self._search is not None:

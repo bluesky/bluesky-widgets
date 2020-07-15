@@ -38,6 +38,10 @@ class ListModel:
         self.__internal_list.append(obj)
         self.events.added(item=obj, index=len(self) - 1)
 
+    def extend(self, iterable):
+        for obj in iterable:
+            self.append(obj)
+
     def pop(self, index=-1):
         obj = self.__internal_list.pop(index)
         self.events.removed(item=obj, index=index)
