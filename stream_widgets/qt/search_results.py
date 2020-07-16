@@ -80,6 +80,7 @@ class _SearchResultsModel(QAbstractTableModel):
         if index in self._data:
             return self._data[index]
         else:
+            self._data[index] = LOADING_PLACEHOLDER
             self._request_queue.put(index)
             return LOADING_PLACEHOLDER
 
