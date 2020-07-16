@@ -2,19 +2,14 @@
 Usage
 =====
 
-You can run the example application in multiple ways:
+We ship some examples to illustrate what it is possible to build from this
+library's components.
 
-* as a stand-alone application
-* from within IPython
-* embedded within napari
-* as a Xi-CAM plugin (TODO)
-* embedded with PyDM (TODO)
-
-Stand-alone Qt application:
+Stand-alone example Qt application for searching Data Broker:
 
 .. code:: bash
 
-   python -m stream_widgets.examples.qt_bec
+   python -m stream_widgets.examples.qt_search
 
 Launched from IPython, either by using ``--gui=qt`` to launch the Qt
 application:
@@ -26,8 +21,8 @@ application:
 
 .. code:: python
 
-   from stream_widgets.examples.qt_bec import Viewer
-   viewer = Viewer()
+   from stream_widgets.examples.qt_search import Searches
+   s  = Searches()
 
 or using a context manager to launch the Qt application:
 
@@ -37,17 +32,20 @@ or using a context manager to launch the Qt application:
 
 .. code:: python
 
-   from stream_widgets.examples.qt_bec import Viewer, gui_qt
+   from stream_widgets.examples.qt_search import Searches, gui_qt
    with gui_qt("example"):
-       viewer = Viewer()
+       s = Searches()
 
-Embedded in napari:
+Search embedded in napari:
 
 .. code:: bash
 
    pip install napari[all]
    python -m stream_widgets.examples.napari_dock_widgets
 
-TODO Xi-CAM
+Search embedded in PyFAI:
 
-TODO PyDM
+.. code:: bash
+
+   pip install pyFAI
+   python -m stream_widgets.examples.pyFAI_dialog

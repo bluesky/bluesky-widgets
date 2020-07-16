@@ -12,5 +12,6 @@ stream-widgets Documentation
    installation
    goals
    usage
+   design 
    release-history
    min_versions

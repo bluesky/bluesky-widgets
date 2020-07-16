@@ -4,8 +4,8 @@ Goals
 
 This is a young project. Here we articulate its design principles and goals.
 
-#. This is a library of Graphic User Interface (GUI) components, not an
-   extensible application. There is no plugin architecture; there are no
+#. This is a library of reusable Graphic User Interface (GUI) components, not
+   an extensible application. There is no plugin architecture; there are no
    configuration files.
 #. It ships with some runnable example applications, but it's presumed that in
    order to build something really useful to users, someone will need to write
@@ -19,5 +19,5 @@ This is a young project. Here we articulate its design principles and goals.
 #. There is a need for both web- and desktop-based solutions, and the space of
    GUI frameworks is ever-changing, especially on the web. From the start, we
    are building in front-ends for Qt and Jupyter with examples of how to embed
-   these components in the existing Qt applications Xi-CAM, napari, and PyDM,
-   using their respective extension points.
+   these components in the existing Qt applications Xi-CAM, PyFAI, PyMca,
+   napari, and PyDM, using their respective extension points.
