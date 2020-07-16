@@ -28,8 +28,6 @@ class SearchesWidget(QWidget):
         # Add a button that does something with the currently-selected Runs
         # when you click it.
         go_button = QPushButton("Process Selected Runs")
-        # We'll just slip this into an existing widget --- not great form, but
-        # this is just a silly example.
         layout.addWidget(go_button)
         go_button.clicked.connect(self.on_click)
 
