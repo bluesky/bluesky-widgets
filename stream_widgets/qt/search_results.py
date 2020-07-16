@@ -15,6 +15,11 @@ class DataLoader(QThread):
     """
     This loads data and notifies QAbstractTableModel when it is ready.
 
+    Each _SearchResultsModel has one of these. It is created and started when
+    the _SearchResultsModel is instantiated, and it is terminated when the
+    _SearchResultsModel and destroyed.
+
+    Loop:
     - Receive an index of data to load on the queue.
     - Fetch the data (a potentially long, blocking operation).
     - Mutate the cache of loaded data, keyed on index.
@@ -38,6 +43,12 @@ class DataLoader(QThread):
             except Exception:
                 logger.exception("Error while loading search results")
             self._data[index] = item
+            # This triggers a targeted re-paint of one cell. It would be
+            # probably be more optimal to get data for a whole *row* and then
+            # repaint the whole thing, or even a whole of several rows. This
+            # requires some measurement. For now, the performance of this
+            # implementation is acceptable. Most important, the application
+            # does not lock up at all during data loading.
             self._data_changed.emit(index, index, [])
 
 
