@@ -5,6 +5,7 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QWidget,
+    QPushButton,
 )
 
 
@@ -41,10 +42,13 @@ class QtSearchInput(QWidget):
         until_layout_widget = QWidget()
         until_layout_widget.setLayout(until_layout)
 
+        self.refresh_button = QPushButton("Refresh")
+
         # Stack them up.
         layout = QVBoxLayout()
         layout.addWidget(since_layout_widget)
         layout.addWidget(until_layout_widget)
+        layout.addWidget(self.refresh_button)
         self.setLayout(layout)
 
         # Initialize values.
@@ -58,6 +62,7 @@ class QtSearchInput(QWidget):
         # Changes to the GUI update the model.
         self.since_widget.dateTimeChanged.connect(self.on_since_view_changed)
         self.until_widget.dateTimeChanged.connect(self.on_until_view_changed)
+        self.refresh_button.clicked.connect(self.model.events.reload)
         # Changes to the model update the GUI.
         self.model.events.since.connect(self.on_since_model_changed)
         self.model.events.until.connect(self.on_until_model_changed)

@@ -16,8 +16,14 @@ class RunSearch:
         self.search_input = SearchInput()
         self.search_results = SearchResults(columns)
         self.search_input.events.query.connect(self._on_query)
+        self.search_input.events.reload.connect(self._on_reload)
         # Initialize the results with the initial state of SearchInput.
         self.search_input.events.query(query=self.search_input.query)
+
+    def _on_reload(self, event):
+        self.search_results.events.begin_reset()
+        self.search_results.catalog.reload()
+        self.search_results.events.end_reset()
 
     def _on_query(self, event):
         results = self.catalog.search(event.query)

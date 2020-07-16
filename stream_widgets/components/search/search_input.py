@@ -14,7 +14,12 @@ class SearchInput:
         self._until = None
         self._query = {}
         self.events = EmitterGroup(
-            source=self, auto_connect=True, query=Event, since=Event, until=Event,
+            source=self,
+            auto_connect=True,
+            query=Event,
+            since=Event,
+            until=Event,
+            reload=Event,
         )
         # Initialize defaults. Some front ends (e.g. Qt) cannot have a null
         # state, so we pick an arbitrary range.

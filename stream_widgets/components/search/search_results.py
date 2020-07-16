@@ -20,7 +20,11 @@ class SearchResults:
         self._active_row = None
         self.columns = columns
         self.events = EmitterGroup(
-            source=self, auto_connect=True, active_row=Event, reset=Event
+            source=self,
+            auto_connect=True,
+            active_row=Event,
+            begin_reset=Event,
+            end_reset=Event,
         )
 
     @property
@@ -44,12 +48,13 @@ class SearchResults:
 
     @catalog.setter
     def catalog(self, catalog):
+        self.events.begin_reset()
         self._row_cache.clear()
         self._catalog = catalog
         self._iterator = iter(catalog)
         self._uids = []
         self._selected_rows.clear()
-        self.events.reset()
+        self.events.end_reset()
 
     def get_data(self, row, column):
         """

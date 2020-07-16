@@ -48,6 +48,7 @@ class DataLoader(QThread):
                 item = self._get_data(row, column)
             except Exception:
                 logger.exception("Error while loading search results")
+                continue
             self._data[index] = item
             # This triggers a targeted re-paint of one cell. It would be
             # probably be more optimal to get data for a whole *row* and then
@@ -90,7 +91,8 @@ class _SearchResultsModel(QAbstractTableModel):
         self.destroyed.connect(self._data_loader.terminate)
 
         # Changes to the model update the GUI.
-        self.model.events.reset.connect(self.on_entries_changed)
+        self.model.events.begin_reset.connect(self.on_begin_reset)
+        self.model.events.end_reset.connect(self.on_end_reset)
 
     def _fetch_data(self, index):
         """Kick off a request to fetch the data"""
@@ -101,11 +103,13 @@ class _SearchResultsModel(QAbstractTableModel):
             self._request_queue.put(index)
             return LOADING_PLACEHOLDER
 
-    def on_entries_changed(self, event):
+    def on_begin_reset(self, event):
         self.beginResetModel()
         self._current_num_rows = 0
         self._catalog_length = len(self.model.catalog)
         self._data.clear()
+
+    def on_end_reset(self, event):
         self.endResetModel()
 
     def canFetchMore(self, parent=None):
