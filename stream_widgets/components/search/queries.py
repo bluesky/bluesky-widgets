@@ -18,6 +18,7 @@ class Query(collections.abc.Mapping):
     the dict interface in a read-only fashion. Subclassses add a nice __repr__
     and mutable attributes from which the contents of the dict are derived.
     """
+
     @abc.abstractproperty
     def query(self):
         ...
@@ -42,8 +43,10 @@ class Query(collections.abc.Mapping):
         return type(self)(**{**self.kwargs, **kwargs})
 
     def __repr__(self):
-        return (f"{type(self).__name__}("
-                f"{', '.join(f'{k}={v}' for k, v in self.kwargs.items())})")
+        return (
+            f"{type(self).__name__}("
+            f"{', '.join(f'{k}={v}' for k, v in self.kwargs.items())})"
+        )
 
 
 class TimeRange(Query):
@@ -81,6 +84,7 @@ class TimeRange(Query):
     >>> TimeRange(since='2014').query
     {'time': {'$gte': 1388552400.0}}
     """
+
     def __init__(self, since=None, until=None, timezone=None):
         if timezone is None:
             import tzlocal
@@ -91,13 +95,15 @@ class TimeRange(Query):
             self._since_normalized = None
         else:
             self._since_normalized = normalize_human_friendly_time(
-                since, tz=self.timezone)
+                since, tz=self.timezone
+            )
         self._since_raw = since
         if until is None:
             self._until_normalized = None
         else:
             self._until_normalized = normalize_human_friendly_time(
-                until, tz=self.timezone)
+                until, tz=self.timezone
+            )
         self._until_raw = until
         if since is not None and until is not None:
             if self._since_normalized > self._until_normalized:
@@ -105,18 +111,20 @@ class TimeRange(Query):
 
     @property
     def kwargs(self):
-        return {'since': self._since_raw,
-                'until': self._until_raw,
-                'timezone': self.timezone}
+        return {
+            "since": self._since_raw,
+            "until": self._until_raw,
+            "timezone": self.timezone,
+        }
 
     @property
     def query(self):
-        query = {'time': {}}
+        query = {"time": {}}
         if self._since_normalized is not None:
-            query['time']['$gte'] = self._since_normalized
+            query["time"]["$gte"] = self._since_normalized
         if self._until_normalized is not None:
-            query['time']['$lt'] = self._until_normalized
-        if query['time']:
+            query["time"]["$lt"] = self._until_normalized
+        if query["time"]:
             return query
         else:
             return {}
@@ -126,16 +134,17 @@ class TimeRange(Query):
 
 # human friendly timestamp formats we'll parse
 _TS_FORMATS = [
-    '%Y-%m-%d %H:%M:%S',
-    '%Y-%m-%d %H:%M',  # these 2 are not as originally doc'd,
-    '%Y-%m-%d %H',     # but match previous pandas behavior
-    '%Y-%m-%d',
-    '%Y-%m',
-    '%Y']
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M",  # these 2 are not as originally doc'd,
+    "%Y-%m-%d %H",  # but match previous pandas behavior
+    "%Y-%m-%d",
+    "%Y-%m",
+    "%Y",
+]
 
 # build a tab indented, '-' bulleted list of supported formats
 # to append to the parsing function docstring below
-_doc_ts_formats = '\n'.join('\t- {}'.format(_) for _ in _TS_FORMATS)
+_doc_ts_formats = "\n".join("\t- {}".format(_) for _ in _TS_FORMATS)
 
 
 def normalize_human_friendly_time(val, tz):
@@ -153,6 +162,7 @@ def normalize_human_friendly_time(val, tz):
     # {} is placeholder for formats; filled in after def...
 
     import pytz
+
     zone = pytz.timezone(tz)  # tz as datetime.tzinfo object
     epoch = pytz.UTC.localize(datetime(1970, 1, 1))
     check = True
@@ -181,11 +191,10 @@ def normalize_human_friendly_time(val, tz):
                 check = False
             else:
                 # what else could the type be here?
-                raise TypeError('expected datetime,'
-                                ' got {:r}'.format(ts))
+                raise TypeError("expected datetime," " got {:r}".format(ts))
 
         except NameError:
-            raise ValueError('failed to parse time: ' + repr(val))
+            raise ValueError("failed to parse time: " + repr(val))
 
     if check and not isinstance(val, datetime):
         return val
@@ -199,6 +208,6 @@ def normalize_human_friendly_time(val, tz):
 
 
 # fill in the placeholder we left in the previous docstring
-normalize_human_friendly_time.__doc__ = (
-    normalize_human_friendly_time.__doc__.format(_doc_ts_formats)
+normalize_human_friendly_time.__doc__ = normalize_human_friendly_time.__doc__.format(
+    _doc_ts_formats
 )

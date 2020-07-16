@@ -21,4 +21,5 @@ with napari.gui_qt():
     viewer.add_search(get_catalog())
     # ...and one listing any and all catalogs discovered on the system.
     from databroker import catalog
+
     viewer.add_search(catalog)

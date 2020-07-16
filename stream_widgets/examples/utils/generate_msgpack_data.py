@@ -16,5 +16,5 @@ def get_catalog():
     with Serializer(directory) as serializer:
         RE(count([img], 3), serializer)
 
-    catalog = BlueskyMsgpackCatalog(f'{directory}/*.msgpack')
+    catalog = BlueskyMsgpackCatalog(f"{directory}/*.msgpack")
     return catalog

@@ -12,16 +12,13 @@ class SearchResults:
         Expected signature::
             f(BlueskyRun) -> tuple[str]
     """
+
     def __init__(self, columns):
         self._catalog = {}
         self._row_cache = {}
         self._selected_rows = ListModel()
         self.columns = columns
-        self.events = EmitterGroup(
-            source=self,
-            auto_connect=True,
-            reset=Event
-        )
+        self.events = EmitterGroup(source=self, auto_connect=True, reset=Event)
 
     @property
     def headings(self):
@@ -70,7 +67,8 @@ class SearchResults:
     def get_uid_by_row(self, row):
         if row > len(self._catalog):
             raise ValueError(
-                f"Cannot get row {row}. Catalog has {len(self._catalog)} rows.")
+                f"Cannot get row {row}. Catalog has {len(self._catalog)} rows."
+            )
         cache_length = len(self._uids)
         if row >= cache_length:
             for _ in range(row - cache_length + 1):

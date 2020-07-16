@@ -12,4 +12,4 @@ def qtbot(qtbot):
     QApplication.processEvents()
     leaks = set(QApplication.topLevelWidgets()).difference(initial)
     if leaks:
-        raise AssertionError(f'Widgets leaked!: {leaks}')
+        raise AssertionError(f"Widgets leaked!: {leaks}")

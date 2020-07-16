@@ -5,7 +5,7 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QWidget,
-    )
+)
 
 
 class QtSearchInput(QWidget):
@@ -16,6 +16,7 @@ class QtSearchInput(QWidget):
     ----------
     model: SearchInput
     """
+
     def __init__(self, model, *args, **kwargs):
         self.model = model
         super().__init__(*args, **kwargs)
@@ -23,9 +24,9 @@ class QtSearchInput(QWidget):
         # "Since: <datetime picker>"
         self.since_widget = QDateTimeEdit()
         self.since_widget.setCalendarPopup(True)
-        self.since_widget.setDisplayFormat('yyyy-MM-dd HH:mm')
+        self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
         since_layout = QHBoxLayout()
-        since_layout.addWidget(QLabel('Since:'))
+        since_layout.addWidget(QLabel("Since:"))
         since_layout.addWidget(self.since_widget)
         since_layout_widget = QWidget()
         since_layout_widget.setLayout(since_layout)
@@ -33,9 +34,9 @@ class QtSearchInput(QWidget):
         # "Until: <datetime picker>"
         self.until_widget = QDateTimeEdit()
         self.until_widget.setCalendarPopup(True)
-        self.until_widget.setDisplayFormat('yyyy-MM-dd HH:mm')
+        self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
         until_layout = QHBoxLayout()
-        until_layout.addWidget(QLabel('Until:'))
+        until_layout.addWidget(QLabel("Until:"))
         until_layout.addWidget(self.until_widget)
         until_layout_widget = QWidget()
         until_layout_widget.setLayout(until_layout)

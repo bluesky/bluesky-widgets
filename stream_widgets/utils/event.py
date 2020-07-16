@@ -166,7 +166,7 @@ class Event(object):
                 return "<...>"
             attrs = []
             for name in dir(self):
-                if name.startswith('_'):
+                if name.startswith("_"):
                     continue
                 # select only properties
                 if not hasattr(type(self), name) or not isinstance(
@@ -237,13 +237,13 @@ class EventEmitter(object):
         self.source = source
         self.default_args = {}
         if type is not None:
-            self.default_args['type'] = type
+            self.default_args["type"] = type
 
         assert inspect.isclass(event_class)
         self.event_class = event_class
 
         self._ignore_callback_errors = False  # True
-        self.print_callback_errors = 'reminders'  # 'reminders'
+        self.print_callback_errors = "reminders"  # 'reminders'
 
     @property
     def ignore_callback_errors(self):
@@ -274,7 +274,7 @@ class EventEmitter(object):
 
     @print_callback_errors.setter
     def print_callback_errors(self, val):
-        if val not in ('first', 'reminders', 'always', 'never'):
+        if val not in ("first", "reminders", "always", "never"):
             raise ValueError(
                 'print_callback_errors must be "first", '
                 '"reminders", "always", or "never"'
@@ -305,9 +305,7 @@ class EventEmitter(object):
         else:
             self._source = weakref.ref(s)
 
-    def connect(
-        self, callback, ref=False, position='first', before=None, after=None
-    ):
+    def connect(self, callback, ref=False, position="first", before=None, after=None):
         """Connect this emitter to a new callback.
 
         Parameters
@@ -368,22 +366,20 @@ class EventEmitter(object):
             if ref:
                 if isinstance(callback, tuple):
                     ref = callback[1]
-                elif hasattr(callback, '__name__'):  # function
+                elif hasattr(callback, "__name__"):  # function
                     ref = callback.__name__
                 else:  # Method, or other
                     ref = callback.__class__.__name__
             else:
                 ref = None
         elif not isinstance(ref, str):
-            raise TypeError('ref must be a bool or string')
+            raise TypeError("ref must be a bool or string")
         if ref is not None and ref in self._callback_refs:
             raise ValueError('ref "%s" is not unique' % ref)
 
         # positions
-        if position not in ('first', 'last'):
-            raise ValueError(
-                'position must be "first" or "last", not %s' % position
-            )
+        if position not in ("first", "last"):
+            raise ValueError('position must be "first" or "last", not %s' % position)
 
         # bounds
         bounds = list()  # upper & lower bnds (inclusive) of possible cb locs
@@ -403,24 +399,21 @@ class EventEmitter(object):
                     if count != 1:
                         raise ValueError(
                             'criteria "%s" is in the current '
-                            'callback list %s times:\n%s\n%s'
+                            "callback list %s times:\n%s\n%s"
                             % (criteria, count, callback_refs, callbacks)
                         )
                 matches = [
                     ci
-                    for ci, (cn, cc) in enumerate(
-                        zip(callback_refs, callbacks)
-                    )
+                    for ci, (cn, cc) in enumerate(zip(callback_refs, callbacks))
                     if (cc in criteria or cn in criteria)
                 ]
                 bounds.append(matches[0] if ri == 0 else (matches[-1] + 1))
         if bounds[0] < bounds[1]:  # i.e., "place before" < "place after"
             raise RuntimeError(
                 'cannot place callback before "%s" '
-                'and after "%s" for callbacks: %s'
-                % (before, after, callback_refs)
+                'and after "%s" for callbacks: %s' % (before, after, callback_refs)
             )
-        idx = bounds[1] if position == 'first' else bounds[0]  # 'last'
+        idx = bounds[1] if position == "first" else bounds[0]  # 'last'
 
         # actually add the callback
         self._callbacks.insert(idx, callback)
@@ -451,9 +444,7 @@ class EventEmitter(object):
             callback = (callback.__self__, callback.__name__)
 
         # always use a weak ref
-        if isinstance(callback, tuple) and not isinstance(
-            callback[0], weakref.ref
-        ):
+        if isinstance(callback, tuple) and not isinstance(callback[0], weakref.ref):
             callback = (weakref.ref(callback[0]),) + callback[1:]
 
         return callback
@@ -523,8 +514,7 @@ class EventEmitter(object):
         try:
             cb(event)
         except Exception:
-            logger.exception("Error in callback %r processing Event %r",
-                             cb, event)
+            logger.exception("Error in callback %r processing Event %r", cb, event)
 
     def _prepare_event(self, *args, **kwargs):
         # When emitting, this method is called to create or otherwise alter
@@ -541,7 +531,7 @@ class EventEmitter(object):
                 # if an EventEmitter is called with a single argument (that is
                 # not an instance of self.event_class), assume that that
                 # argument is a value to be emitted.
-                kwargs['value'] = args[0]
+                kwargs["value"] = args[0]
             else:
                 raise ValueError(
                     "Event emitters may be called with an Event instance, "
@@ -736,9 +726,9 @@ class EmitterGroup(EventEmitter):
                 )
             elif not isinstance(emitter, EventEmitter):
                 raise Exception(
-                    'Emitter must be specified as either an '
-                    'EventEmitter instance or Event subclass. '
-                    '(got %s=%s)' % (name, emitter)
+                    "Emitter must be specified as either an "
+                    "EventEmitter instance or Event subclass. "
+                    "(got %s=%s)" % (name, emitter)
                 )
 
             # give this emitter the same source as the group.
@@ -782,9 +772,7 @@ class EmitterGroup(EventEmitter):
         for em in self._emitters.values():
             em.unblock()
 
-    def connect(
-        self, callback, ref=False, position='first', before=None, after=None
-    ):
+    def connect(self, callback, ref=False, position="first", before=None, after=None):
         """ Connect the callback to the event group. The callback will receive
         events from *all* of the emitters in the group.
 
@@ -792,9 +780,7 @@ class EmitterGroup(EventEmitter):
         for arguments.
         """
         self._connect_emitters(True)
-        return EventEmitter.connect(
-            self, callback, ref, position, before, after
-        )
+        return EventEmitter.connect(self, callback, ref, position, before, after)
 
     def disconnect(self, callback=None):
         """ Disconnect the callback from this group. See

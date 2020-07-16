@@ -41,6 +41,7 @@ class Window:
     window_menu : qtpy.QtWidgets.QMenu
         Window menu.
     """
+
     def __init__(self, qt_widget, *, show):
 
         self.qt_widget = qt_widget
@@ -56,8 +57,8 @@ class Window:
         self._status_bar = QStatusBar()
         self._qt_window.setStatusBar(self._status_bar)
 
-        self._status_bar.showMessage('Ready')
-        self._help = QLabel('')
+        self._status_bar.showMessage("Ready")
+        self._help = QLabel("")
         self._status_bar.addPermanentWidget(self._help)
 
         self._qt_center.layout().addWidget(self.qt_widget)
@@ -138,18 +139,18 @@ class Window:
         """Save screenshot of current display with viewer, default .png"""
         filename, _ = QFileDialog.getSaveFileName(
             parent=self.qt_widget,
-            caption='Save screenshot with viewer',
+            caption="Save screenshot with viewer",
             directory=self.qt_widget._last_visited_dir,  # home dir by default
             filter="Image files (*.png *.bmp *.gif *.tif *.tiff)",  # first one used by default
             # jpg and jpeg not included as they don't support an alpha channel
         )
-        if (filename != '') and (filename is not None):
+        if (filename != "") and (filename is not None):
             # double check that an appropriate extension has been added as the
             # filter option does not always add an extension on linux and windows
             # see https://bugreports.qt.io/browse/QTBUG-27186
-            image_extensions = ('.bmp', '.gif', '.png', '.tif', '.tiff')
+            image_extensions = (".bmp", ".gif", ".png", ".tif", ".tiff")
             if not filename.endswith(image_extensions):
-                filename = filename + '.png'
+                filename = filename + ".png"
             self.screenshot(path=filename)
 
     def screenshot(self, path=None):
@@ -170,6 +171,7 @@ class Window:
         if path is not None:
             from skimage.io import imsave
             from .utils import QImg2array  # noqa: E402
+
             imsave(path, QImg2array(img))
         return QImg2array(img)
 

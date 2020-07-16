@@ -17,6 +17,7 @@ class SearchesWidget(QWidget):
     """
     Combine the QtSearches widget with a button that processes selected Runs.
     """
+
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
@@ -35,13 +36,16 @@ class SearchesWidget(QWidget):
     def on_click(self):
         for uid, run in self.model.active.selection_as_catalog.items():
             # Pretend to kick off data processing or something.
-            print(f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})")
+            print(
+                f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"
+            )
 
 
 class Searches(SearchList):
     """
     A user-facing model composed with a Qt widget and window.
     """
+
     def __init__(self, *, show=True, title=""):
         super().__init__()
         self.title = title
@@ -52,6 +56,7 @@ class Searches(SearchList):
         self.append(Search(get_catalog(), columns=columns))
         # ...and one listing any and all catalogs discovered on the system.
         from databroker import catalog
+
         self.append(Search(catalog, columns=columns))
 
     def show(self):

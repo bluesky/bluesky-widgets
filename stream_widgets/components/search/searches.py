@@ -10,6 +10,7 @@ class RunSearch:
     """
     Model of search input and search results for a search for Runs in a catalog of runs.
     """
+
     def __init__(self, catalog, columns):
         self.catalog = catalog
         self.search_input = SearchInput()
@@ -27,6 +28,7 @@ class Search:
     """
     Model for digging into potentially nested catalogs and ending at a catalog of runs.
     """
+
     _name_counter = itertools.count(1)
 
     def __init__(self, root_catalog, *, name=None, columns):
@@ -53,7 +55,7 @@ class Search:
             self._search = RunSearch(root_catalog, columns)
             self.events.run_search_ready(
                 search_input=self._search.search_input,
-                search_results=self._search.search_results
+                search_results=self._search.search_results,
             )
 
     @classmethod
@@ -130,7 +132,7 @@ class Search:
             self._search = RunSearch(new, self._columns)
             self.events.run_search_ready(
                 search_input=self._search.search_input,
-                search_results=self._search.search_results
+                search_results=self._search.search_results,
             )
 
     def go_back(self):
@@ -161,6 +163,7 @@ class Search:
         "Is this a catalog BlueskyRuns, or a Catalog of Catalogs?"
         # HACK!
         from databroker.v2 import Broker
+
         return isinstance(catalog, Broker)
 
 
@@ -168,11 +171,14 @@ class SearchList(ListModel):
     """
     Model for a list of Search models
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.events.add(active=Event)
         self.events.added.connect(self._connect_enforce_mutually_exclusive_activation)
-        self.events.removed.connect(self._disconnect_enforce_mutually_exclusive_activation)
+        self.events.removed.connect(
+            self._disconnect_enforce_mutually_exclusive_activation
+        )
 
     # Ensure that whenever an item in this list become "active" all others are
     # not active.

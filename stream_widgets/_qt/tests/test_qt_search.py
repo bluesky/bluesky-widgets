@@ -8,8 +8,8 @@ def make_test_searches(qtbot, request):
     searchess = []
 
     def actual_factory(*model_args, **model_kwargs):
-        model_kwargs['show'] = model_kwargs.pop(
-            'show', request.config.getoption("--show-window")
+        model_kwargs["show"] = model_kwargs.pop(
+            "show", request.config.getoption("--show-window")
         )
         searches = Searches(*model_args, **model_kwargs)
         searchess.append(searches)

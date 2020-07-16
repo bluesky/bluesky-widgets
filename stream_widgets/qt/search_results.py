@@ -19,6 +19,7 @@ class DataLoader(QThread):
     - Notify QAbstractTableModel of the change so that it is refreshes the
       viewer from the data cache.
     """
+
     def __init__(self, queue, get_data, data, data_changed, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._queue = queue
@@ -48,6 +49,7 @@ class _SearchResultsModel(QAbstractTableModel):
     filled with LOADING_PLACEHOLDER. Work is kicked off on a thread to later
     update this with the actual data.
     """
+
     def __init__(self, model, *args, **kwargs):
         self.model = model  # our internal model for the components subpackage
         super().__init__(*args, **kwargs)
@@ -60,7 +62,8 @@ class _SearchResultsModel(QAbstractTableModel):
         self._data = {}
         self._request_queue = queue.Queue()
         self._data_loader = DataLoader(
-            self._request_queue, self.model.get_data, self._data, self.dataChanged)
+            self._request_queue, self.model.get_data, self._data, self.dataChanged
+        )
         self._data_loader.start()
         self.destroyed.connect(self._data_loader.terminate)
 
@@ -94,7 +97,9 @@ class _SearchResultsModel(QAbstractTableModel):
         rows_to_add = min(remainder, CHUNK_SIZE)
         if rows_to_add <= 0:
             return
-        self.beginInsertRows(parent, self._current_num_rows, self._current_num_rows + rows_to_add - 1)
+        self.beginInsertRows(
+            parent, self._current_num_rows, self._current_num_rows + rows_to_add - 1
+        )
         self._current_num_rows += rows_to_add
         self.endInsertRows()
 
@@ -131,6 +136,7 @@ class QtSearchResults(QTableView):
     ----------
     model: stream_widgets.components.search_results.SearchResults
     """
+
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
