@@ -67,6 +67,7 @@ def main():
     print(__doc__)
     with gui_qt("Example Application"):
         searches = Searches(title="Example Application")
+        print(searches)
 
 
 if __name__ == "__main__":
