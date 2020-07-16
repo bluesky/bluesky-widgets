@@ -1,3 +1,4 @@
+import logging
 import queue
 
 from qtpy import QtCore
@@ -5,6 +6,7 @@ from qtpy.QtCore import QAbstractTableModel, QThread, Qt
 from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 
+logger = logging.getLogger(__name__)
 LOADING_PLACEHOLDER = "..."
 CHUNK_SIZE = 5  # max rows to fetch at once
 
@@ -31,7 +33,10 @@ class DataLoader(QThread):
         while True:
             index = self._queue.get()
             row, column = index.row(), index.column()
-            item = self._get_data(row, column)
+            try:
+                item = self._get_data(row, column)
+            except Exception:
+                logger.exception("Error while loading search results")
             self._data[index] = item
             self._data_changed.emit(index, index, [])
 
