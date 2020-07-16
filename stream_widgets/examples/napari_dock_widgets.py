@@ -1,9 +1,9 @@
 import napari
 
-from stream_widgets.components.search.searches import SearchList
-from stream_widgets.qt.searches import QtSearches
-from stream_widgets.examples.utils.add_search_mixin import AddSearchMixin
-from stream_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.components.search.searches import SearchList
+from bluesky_widgets.qt.searches import QtSearches
+from bluesky_widgets.examples.utils.add_search_mixin import AddSearchMixin
+from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 
 
 class Viewer(napari.Viewer, AddSearchMixin):

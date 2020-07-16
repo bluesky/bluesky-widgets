@@ -1,7 +1,7 @@
 """
 This file is vendored from pyFAI.app.calib2.
 
-It has been modified to hook in stream_widgets' search functionality, available
+It has been modified to hook in bluesky_widgets' search functionality, available
 from a new menu item in the top menu bar.
 
 The changes are marked below with comments.
@@ -879,13 +879,13 @@ def main():
     setup_model(context.getCalibrationModel(), options)
     window = CalibrationWindow(context)
 
-    # Begin modifications for stream_widgets
+    # Begin modifications for bluesky_widgets
 
     from qtpy.QtWidgets import QDialog
-    from stream_widgets.components.search.searches import Search
-    from stream_widgets.qt.searches import QtSearch
-    from stream_widgets.examples.utils.generate_msgpack_data import get_catalog
-    from stream_widgets.examples.utils.add_search_mixin import columns
+    from bluesky_widgets.components.search.searches import Search
+    from bluesky_widgets.qt.searches import QtSearch
+    from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+    from bluesky_widgets.examples.utils.add_search_mixin import columns
 
     from qtpy.QtWidgets import QAction, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
@@ -932,7 +932,7 @@ def main():
     launch_dialog_action = QAction("&Search")
     menu.addAction(launch_dialog_action)
     launch_dialog_action.triggered.connect(launch_dialog)
-    # End modifications for stream_widgets
+    # End modifications for bluesky_widgets
 
     window.setVisible(True)
     window.setAttribute(qt.Qt.WA_DeleteOnClose, True)

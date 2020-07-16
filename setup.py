@@ -10,7 +10,7 @@ import versioneer
 min_version = (3, 6)
 if sys.version_info < min_version:
     error = """
-stream-widgets does not support Python {0}.{1}.
+bluesky-widgets does not support Python {0}.{1}.
 Python {2}.{3} and above is required. Check your Python version like so:
 
 python3 --version
@@ -39,14 +39,14 @@ with open(path.join(here, "requirements.txt")) as requirements_file:
 
 
 setup(
-    name="stream-widgets",
+    name="bluesky-widgets",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="Toolbox of widgets for visualizing streaming data",
     long_description=readme,
     author="Brookhaven National Lab",
     author_email="dallan@bnl.gov",
-    url="https://github.com/danielballan/stream-widgets",
+    url="https://github.com/danielballan/bluesky-widgets",
     python_requires=">={}".format(".".join(str(n) for n in min_version)),
     packages=find_packages(exclude=["docs", "tests"]),
     entry_points={
@@ -56,7 +56,7 @@ setup(
     },
     include_package_data=True,
     package_data={
-        "stream_widgets": [
+        "bluesky_widgets": [
             # When adding files here, remember to update MANIFEST.in as well,
             # or else they will not be included in the distribution on PyPI!
             # 'path/to/data_file',

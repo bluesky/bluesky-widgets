@@ -9,7 +9,7 @@ Stand-alone example Qt application for searching Data Broker:
 
 .. code:: bash
 
-   python -m stream_widgets.examples.qt_search
+   python -m bluesky_widgets.examples.qt_search
 
 Launched from IPython, either by using ``--gui=qt`` to launch the Qt
 application:
@@ -21,7 +21,7 @@ application:
 
 .. code:: python
 
-   from stream_widgets.examples.qt_search import Searches
+   from bluesky_widgets.examples.qt_search import Searches
    s  = Searches()
 
 or using a context manager to launch the Qt application:
@@ -32,7 +32,7 @@ or using a context manager to launch the Qt application:
 
 .. code:: python
 
-   from stream_widgets.examples.qt_search import Searches, gui_qt
+   from bluesky_widgets.examples.qt_search import Searches, gui_qt
    with gui_qt("example"):
        s = Searches()
 
@@ -41,11 +41,11 @@ Search embedded in napari:
 .. code:: bash
 
    pip install napari[all]
-   python -m stream_widgets.examples.napari_dock_widgets
+   python -m bluesky_widgets.examples.napari_dock_widgets
 
 Search embedded in PyFAI:
 
 .. code:: bash
 
    pip install pyFAI
-   python -m stream_widgets.examples.pyFAI_dialog
+   python -m bluesky_widgets.examples.pyFAI_dialog

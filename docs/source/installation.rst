@@ -20,4 +20,4 @@ and they use Qt:::
 
 Finally, install the project itself:::
 
-    $ pip install stream-widgets
+    $ pip install bluesky-widgets

@@ -3,12 +3,12 @@ Select some runs and click the button. Their IDs will be printed to the
 terminal. In a real application, this could kick off data processing, export,
 or visualization.
 """
-from stream_widgets.qt import Window
-from stream_widgets.qt import gui_qt
-from stream_widgets.components.search.searches import SearchList, Search
-from stream_widgets.qt.searches import QtSearches
-from stream_widgets.examples.utils.generate_msgpack_data import get_catalog
-from stream_widgets.examples.utils.add_search_mixin import columns
+from bluesky_widgets.qt import Window
+from bluesky_widgets.qt import gui_qt
+from bluesky_widgets.components.search.searches import SearchList, Search
+from bluesky_widgets.qt.searches import QtSearches
+from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.examples.utils.add_search_mixin import columns
 
 from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget
 

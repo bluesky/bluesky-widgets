@@ -1,4 +1,4 @@
-from stream_widgets.components.search.searches import Search
+from bluesky_widgets.components.search.searches import Search
 
 headings = (
     "Unique ID",

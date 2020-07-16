@@ -161,7 +161,7 @@ class QtSearchResults(QTableView):
 
     Parameters
     ----------
-    model: stream_widgets.components.search_results.SearchResults
+    model: bluesky_widgets.components.search_results.SearchResults
     """
 
     def __init__(self, model, *args, **kwargs):
