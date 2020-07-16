@@ -17,8 +17,11 @@ class SearchResults:
         self._catalog = {}
         self._row_cache = {}
         self._selected_rows = ListModel()
+        self._active_row = None
         self.columns = columns
-        self.events = EmitterGroup(source=self, auto_connect=True, reset=Event)
+        self.events = EmitterGroup(
+            source=self, auto_connect=True, active_row=Event, reset=Event
+        )
 
     @property
     def headings(self):
@@ -74,6 +77,26 @@ class SearchResults:
             for _ in range(row - cache_length + 1):
                 self._uids.append(next(self._iterator))
         return self._uids[row]
+
+    @property
+    def active_row(self):
+        return self._active_row
+
+    @active_row.setter
+    def active_row(self, active_row):
+        if active_row != self.active_row:
+            self._active_row = active_row
+        self.events.active_row(item=active_row)
+
+    @property
+    def active_uid(self):
+        if self.active_row is not None:
+            return self.get_uid_by_row(self.active_row)
+
+    @property
+    def active_run(self):
+        if self.active_uid is not None:
+            return self.catalog[self.active_uid]
 
     @property
     def selected_rows(self):

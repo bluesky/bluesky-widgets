@@ -2,7 +2,13 @@ import logging
 import queue
 
 from qtpy import QtCore
-from qtpy.QtCore import QAbstractTableModel, QItemSelection, QItemSelectionModel, QThread, Qt
+from qtpy.QtCore import (
+    QAbstractTableModel,
+    # QItemSelection,
+    # QItemSelectionModel,
+    QThread,
+    Qt,
+)
 from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 
@@ -169,8 +175,9 @@ class QtSearchResults(QTableView):
         self._abstract_table_model = _SearchResultsModel(model)
         self.setModel(self._abstract_table_model)
 
-        # Notify model of changes to selection.
+        # Notify model of changes to selection and activation.
         self.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        self.clicked.connect(self.on_clicked)
 
         # Update the view to changes in the model.
         self.model.selected_rows.events.added.connect(self.on_row_added)
@@ -186,16 +193,33 @@ class QtSearchResults(QTableView):
             if row not in self.model.selected_rows:
                 self.model.selected_rows.append(row)
 
+    def on_clicked(self, index):
+        self.model.active_row = index.row()
+
     def on_row_added(self, event):
+        """Sync changes to model to view.
+
+        This is expected to be rare, is not yet publicly exposed.
+        """
         # TODO -- Not sure what is broken here
         # index1 = self._abstract_table_model.index(event.item, 0)
         # index2 = self._abstract_table_model.index(event.item, self._abstract_table_model.columnCount())
         # selection = QItemSelection(index1, index2)
         # self.selectionModel().select(selection, QItemSelectionModel.Select)
+        ...
 
     def on_row_removed(self, event):
+        """Sync changes to model to view.
+
+        This is expected to be rare, is not yet publicly exposed.
+        """
         # TODO -- Not sure what is broken here
         # index1 = self._abstract_table_model.index(event.item, 0)
         # index2 = self._abstract_table_model.index(event.item, self._abstract_table_model.columnCount())
         # selection = QItemSelection(index1, index2)
         # self.selectionModel().select(selection, QItemSelectionModel.Deselect)
+        ...
+
+    def on_activated_by_model(self, event):
+        # TODO
+        ...

@@ -49,10 +49,12 @@ class Search:
             run_search_cleared=Event,
             active=Event,
             inactive=Event,
+            active_run=Event,
         )
 
         if self._has_runs(root_catalog):
             self._search = RunSearch(root_catalog, columns)
+            self._search.search_results.events.active_row.connect(self._on_active_row)
             self.events.run_search_ready(
                 search_input=self._search.search_input,
                 search_results=self._search.search_results,
@@ -130,6 +132,7 @@ class Search:
             self.events.enter(catalog=new)
         else:
             self._search = RunSearch(new, self._columns)
+            self._search.search_results.events.active_row.connect(self._on_active_row)
             self.events.run_search_ready(
                 search_input=self._search.search_input,
                 search_results=self._search.search_results,
@@ -139,10 +142,14 @@ class Search:
         if self.root_catalog is self.current_catalog:
             raise RuntimeError("We are the root catalog.")
         if self._search is not None:
+            self._search.events.active_row.disconnect(self._on_active_row)
             self._search = None
             self.events.run_search_cleared()
         self._subcatalogs.pop()
         self.events.go_back()
+
+    def _on_active_row(self, event):
+        self.events.active_run(uid=self.active_uid, run=self.active_run)
 
     @property
     def active(self):
@@ -157,6 +164,16 @@ class Search:
             self.events.active()
         else:
             self.events.inactive()
+
+    @property
+    def active_uid(self):
+        if self._search is not None:
+            return self._search.search_results.active_uid
+
+    @property
+    def active_run(self):
+        if self._search is not None:
+            return self._search.search_results.active_run
 
     @staticmethod
     def _has_runs(catalog):

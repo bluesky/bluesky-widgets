@@ -31,3 +31,4 @@ def test_search():
     assert s.results is None
     assert s.input is None
     assert s.active is False
+    assert s.active_run is None
