@@ -14,6 +14,9 @@ from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
 
 class SearchesWidget(QWidget):
+    """
+    Combine the QtSearches widget with a button that processes selected Runs.
+    """
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
@@ -37,13 +40,19 @@ class SearchesWidget(QWidget):
 
 class Searches(SearchList):
     """
-    A user-facing Qt-based Search Window.
+    A user-facing model composed with a Qt widget and window.
     """
     def __init__(self, *, show=True, title=""):
         super().__init__()
         self.title = title
         widget = SearchesWidget(self)
         self.window = Window(widget, show=show)
+
+        # Initialize with a two search tabs: one with some generated example data...
+        self.append(Search(get_catalog(), columns=columns))
+        # ...and one listing any and all catalogs discovered on the system.
+        from databroker import catalog
+        self.append(Search(catalog, columns=columns))
 
     def show(self):
         """Resize, show, and raise the window."""
@@ -58,12 +67,6 @@ def main():
     print(__doc__)
     with gui_qt("Example Application"):
         searches = Searches(title="Example Application")
-
-        # Initialize with a two search tabs: one with some generated example data...
-        searches.append(Search(get_catalog(), columns=columns))
-        # ...and one listing any and all catalogs discovered on the system.
-        from databroker import catalog
-        searches.append(Search(catalog, columns=columns))
 
 
 if __name__ == "__main__":
