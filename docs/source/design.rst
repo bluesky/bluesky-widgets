@@ -21,7 +21,7 @@ can react to and expose out things happening in ``SearchInput``, but
 ``SearchInput`` will never reach up into ``Search`` or sideways into its
 sibling ``SearchResults``.
 
-What does this buy us:
+What does this buy us?
 
 * Maximum reusability
 * Easy embedding into existing applications, validated by early examples
