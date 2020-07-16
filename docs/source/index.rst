@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 bluesky-widgets Documentation
-============================
+=============================
 
 .. toctree::
    :maxdepth: 2
