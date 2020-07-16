@@ -59,8 +59,8 @@ class _SearchResultsModel(QAbstractTableModel):
         # State related to asynchronously fetching data
         self._data = {}
         self._request_queue = queue.Queue()
-        self._data_loader = DataLoader(self._request_queue,
-            self.model.get_data, self._data, self.dataChanged)
+        self._data_loader = DataLoader(
+            self._request_queue, self.model.get_data, self._data, self.dataChanged)
         self._data_loader.start()
         self.destroyed.connect(self._data_loader.terminate)
 

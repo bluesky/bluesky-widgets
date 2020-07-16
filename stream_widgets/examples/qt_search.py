@@ -67,7 +67,16 @@ def main():
     print(__doc__)
     with gui_qt("Example Application"):
         searches = Searches(title="Example Application")
-        print(searches)
+
+        # We can access and modify the model as in...
+        len(searches)
+        searches[0]
+        searches.active  # i.e. current tab
+        searches.active.input.since  # time range
+        searches.active.input.until = "2040"
+        searches.active.results
+        searches.active.selection_as_catalog
+        searches.active.selected_uids
 
 
 if __name__ == "__main__":
