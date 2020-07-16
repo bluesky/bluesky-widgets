@@ -88,11 +88,14 @@ install:
   - |
     set -e
     if [ $QT == "pyside2" ]; then
-      conda install -y pyside2 -c conda-forge
+      conda install -y pyside2 -c conda-forge;
+      conda update -y pyside2 -c conda-forge
     elif [ $QT == "pyqt5" ]; then
-      conda install -y pyqt
+      conda install -y pyqt;
+      conda update -y pyqt
     elif [ $QT == "pyqt5cf" ]; then
-      conda install -y pyqt -c conda-forge
+      conda install -y pyqt -c conda-forge;
+      conda update -y pyqt -c conda-forge
     else
         echo "Unknown Qt package $QT"
         exit 1
