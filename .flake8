@@ -7,4 +7,5 @@ exclude =
     versioneer.py,
     stream_widgets/_version.py,
     docs/source/conf.py
+    stream_widgets/examples/pyFAI_dialog.py,
 max-line-length = 115
