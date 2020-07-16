@@ -9,4 +9,4 @@ bluesky-widgets
         :target: https://pypi.python.org/pypi/bluesky-widgets
 
 
-Toolbox of widgets for visualizing streaming data
+Toolbox of widgets for visualizing blueskying data
