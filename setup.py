@@ -37,6 +37,10 @@ with open(path.join(here, "requirements.txt")) as requirements_file:
         if not line.startswith("#")
     ]
 
+extras_require = {
+    "pyside2": ["PySide2", "qtpy"],
+    "pyqt5": ["PyQt5", "qtpy"]
+}
 
 setup(
     name="bluesky-widgets",
@@ -63,6 +67,7 @@ setup(
         ]
     },
     install_requires=requirements,
+    extras_require=extras_require,
     license="BSD (3-clause)",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

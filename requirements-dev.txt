@@ -1,9 +1,15 @@
 # These are required for developing the package (running the tests, building
 # the documentation) but not necessarily required for _using_ it.
+bluesky
 codecov
 coverage
+databroker
 flake8
+napari
+ophyd
 pytest
+pytest-qt
+qtpy
 sphinx
 # These are dependencies of various sphinx extensions for documentation.
 ipython
