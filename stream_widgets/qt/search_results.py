@@ -2,7 +2,7 @@ import logging
 import queue
 
 from qtpy import QtCore
-from qtpy.QtCore import QAbstractTableModel, QThread, Qt
+from qtpy.QtCore import QAbstractTableModel, QItemSelection, QItemSelectionModel, QThread, Qt
 from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 
@@ -166,27 +166,36 @@ class QtSearchResults(QTableView):
         self.horizontalHeader().setDefaultAlignment(Qt.AlignHCenter)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         # self.setAlternatingRowColors(True)
-        self.setModel(_SearchResultsModel(model))
+        self._abstract_table_model = _SearchResultsModel(model)
+        self.setModel(self._abstract_table_model)
 
         # Notify model of changes to selection.
         self.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         # Update the view to changes in the model.
-        self.model.selected_rows.events.added(self.on_row_added)
-        self.model.selected_rows.events.removed(self.on_row_removed)
+        self.model.selected_rows.events.added.connect(self.on_row_added)
+        self.model.selected_rows.events.removed.connect(self.on_row_removed)
 
     def on_selection_changed(self, selected, deselected):
         # One would expect we could ask Qt directly for the rows, as opposed to
         # using set() here, but I cannot find such a method.
         for row in set(index.row() for index in deselected.indexes()):
-            self.model.selected_rows.remove(row)
+            if row in self.model.selected_rows:
+                self.model.selected_rows.remove(row)
         for row in set(index.row() for index in selected.indexes()):
-            self.model.selected_rows.append(row)
+            if row not in self.model.selected_rows:
+                self.model.selected_rows.append(row)
 
     def on_row_added(self, event):
-        # TODO
-        ...
+        # TODO -- Not sure what is broken here
+        # index1 = self._abstract_table_model.index(event.item, 0)
+        # index2 = self._abstract_table_model.index(event.item, self._abstract_table_model.columnCount())
+        # selection = QItemSelection(index1, index2)
+        # self.selectionModel().select(selection, QItemSelectionModel.Select)
 
     def on_row_removed(self, event):
-        # TODO
-        ...
+        # TODO -- Not sure what is broken here
+        # index1 = self._abstract_table_model.index(event.item, 0)
+        # index2 = self._abstract_table_model.index(event.item, self._abstract_table_model.columnCount())
+        # selection = QItemSelection(index1, index2)
+        # self.selectionModel().select(selection, QItemSelectionModel.Deselect)
