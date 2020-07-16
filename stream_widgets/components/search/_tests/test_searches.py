@@ -19,6 +19,7 @@ def test_search_list_mutually_exclusive_active_item():
     assert search_list.active is s2
     s2.active = False
     assert search_list.active is None
+    assert "SearchList" in repr(search_list)
 
 
 def test_search():
