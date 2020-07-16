@@ -7,7 +7,6 @@ databroker
 flake8
 napari
 ophyd
-PyQt5
 pytest
 pytest-qt
 qtpy
