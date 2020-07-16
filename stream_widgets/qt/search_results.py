@@ -1,28 +1,105 @@
+import queue
+
 from qtpy import QtCore
-from qtpy.QtCore import QAbstractTableModel, Qt
+from qtpy.QtCore import QAbstractTableModel, QThread, Qt
 from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTableView
+
+
+LOADING_PLACEHOLDER = "..."
+CHUNK_SIZE = 5  # max rows to fetch at once
+
+
+class DataLoader(QThread):
+    """
+    This loads data and notifies QAbstractTableModel when it is ready.
+
+    - Receive an index of data to load on the queue.
+    - Fetch the data (a potentially long, blocking operation).
+    - Mutate the cache of loaded data, keyed on index.
+    - Notify QAbstractTableModel of the change so that it is refreshes the
+      viewer from the data cache.
+    """
+    def __init__(self, queue, get_data, data, data_changed, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._queue = queue
+        self._get_data = get_data
+        self._data = data
+        self._data_changed = data_changed
+
+    def run(self):
+        while True:
+            index = self._queue.get()
+            row, column = index.row(), index.column()
+            item = self._get_data(row, column)
+            self._data[index] = item
+            self._data_changed.emit(index, index, [])
 
 
 class _SearchResultsModel(QAbstractTableModel):
     """
     Qt model connecting our model to Qt's model--view machinery
+
+    This is implementing two layers of "laziness" to ensure that the app
+    remains responsive when large tables are loaded.
+
+    1. Rows are added dynamically using Qt's canFetchMore / fetchMore
+    machinery.
+    2. Data (which Qt assumes is readily available in memory) is immediately
+    filled with LOADING_PLACEHOLDER. Work is kicked off on a thread to later
+    update this with the actual data.
     """
     def __init__(self, model, *args, **kwargs):
         self.model = model  # our internal model for the components subpackage
         super().__init__(*args, **kwargs)
 
+        # State related to dynamically adding rows
+        self._current_num_rows = 0
+        self._catalog_length = len(self.model.catalog)
+
+        # State related to asynchronously fetching data
+        self._data = {}
+        self._request_queue = queue.Queue()
+        self._data_loader = DataLoader(self._request_queue,
+            self.model.get_data, self._data, self.dataChanged)
+        self._data_loader.start()
+        self.destroyed.connect(self._data_loader.terminate)
+
         # Changes to the model update the GUI.
         self.model.events.reset.connect(self.on_entries_changed)
 
+    def _fetch_data(self, index):
+        """Kick off a request to fetch the data"""
+        if index in self._data:
+            return self._data[index]
+        else:
+            self._request_queue.put(index)
+            return LOADING_PLACEHOLDER
+
     def on_entries_changed(self, event):
-        # TODO Maybe expose to signals out of the model, one that is emitted
-        # before it starts breaking its internal state and one after the new
-        # state is ready.
         self.beginResetModel()
+        self._current_num_rows = 0
+        self._catalog_length = len(self.model.catalog)
+        self._data.clear()
         self.endResetModel()
 
+    def canFetchMore(self, parent=None):
+        if parent.isValid():
+            return False
+        return self._current_num_rows < self._catalog_length
+
+    def fetchMore(self, parent=None):
+        if parent.isValid():
+            return
+        remainder = self._catalog_length - self._current_num_rows
+        rows_to_add = min(remainder, CHUNK_SIZE)
+        if rows_to_add <= 0:
+            return
+        self.beginInsertRows(parent, self._current_num_rows, self._current_num_rows + rows_to_add - 1)
+        self._current_num_rows += rows_to_add
+        self.endInsertRows()
+
     def rowCount(self, parent=None):
-        return self.model.get_length()
+        return self._current_num_rows
 
     def columnCount(self, parent=None):
         return len(self.model.headings)
@@ -41,7 +118,7 @@ class _SearchResultsModel(QAbstractTableModel):
         if index.column() >= self.columnCount() or index.row() >= self.rowCount():
             return QtCore.QVariant()
         if role == QtCore.Qt.DisplayRole:
-            return self.model.get_data(index.row(), index.column())
+            return self._fetch_data(index)
         else:
             return QtCore.QVariant()
 

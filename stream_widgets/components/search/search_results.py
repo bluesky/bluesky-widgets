@@ -51,9 +51,6 @@ class SearchResults:
         self._selected_rows.clear()
         self.events.reset()
 
-    def get_length(self):
-        return len(self._catalog)
-
     def get_data(self, row, column):
         """
         Get data for one item of the display table.
