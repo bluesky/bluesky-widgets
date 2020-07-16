@@ -167,4 +167,4 @@ class QtSearches(QTabWidget):
         widget = self.widget(index)
         self.removeTab(index)
         del self._tabs[widget.model]
-        self.model.remove(widget._model)
+        self.model.remove(widget.model)
