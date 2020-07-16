@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Design &mdash; bluesky-widgets 0.post58+gd19e896 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Release History" href="release-history.html" />
+    <link rel="prev" title="Usage" href="usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> bluesky-widgets
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.post58+gd19e896
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="goals.html">Goals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#decoupled-components">Decoupled Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#models-not-tied-to-any-gui-framework">Models not tied to any GUI framework</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="release-history.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="min_versions.html">Minimum Version of Python and NumPy</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky-widgets</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Design</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/design.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="design">
+<h1>Design<a class="headerlink" href="#design" title="Permalink to this headline">¶</a></h1>
+<p>These are notes for developers on the design principles of this project.</p>
+<div class="section" id="decoupled-components">
+<h2>Decoupled Components<a class="headerlink" href="#decoupled-components" title="Permalink to this headline">¶</a></h2>
+<p>Components are carefully decoupled so that anyone may take just the parts that
+are useful to them and place them within existing programs or joined up with
+their own custom work. For example, there are separate models for
+<code class="docutils literal notranslate"><span class="pre">SearchInput</span></code> and <code class="docutils literal notranslate"><span class="pre">SearchResults</span></code> which can be used and remixed
+independently. These are composed to together in a <code class="docutils literal notranslate"><span class="pre">Search</span></code> model. Multiple
+<code class="docutils literal notranslate"><span class="pre">Search</span></code> models can be composed together in a <code class="docutils literal notranslate"><span class="pre">SearchList</span></code> model—for
+example, to back a tabbed view of multiple searches.</p>
+<p>In this nested scheme, parents are allowed to know about their children, but
+children are not allowed to know about their parents. For example, a <code class="docutils literal notranslate"><span class="pre">Search</span></code>
+can react to and expose out things happening in <code class="docutils literal notranslate"><span class="pre">SearchInput</span></code>, but
+<code class="docutils literal notranslate"><span class="pre">SearchInput</span></code> will never reach up into <code class="docutils literal notranslate"><span class="pre">Search</span></code> or sideways into its
+sibling <code class="docutils literal notranslate"><span class="pre">SearchResults</span></code>.</p>
+<p>What does this buy us:</p>
+<ul class="simple">
+<li><p>Maximum reusability</p></li>
+<li><p>Easy embedding into existing applications, validated by early examples
+(napari, pyFAI, Xi-CAM)</p></li>
+</ul>
+</div>
+<div class="section" id="models-not-tied-to-any-gui-framework">
+<h2>Models not tied to any GUI framework<a class="headerlink" href="#models-not-tied-to-any-gui-framework" title="Permalink to this headline">¶</a></h2>
+<p>All of the logic lives in the models. The models use an internal signaling
+system (vendored from napari, which in turn vendored and adapted theirs from
+vispy). Thus, they are not <em>tied</em> to any particular GUI framework’s signaling
+system, such as Qt signals and slots or ipywidgets’ traitlets, but they can be
+hooked up to any of them.</p>
+<p>For user–developer assembling components into a custom application, connecting
+the models to a particular GUI looks like this, as illustrated in the examples.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thing_model</span> <span class="o">=</span> <span class="n">ThingModel</span><span class="p">()</span>
+<span class="n">qt_thing</span> <span class="o">=</span> <span class="n">QtThing</span><span class="p">(</span><span class="n">thing_model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thing_model</span> <span class="o">=</span> <span class="n">ThingModel</span><span class="p">()</span>  <span class="c1"># the very same type of model</span>
+<span class="n">jupyter_thing</span> <span class="o">=</span> <span class="n">JupyterThing</span><span class="p">(</span><span class="n">thing_model</span><span class="p">)</span>  <span class="c1"># a different view</span>
+</pre></div>
+</div>
+<p>where, in the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> of <code class="docutils literal notranslate"><span class="pre">QtThing</span></code> and <code class="docutils literal notranslate"><span class="pre">JupyterThing</span></code>, connections are
+made between Qt signals and slots or ipywidgets traitlets and the model’s own
+signaling system. This is in addition to whatever model–view abstractions are
+happening within those frameworks; in some places one has effectively
+model–model–view.</p>
+<p>What does this buy us?</p>
+<ul>
+<li><p>If we launch the GUI from within IPython or Jupyter, we can access and alter
+the state of the model interactively. The model and the GUI remain synced,
+with updates propagating in both directions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Update a search GUI to set the time range.</span>
+<span class="n">search</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">since</span> <span class="o">=</span> <span class="s2">&quot;2020&quot;</span>
+<span class="n">search</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">until</span> <span class="o">=</span> <span class="s2">&quot;2021&quot;</span>
+<span class="c1"># Access all the results.</span>
+<span class="n">search</span><span class="o">.</span><span class="n">results</span>
+<span class="c1"># Access all the selected results.</span>
+<span class="n">search</span><span class="o">.</span><span class="n">selection_as_catalog</span>
+</pre></div>
+</div>
+</li>
+<li><p>We can efficiently base a variety of GUI frameworks (starting with Qt and
+Jupyter) on this model because most of the work involved is simply hooking up
+the frameworks’ particular signaling system to the model’s.</p></li>
+<li><p>The model may naturally be used “headless”.</p></li>
+<li><p>The model can be unit tested separate from any GUI-based testing.</p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="release-history.html" class="btn btn-neutral float-right" title="Release History" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Brookhaven National Lab
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
