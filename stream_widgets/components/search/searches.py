@@ -142,7 +142,9 @@ class Search:
         if self.root_catalog is self.current_catalog:
             raise RuntimeError("We are the root catalog.")
         if self._search is not None:
-            self._search.events.active_row.disconnect(self._on_active_row)
+            self._search.search_results.events.active_row.disconnect(
+                self._on_active_row
+            )
             self._search = None
             self.events.run_search_cleared()
         self._subcatalogs.pop()
