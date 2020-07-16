@@ -38,7 +38,7 @@ with open(path.join(here, "requirements.txt")) as requirements_file:
     ]
 
 extras_require = {
-    "pyside2": ["PySide2", "qtpy"]
+    "pyside2": ["PySide2", "qtpy"],
     "pyqt5": ["PyQt5", "qtpy"]
 }
 
