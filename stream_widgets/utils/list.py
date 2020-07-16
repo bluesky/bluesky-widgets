@@ -1,6 +1,6 @@
 """
-This is a simplified version of napari.utils.list.model until I understand why
-I would need the more complicated Typed and MultiIndexed aspects.
+This is a simplified version of napari.utils.list.model until I understand
+whether I need the more complex Typed and MultiIndexed aspects.
 """
 from .event import EmitterGroup, Event
 
@@ -13,7 +13,6 @@ class ListModel:
             auto_connect=True,
             added=Event,
             removed=Event,
-            changed=Event,
         )
 
     def __getitem__(self, index):
@@ -24,8 +23,10 @@ class ListModel:
         self.events.removed(item=obj, index=index)
 
     def __setitem__(self, index, obj):
+        old = self.__internal_list[index]
         self.__internal_list[index] = obj
-        self.events.changed(item=obj, index=index)
+        self.events.removed(item=old, index=index)
+        self.events.added(item=obj, index=index)
 
     def __len__(self):
         return len(self.__internal_list)
