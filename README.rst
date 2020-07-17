@@ -1,6 +1,6 @@
-==============
+===============
 bluesky-widgets
-==============
+===============
 
 .. image:: https://img.shields.io/travis/danielballan/bluesky-widgets.svg
         :target: https://travis-ci.org/danielballan/bluesky-widgets
