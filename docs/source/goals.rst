@@ -19,5 +19,5 @@ This is a young project. Here we articulate its design principles and goals.
 #. There is a need for both web- and desktop-based solutions, and the space of
    GUI frameworks is ever-changing, especially on the web. From the start, we
    are building in front-ends for Qt and Jupyter with examples of how to embed
-   these components in the existing Qt applications Xi-CAM, PyFAI, PyMca,
-   napari, and PyDM, using their respective extension points.
+   these components in the existing Qt applications such as Xi-CAM, PyFAI,
+   PyMca, napari, and PyDM, using their respective extension points.
