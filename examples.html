@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; bluesky-widgets 0.post58+gd19e896 documentation</title>
+  <title>Examples &mdash; bluesky-widgets 0.post57+gd4e7d65 documentation</title>
   
 
   
@@ -40,7 +40,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Design" href="design.html" />
-    <link rel="prev" title="Goals" href="goals.html" /> 
+    <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.post58+gd19e896
+                0.post57+gd4e7d65
               </div>
             
           
@@ -90,9 +90,17 @@
             
             
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="goals.html">Goals</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example-stand-alone-qt-application">Example Stand-alone Qt Application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#embedding-compoents-in-existing-applications">Embedding Compoents in Existing Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#napari">Napari</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pyfai">PyFAI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#xi-cam">Xi-CAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#planned-integrations">Planned Integrations</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release-history.html">Release History</a></li>
 <li class="toctree-l1"><a class="reference internal" href="min_versions.html">Minimum Version of Python and NumPy</a></li>
@@ -142,13 +150,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Usage</li>
+      <li>Examples</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/examples.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -161,8 +169,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="example-stand-alone-qt-application">
+<h2>Example Stand-alone Qt Application<a class="headerlink" href="#example-stand-alone-qt-application" title="Permalink to this headline">¶</a></h2>
 <p>We ship some examples to illustrate what it is possible to build from this
 library’s components.</p>
 <p>Stand-alone example Qt application for searching Data Broker:</p>
@@ -188,15 +198,42 @@ ipython --gui<span class="o">=</span>qt
     <span class="n">s</span> <span class="o">=</span> <span class="n">Searches</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Search embedded in napari:</p>
+</div>
+<div class="section" id="embedding-compoents-in-existing-applications">
+<h2>Embedding Compoents in Existing Applications<a class="headerlink" href="#embedding-compoents-in-existing-applications" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="napari">
+<h2>Napari<a class="headerlink" href="#napari" title="Permalink to this headline">¶</a></h2>
+<p>Search embedded in napari as dock widget:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install napari<span class="o">[</span>all<span class="o">]</span>
 python -m bluesky_widgets.examples.napari_dock_widgets
 </pre></div>
 </div>
-<p>Search embedded in PyFAI:</p>
+</div>
+<div class="section" id="pyfai">
+<h2>PyFAI<a class="headerlink" href="#pyfai" title="Permalink to this headline">¶</a></h2>
+<p>Search embedded in PyFAI as a dialog box:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install pyFAI
 python -m bluesky_widgets.examples.pyFAI_dialog
 </pre></div>
+</div>
+</div>
+<div class="section" id="xi-cam">
+<h2>Xi-CAM<a class="headerlink" href="#xi-cam" title="Permalink to this headline">¶</a></h2>
+<p>The Search component is proposed to be part of core Xi-CAM, replacing a widget
+with similar functionality and appearance but different internals.</p>
+</div>
+<div class="section" id="planned-integrations">
+<h2>Planned Integrations<a class="headerlink" href="#planned-integrations" title="Permalink to this headline">¶</a></h2>
+<p>The authors of bluesky-widget plan to integrate with the following open source
+projects using whatever extension mechanisms they offer, and working with the
+maintainers of these projects if they are interested.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.silx.org/doc/silx/0.7.0/applications/view.html">silx view</a></p></li>
+<li><p><a class="reference external" href="http://pymca.sourceforge.net/">PyMCA</a></p></li>
+<li><p><a class="reference external" href="https://nexpy.github.io/nexpy/">NeXpy</a></p></li>
+</ul>
+<p>More welcome!</p>
 </div>
 </div>
 
@@ -211,7 +248,7 @@ python -m bluesky_widgets.examples.pyFAI_dialog
         <a href="design.html" class="btn btn-neutral float-right" title="Design" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="goals.html" class="btn btn-neutral float-left" title="Goals" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

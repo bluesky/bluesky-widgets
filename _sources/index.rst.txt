@@ -9,9 +9,9 @@ bluesky-widgets Documentation
 .. toctree::
    :maxdepth: 2
 
-   installation
    goals
-   usage
+   installation
+   examples
    design 
    release-history
    min_versions
