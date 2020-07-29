@@ -51,11 +51,11 @@ class DataLoader(QThread):
         # Process work from the queue, periodically checking to see if we need
         # to shutdown.
         logger.debug("DataLoader starting")
+        CHECK_FOR_SHUTDOWN_PERIOD = 0.1
         while True:
             if self._shutdown_requested:
                 logger.debug("DataLoader exiting")
                 break
-            CHECK_FOR_SHUTDOWN_PERIOD = 0.1
             try:
                 index = self._queue.get(timeout=CHECK_FOR_SHUTDOWN_PERIOD)
             except queue.Empty:
