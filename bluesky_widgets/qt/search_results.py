@@ -34,7 +34,16 @@ class DataLoader(QThread):
     """
 
     def __init__(self, queue, get_data, data, data_changed, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        # Because the run method contains an infinite loop (standing by to
+        # receive work when additional rows are fetched or when the
+        # results catalog is refreshed) stopping it requires a special pattern.
+        #
+        # Note that parent=None here. If we make the parent the
+        # _SearchResultsModel, it will kill this thread immediately after it
+        # fires the `destroyed` signal, which does not give us time to process
+        # that `destroyed` signal and notice that an interruption has been
+        # requested before we are killed.
+        super().__init__(*args, parent=None, **kwargs)
         self._queue = queue
         self._get_data = get_data
         self._data = data
