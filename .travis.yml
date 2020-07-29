@@ -111,6 +111,7 @@ install:
         echo "Unknown Qt package $QT"
         exit 1
     fi
+  - pip install --upgrade pip setuptools numpy
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
   - pip install .
