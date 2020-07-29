@@ -108,7 +108,8 @@ class _SearchResultsModel(QAbstractTableModel):
         self._data_loader = DataLoader(
             self._request_queue, self.model.get_data, self._data, self.dataChanged
         )
-        self._data_loader.start()
+        # The DataLoader thread is not started here. It will be started if/when
+        # we need it for the first time.
         self.destroyed.connect(self._data_loader.requestInterruption)
 
         # Changes to the model update the GUI.
@@ -145,6 +146,10 @@ class _SearchResultsModel(QAbstractTableModel):
         rows_to_add = min(remainder, CHUNK_SIZE)
         if rows_to_add <= 0:
             return
+        # Lazily start the DataLoader thread just when we need it for the first
+        # time.
+        if not self._data_loader.isRunning():
+            self._data_loader.start()
         self.beginInsertRows(
             parent, self._current_num_rows, self._current_num_rows + rows_to_add - 1
         )
