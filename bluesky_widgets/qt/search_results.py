@@ -22,7 +22,7 @@ class DataLoader(QThread):
     This loads data and notifies QAbstractTableModel when it is ready.
 
     Each _SearchResultsModel has one of these. It is created and started when
-    the _SearchResultsModel is instantiated, and it is terminated when the
+    the _SearchResultsModel is instantiated, and it is shutdown when the
     _SearchResultsModel and destroyed.
 
     Loop:
@@ -39,10 +39,29 @@ class DataLoader(QThread):
         self._get_data = get_data
         self._data = data
         self._data_changed = data_changed
+        self._shutdown_requested = False
+
+    def request_shutdown(self):
+        """
+        Shutdown this worker thread. Expected to respond in about 0.1 seconds.
+        """
+        self._shutdown_requested = True
 
     def run(self):
+        # Process work from the queue, periodically checking to see if we need
+        # to shutdown.
+        logger.debug("DataLoader starting")
         while True:
-            index = self._queue.get()
+            if self._shutdown_requested:
+                logger.debug("DataLoader exiting")
+                break
+            CHECK_FOR_SHUTDOWN_PERIOD = 0.1
+            try:
+                index = self._queue.get(timeout=CHECK_FOR_SHUTDOWN_PERIOD)
+            except queue.Empty:
+                # Check if we need to shut down, and if not go back to waiting
+                # on the queue.
+                continue
             row, column = index.row(), index.column()
             try:
                 item = self._get_data(row, column)
@@ -88,7 +107,7 @@ class _SearchResultsModel(QAbstractTableModel):
             self._request_queue, self.model.get_data, self._data, self.dataChanged
         )
         self._data_loader.start()
-        self.destroyed.connect(self._data_loader.terminate)
+        self.destroyed.connect(self._data_loader.request_shutdown)
 
         # Changes to the model update the GUI.
         self.model.events.begin_reset.connect(self.on_begin_reset)
