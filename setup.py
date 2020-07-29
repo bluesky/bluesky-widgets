@@ -37,10 +37,7 @@ with open(path.join(here, "requirements.txt")) as requirements_file:
         if not line.startswith("#")
     ]
 
-extras_require = {
-    "pyside2": ["PySide2", "qtpy"],
-    "pyqt5": ["PyQt5", "qtpy"]
-}
+extras_require = {"pyside2": ["PySide2", "qtpy"], "pyqt5": ["PyQt5", "qtpy"]}
 
 setup(
     name="bluesky-widgets",
