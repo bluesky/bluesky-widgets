@@ -1,5 +1,6 @@
 import logging
 import queue
+import weakref
 
 from qtpy import QtCore
 from qtpy.QtCore import (
@@ -34,16 +35,7 @@ class DataLoader(QThread):
     """
 
     def __init__(self, queue, get_data, data, data_changed, *args, **kwargs):
-        # Because the run method contains an infinite loop (standing by to
-        # receive work when additional rows are fetched or when the
-        # results catalog is refreshed) stopping it requires a special pattern.
-        #
-        # Note that parent=None here. If we make the parent the
-        # _SearchResultsModel, it will kill this thread immediately after it
-        # fires the `destroyed` signal, which does not give us time to process
-        # that `destroyed` signal and notice that an interruption has been
-        # requested before we are killed.
-        super().__init__(*args, parent=None, **kwargs)
+        super().__init__(*args, **kwargs)
         self._queue = queue
         self._get_data = get_data
         self._data = data
@@ -105,12 +97,33 @@ class _SearchResultsModel(QAbstractTableModel):
         # State related to asynchronously fetching data
         self._data = {}
         self._request_queue = queue.Queue()
-        self._data_loader = DataLoader(
-            self._request_queue, self.model.get_data, self._data, self.dataChanged
+
+        # This is a QThread that will run the blocking operations required to
+        # fetch data.
+        data_loader = DataLoader(
+            self._request_queue,
+            self.model.get_data,
+            self._data,
+            self.dataChanged,
+            parent=self,
         )
+
+        def stop_data_loader():
+            # This must not contain references to self, or finalize will never
+            # be called.
+            data_loader.requestInterruption()
+            logger.debug("Initiated graceful shutdown of DataLoader")
+            # Wait for the polling loop in DataLoader to process the interruption
+            # request.
+            data_loader.wait()
+
+        # When this Python object is destroyed by Qt, gracefully stop the
+        # DataLoader QThread before Qt destroys it.
+        weakref.finalize(self, stop_data_loader)
+
         # The DataLoader thread is not started here. It will be started if/when
         # we need it for the first time.
-        self.destroyed.connect(self._data_loader.requestInterruption)
+        self._data_loader = data_loader
 
         # Changes to the model update the GUI.
         self.model.events.begin_reset.connect(self.on_begin_reset)
