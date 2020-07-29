@@ -45,12 +45,6 @@ jobs:
       env: QT="pyside2"
     - python: 3.8
       env: QT="pyside2"
-    - os: osx
-      language: generic
-      env: TRAVIS_PYTHON_VERSION=3.7 QT="pyside2"
-    - os: osx
-      language: generic
-      env: TRAVIS_PYTHON_VERSION=3.8 QT="pyside2"
 
 before_install:
   - if [ $FLAKE_8 == 'true' ]; then
