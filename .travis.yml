@@ -40,6 +40,11 @@ jobs:
       env: QT="pyqt5"
     - python: 3.8
       env: QT="pyqt5"
+  allow_failures:
+    - python: 3.7
+      env: QT="pyside2"
+    - python: 3.8
+      env: QT="pyside2"
 
 before_install:
   - if [ $FLAKE_8 == 'true' ]; then
@@ -100,6 +105,7 @@ install:
         echo "Unknown Qt package $QT"
         exit 1
     fi
+  - pip install --upgrade pip setuptools numpy
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
   - pip install .
