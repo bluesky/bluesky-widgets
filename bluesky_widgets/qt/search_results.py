@@ -105,7 +105,7 @@ class _SearchResultsModel(QAbstractTableModel):
             self.model.get_data,
             self._data,
             self.dataChanged,
-            parent=self,
+            parent=None,
         )
 
         def stop_data_loader():
@@ -116,6 +116,7 @@ class _SearchResultsModel(QAbstractTableModel):
             # Wait for the polling loop in DataLoader to process the interruption
             # request.
             data_loader.wait()
+            data_loader.deleteLater()
 
         # When this Python object is destroyed by Qt, gracefully stop the
         # DataLoader QThread before Qt destroys it.
