@@ -1,6 +1,5 @@
 import logging
 import queue
-import weakref
 
 from qtpy import QtCore
 from qtpy.QtCore import (
@@ -40,6 +39,7 @@ class DataLoader(WorkerBase):
     - Notify QAbstractTableModel of the change so that it is refreshes the
       viewer from the data cache.
     """
+
     def __init__(self, get_data, data, *args, **kwargs):
         super().__init__(*args, SignalsClass=DataLoaderSignals, **kwargs)
         self._get_data = get_data
@@ -107,10 +107,7 @@ class _SearchResultsModel(QAbstractTableModel):
 
         # This is a Worker that will run the blocking operations required to
         # fetch data on a thread in the QThreadPool.
-        data_loader = DataLoader(
-            self.model.get_data,
-            self._data,
-        )
+        data_loader = DataLoader(self.model.get_data, self._data,)
         data_loader.data_changed.connect(self.dataChanged)
         # The DataLoader thread is not started here. It will be started if/when
         # we need it for the first time.

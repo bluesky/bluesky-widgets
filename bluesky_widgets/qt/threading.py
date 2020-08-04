@@ -36,7 +36,7 @@ class WorkerBase(QRunnable):
     """
 
     #: A set of Workers.  Add to set using :meth:`WorkerBase.start`
-    _worker_set: Set['WorkerBase'] = set()
+    _worker_set: Set["WorkerBase"] = set()
 
     def __init__(
         self, *args, SignalsClass: Type[QObject] = WorkerBaseSignals, **kwargs
@@ -163,7 +163,7 @@ class WorkerBase(QRunnable):
            worker.start -> worker.run -> worker.work
         """
         if self in WorkerBase._worker_set:
-            raise RuntimeError('This worker is already started!')
+            raise RuntimeError("This worker is already started!")
 
         # This will raise a RunTimeError if the worker is already deleted
         repr(self)
@@ -482,13 +482,8 @@ def create_worker(
         else:
             _worker_class = FunctionWorker
 
-    if not (
-        inspect.isclass(_worker_class)
-        and issubclass(_worker_class, WorkerBase)
-    ):
-        raise TypeError(
-            f'Worker {_worker_class} must be a subclass of WorkerBase'
-        )
+    if not (inspect.isclass(_worker_class) and issubclass(_worker_class, WorkerBase)):
+        raise TypeError(f"Worker {_worker_class} must be a subclass of WorkerBase")
 
     worker = _worker_class(func, *args, **kwargs)
 
@@ -505,14 +500,14 @@ def create_worker(
                 if not callable(v):
                     raise TypeError(
                         f'"_connect[{key!r}]" must be a function or '
-                        'sequence of functions'
+                        "sequence of functions"
                     )
                 getattr(worker, key).connect(v)
 
     # if the user has not provided a default connection for the "errored"
     # signal... and they have not explicitly set ``ignore_errors=True``
     # Then rereaise any errors from the thread.
-    if not _ignore_errors and not (_connect or {}).get('errored', False):
+    if not _ignore_errors and not (_connect or {}).get("errored", False):
 
         def reraise(e):
             raise e
@@ -618,10 +613,10 @@ def thread_worker(
     def worker_function(*args, **kwargs):
         # decorator kwargs can be overridden at call time by using the
         # underscore-prefixed version of the kwarg.
-        kwargs['_start_thread'] = kwargs.get('_start_thread', start_thread)
-        kwargs['_connect'] = kwargs.get('_connect', connect)
-        kwargs['_worker_class'] = kwargs.get('_worker_class', worker_class)
-        kwargs['_ignore_errors'] = kwargs.get('_ignore_errors', ignore_errors)
+        kwargs["_start_thread"] = kwargs.get("_start_thread", start_thread)
+        kwargs["_connect"] = kwargs.get("_connect", connect)
+        kwargs["_worker_class"] = kwargs.get("_worker_class", worker_class)
+        kwargs["_ignore_errors"] = kwargs.get("_ignore_errors", ignore_errors)
         return create_worker(function, *args, **kwargs,)
 
     return worker_function
