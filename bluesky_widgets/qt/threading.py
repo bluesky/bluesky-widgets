@@ -1,3 +1,6 @@
+"""
+Vendored from napari._qt.threading
+"""
 import inspect
 import time
 from functools import wraps
