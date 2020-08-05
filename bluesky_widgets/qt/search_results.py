@@ -9,6 +9,7 @@ from qtpy.QtCore import (
     QModelIndex,
     Qt,
     Signal,
+    Slot,
 )
 from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
@@ -21,7 +22,7 @@ CHUNK_SIZE = 5  # max rows to fetch at once
 
 
 class DataLoaderSignals(WorkerBaseSignals):
-    data_changed = Signal(QModelIndex, QModelIndex, "QVector<int>")
+    item_loaded = Signal(QModelIndex, tuple)
 
 
 class DataLoader(WorkerBase):
@@ -40,14 +41,14 @@ class DataLoader(WorkerBase):
       viewer from the data cache.
     """
 
-    def __init__(self, get_data, data, *args, **kwargs):
+    def __init__(self, get_data, *args, **kwargs):
         super().__init__(*args, SignalsClass=DataLoaderSignals, **kwargs)
         self._get_data = get_data
-        self._data = data
         self._queue = queue.Queue()
 
-    def request(self, work):
-        self._queue.put(work)
+    @Slot(QModelIndex)
+    def request(self, index):
+        self._queue.put(index)
 
     def work(self):
         # Process work from the queue, periodically checking to see if we need
@@ -70,14 +71,13 @@ class DataLoader(WorkerBase):
             except Exception:
                 logger.exception("Error while loading search results")
                 continue
-            self._data[index] = item
             # This triggers a targeted re-paint of one cell. It would be
             # probably be more optimal to get data for a whole *row* and then
             # repaint the whole thing, or even a whole of several rows. This
             # requires some measurement. For now, the performance of this
             # implementation is acceptable. Most important, the application
             # does not lock up at all during data loading.
-            self._signals.data_changed.emit(index, index, [])
+            self._signals.item_loaded.emit(index, item)
 
 
 class _SearchResultsModel(QAbstractTableModel):
@@ -93,6 +93,7 @@ class _SearchResultsModel(QAbstractTableModel):
     filled with LOADING_PLACEHOLDER. Work is kicked off on a thread to later
     update this with the actual data.
     """
+    request_data = Signal(QModelIndex)
 
     def __init__(self, model, *args, **kwargs):
         self.model = model  # our internal model for the components subpackage
@@ -107,8 +108,9 @@ class _SearchResultsModel(QAbstractTableModel):
 
         # This is a Worker that will run the blocking operations required to
         # fetch data on a thread in the QThreadPool.
-        data_loader = DataLoader(self.model.get_data, self._data,)
-        data_loader.data_changed.connect(self.dataChanged)
+        data_loader = DataLoader(self.model.get_data)
+        data_loader.item_loaded.connect(self.on_item_loaded)
+        self.request_data.connect(data_loader.request)
         # The DataLoader thread is not started here. It will be started if/when
         # we need it for the first time.
         self._data_loader = data_loader
@@ -117,14 +119,10 @@ class _SearchResultsModel(QAbstractTableModel):
         self.model.events.begin_reset.connect(self.on_begin_reset)
         self.model.events.end_reset.connect(self.on_end_reset)
 
-    def _fetch_data(self, index):
-        """Kick off a request to fetch the data"""
-        if index in self._data:
-            return self._data[index]
-        else:
-            self._data[index] = LOADING_PLACEHOLDER
-            self._data_loader.request(index)
-            return LOADING_PLACEHOLDER
+    def on_item_loaded(self, index, item):
+        # Update state and trigger Qt to run data() to update its internal model.
+        self._data[index] = item
+        self.dataChanged.emit(index, index, [])
 
     def on_begin_reset(self, event):
         self.beginResetModel()
@@ -177,7 +175,12 @@ class _SearchResultsModel(QAbstractTableModel):
         if index.column() >= self.columnCount() or index.row() >= self.rowCount():
             return QtCore.QVariant()
         if role == QtCore.Qt.DisplayRole:
-            return self._fetch_data(index)
+            if index in self._data:
+                return self._data[index]
+            else:
+                self._data[index] = LOADING_PLACEHOLDER
+                self.request_data.emit(index)
+                return LOADING_PLACEHOLDER
         else:
             return QtCore.QVariant()
 
