@@ -1,75 +1,35 @@
+import collections
 import logging
-import queue
-import weakref
 
 from qtpy import QtCore
 from qtpy.QtCore import (
     QAbstractTableModel,
     # QItemSelection,
     # QItemSelectionModel,
-    QThread,
+    QTimer,
     Qt,
 )
 from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTableView
+
+from .threading import create_worker
 
 
 logger = logging.getLogger(__name__)
 LOADING_PLACEHOLDER = "..."
 CHUNK_SIZE = 5  # max rows to fetch at once
+LOADING_LATENCY = 100  # ms
 
 
-class DataLoader(QThread):
-    """
-    This loads data and notifies QAbstractTableModel when it is ready.
-
-    Each _SearchResultsModel has one of these. It is created and started when
-    the _SearchResultsModel is instantiated, and it is interrupted and shut
-    down when the _SearchResultsModel and destroyed.
-
-    Loop:
-    - Receive an index of data to load on the queue.
-    - Fetch the data (a potentially long, blocking operation).
-    - Mutate the cache of loaded data, keyed on index.
-    - Notify QAbstractTableModel of the change so that it is refreshes the
-      viewer from the data cache.
-    """
-
-    def __init__(self, queue, get_data, data, data_changed, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._queue = queue
-        self._get_data = get_data
-        self._data = data
-        self._data_changed = data_changed
-
-    def run(self):
-        # Process work from the queue, periodically checking to see if we need
-        # to shutdown.
-        logger.debug("DataLoader starting")
-        CHECK_FOR_SHUTDOWN_PERIOD = 0.1
-        while True:
-            if self.isInterruptionRequested():
-                logger.debug("DataLoader exiting")
-                break
-            try:
-                index = self._queue.get(timeout=CHECK_FOR_SHUTDOWN_PERIOD)
-            except queue.Empty:
-                # Check if we need to shut down, and if not go back to waiting
-                # on the queue.
-                continue
-            row, column = index.row(), index.column()
-            try:
-                item = self._get_data(row, column)
-            except Exception:
-                logger.exception("Error while loading search results")
-                continue
-            self._data[index] = item
-            # This triggers a targeted re-paint of one cell. It would be
-            # probably be more optimal to get data for a whole *row* and then
-            # repaint the whole thing, or even a whole of several rows. This
-            # requires some measurement. For now, the performance of this
-            # implementation is acceptable. Most important, the application
-            # does not lock up at all during data loading.
-            self._data_changed.emit(index, index, [])
+def _load_data(get_data, indexes):
+    "Load a batch of data. This is run in a threadpool."
+    for index in indexes:
+        row, column = index.row(), index.column()
+        try:
+            item = get_data(row, column)
+        except Exception:
+            logger.exception("Error while loading search results")
+            continue
+        yield index, item
 
 
 class _SearchResultsModel(QAbstractTableModel):
@@ -94,55 +54,58 @@ class _SearchResultsModel(QAbstractTableModel):
         self._current_num_rows = 0
         self._catalog_length = len(self.model.catalog)
 
-        # State related to asynchronously fetching data
+        # Cache for loaded data
         self._data = {}
-        self._request_queue = queue.Queue()
+        # Queue of indexes of data to be loaded
+        self._work_queue = collections.deque()
+        # Set of active workers
+        self._active_workers = set()
 
-        # This is a QThread that will run the blocking operations required to
-        # fetch data.
-        data_loader = DataLoader(
-            self._request_queue,
-            self.model.get_data,
-            self._data,
-            self.dataChanged,
-            parent=None,
-        )
-
-        def stop_data_loader():
-            # This must not contain references to self, or finalize will never
-            # be called.
-            data_loader.requestInterruption()
-            logger.debug("Initiated graceful shutdown of DataLoader")
-            # Wait for the polling loop in DataLoader to process the interruption
-            # request.
-            data_loader.wait()
-            data_loader.deleteLater()
-
-        # When this Python object is destroyed by Qt, gracefully stop the
-        # DataLoader QThread before Qt destroys it.
-        weakref.finalize(self, stop_data_loader)
-
-        # The DataLoader thread is not started here. It will be started if/when
-        # we need it for the first time.
-        self._data_loader = data_loader
+        # Start a timer that will periodically load any data queued up to be loaded.
+        self._data_loading_timer = QTimer(self)
+        # We run this once to initialize it. The _process_work_queue schedules
+        # it to be run again when it completes. This is better than a strictly
+        # periodic timer because it ensures that requests do not pile up if
+        # _process_work_queue takes longer than LOADING_LATENCY to complete.
+        self._data_loading_timer.singleShot(LOADING_LATENCY, self._process_work_queue)
 
         # Changes to the model update the GUI.
         self.model.events.begin_reset.connect(self.on_begin_reset)
         self.model.events.end_reset.connect(self.on_end_reset)
 
-    def _fetch_data(self, index):
-        """Kick off a request to fetch the data"""
-        if index in self._data:
-            return self._data[index]
-        else:
-            self._data[index] = LOADING_PLACEHOLDER
-            self._request_queue.put(index)
-            return LOADING_PLACEHOLDER
+    def _process_work_queue(self):
+        if self._work_queue:
+            worker = create_worker(_load_data, self.model.get_data, tuple(self._work_queue))
+            self._work_queue.clear()
+            # Track this worker in case we need to ignore it and cancel due to
+            # model reset.
+            self._active_workers.add(worker)
+            worker.finished.connect(lambda: self._active_workers.discard(worker))
+            worker.yielded.connect(self.on_item_loaded)
+            worker.start()
+        # Else, no work to do.
+        # Schedule the next processing.
+        self._data_loading_timer.singleShot(LOADING_LATENCY, self._process_work_queue)
+
+    def on_item_loaded(self, payload):
+        # Update state and trigger Qt to run data() to update its internal model.
+        index, item = payload
+        self._data[index] = item
+        self.dataChanged.emit(index, index, [])
 
     def on_begin_reset(self, event):
         self.beginResetModel()
         self._current_num_rows = 0
         self._catalog_length = len(self.model.catalog)
+        for worker in self._active_workers:
+            # Cease allowing this worker to mutate _data so that we do not get
+            # any stale updates.
+            worker.yielded.disconnect(self.on_item_loaded)
+            # To avoid doing useless work, try to cancel the worker. We do not
+            # rely on this request being effective.
+            worker.quit()
+        self._active_workers.clear()
+        self._work_queue.clear()
         self._data.clear()
 
     def on_end_reset(self, event):
@@ -160,10 +123,6 @@ class _SearchResultsModel(QAbstractTableModel):
         rows_to_add = min(remainder, CHUNK_SIZE)
         if rows_to_add <= 0:
             return
-        # Lazily start the DataLoader thread just when we need it for the first
-        # time.
-        if not self._data_loader.isRunning():
-            self._data_loader.start()
         self.beginInsertRows(
             parent, self._current_num_rows, self._current_num_rows + rows_to_add - 1
         )
@@ -190,7 +149,12 @@ class _SearchResultsModel(QAbstractTableModel):
         if index.column() >= self.columnCount() or index.row() >= self.rowCount():
             return QtCore.QVariant()
         if role == QtCore.Qt.DisplayRole:
-            return self._fetch_data(index)
+            if index in self._data:
+                return self._data[index]
+            else:
+                self._data[index] = LOADING_PLACEHOLDER
+                self._work_queue.append(index)
+                return LOADING_PLACEHOLDER
         else:
             return QtCore.QVariant()
 
