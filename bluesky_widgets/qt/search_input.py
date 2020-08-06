@@ -86,6 +86,7 @@ class QtSearchInput(QWidget):
         self.since_widget.dateTimeChanged.connect(self.on_since_view_changed)
         self.until_widget.dateTimeChanged.connect(self.on_until_view_changed)
         self.refresh_button.clicked.connect(self.model.events.reload)
+        self.refresh_button.clicked.connect(self.on_refresh_clicked)
         # Changes to the model update the GUI.
         self.model.events.since.connect(self.on_since_model_changed)
         self.model.events.until.connect(self.on_until_model_changed)
@@ -123,7 +124,10 @@ class QtSearchInput(QWidget):
         qdatetime.setSecsSinceEpoch(event.date)
         self.until_widget.setDateTime(qdatetime)
 
-
+    def on_refresh_clicked(self):
+        self.now = time.time()
+        #TODO: since/until widget should update immediately when clicking refresh
+        # check which RButton is selected to update that range
 
     def set_timerange(self, timerange):
         self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(self.now - timerange))
