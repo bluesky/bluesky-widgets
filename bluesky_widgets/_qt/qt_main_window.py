@@ -16,6 +16,7 @@ from qtpy.QtWidgets import (  # noqa: E402
 from qtpy.QtCore import Qt  # noqa: E402
 
 from .event_loop import get_our_app_name
+from ..qt.threading import wait_for_workers_to_quit
 
 
 class Window:
@@ -187,4 +188,5 @@ class Window:
                 QApplication.processEvents()
         self.qt_widget.close()
         self._qt_window.close()
+        wait_for_workers_to_quit()
         del self._qt_window

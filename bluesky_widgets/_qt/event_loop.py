@@ -3,6 +3,8 @@ from contextlib import contextmanager
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication
 
+from ..qt.threading import wait_for_workers_to_quit
+
 
 _our_app_name = None
 
@@ -38,6 +40,7 @@ def gui_qt(app_name):
         _our_app_name = app_name
     else:
         app._existed = True
+    app.aboutToQuit.connect(wait_for_workers_to_quit)
     yield app
     # if the application already existed before this function was called,
     # there's no need to start it again.  By avoiding unnecessary calls to
