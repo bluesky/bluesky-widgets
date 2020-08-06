@@ -17,6 +17,7 @@ from .threading import create_worker
 logger = logging.getLogger(__name__)
 LOADING_PLACEHOLDER = "..."
 CHUNK_SIZE = 5  # max rows to fetch at once
+LOADING_LATENCY = 100  # ms
 
 
 def _load_data(get_data, indexes):
@@ -61,10 +62,12 @@ class _SearchResultsModel(QAbstractTableModel):
         self._active_workers = set()
 
         # Start a timer that will periodically load any data queued up to be loaded.
-        LATENCY = 100  # ms
         self._data_loading_timer = QTimer(self)
-        self._data_loading_timer.timeout.connect(self._process_work_queue)
-        self._data_loading_timer.start(LATENCY)
+        # We run this once to initialize it. The _process_work_queue schedules
+        # it to be run again when it completes. This is better than a strictly
+        # periodic timer because it ensures that requests do not pile up if
+        # _process_work_queue takes longer than LOADING_LATENCY to complete.
+        self._data_loading_timer.singleShot(LOADING_LATENCY, self._process_work_queue)
 
         # Changes to the model update the GUI.
         self.model.events.begin_reset.connect(self.on_begin_reset)
@@ -82,6 +85,7 @@ class _SearchResultsModel(QAbstractTableModel):
         worker.finished.connect(lambda: self._active_workers.discard(worker))
         worker.yielded.connect(self.on_item_loaded)
         worker.start()
+        self._data_loading_timer.singleShot(LOADING_LATENCY, self._process_work_queue)
 
     def on_item_loaded(self, payload):
         # Update state and trigger Qt to run data() to update its internal model.
