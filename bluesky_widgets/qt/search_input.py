@@ -46,6 +46,7 @@ class QtSearchInput(QWidget):
         self.since_widget = QDateTimeEdit()
         self.since_widget.setCalendarPopup(True)
         self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.since_widget.dateTimeChanged.connect(self.uncheck_radiobuttons)
         since_layout = QHBoxLayout()
         since_layout.addWidget(QLabel("Since:"))
         since_layout.addWidget(self.since_widget)
@@ -56,6 +57,7 @@ class QtSearchInput(QWidget):
         self.until_widget = QDateTimeEdit()
         self.until_widget.setCalendarPopup(True)
         self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.until_widget.dateTimeChanged.connect(self.uncheck_radiobuttons)
         until_layout = QHBoxLayout()
         until_layout.addWidget(QLabel("Until:"))
         until_layout.addWidget(self.until_widget)
@@ -145,3 +147,11 @@ class QtSearchInput(QWidget):
         self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(0))
         self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(self.now))
         self.all_widget.setChecked(True)
+
+    def uncheck_radiobuttons(self):
+        self.radio_button_group.setExclusive(False)
+        self.all_widget.setChecked(False)
+        self.days_widget.setChecked(False)
+        self.today_widget.setChecked(False)
+        self.hour_widget.setChecked(False)
+        self.radio_button_group.setExclusive(True)
