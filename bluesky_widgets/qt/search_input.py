@@ -1,3 +1,4 @@
+import time
 from qtpy.QtCore import QDateTime
 from qtpy.QtGui import QButtonGroup
 from qtpy.QtWidgets import (
@@ -88,11 +89,16 @@ class QtSearchInput(QWidget):
         self.model.events.until.connect(self.on_until_model_changed)
 
         # connect QRadioButtons and change date dropdowns (since/until widgets) accordingly
-        self.today_widget.clicked.connect(on_select_today)
-        self.hour_widget.clicked.connect(on_select_lasthour)
-        self.days_widget.clicked.connect(on_select_30days)
-        self.all_widget.clicked.connect(on_select_all)
+        self.today_widget.clicked.connect(self.on_select_today)
+        self.hour_widget.clicked.connect(self.on_select_lasthour)
+        self.days_widget.clicked.connect(self.on_select_30days)
+        self.all_widget.clicked.connect(self.on_select_all)
 
+        self.now = time.time()
+        self.ONE_HOUR = 60 * 60
+        self.TODAY = self.ONE_HOUR * 24
+        self.ONE_WEEK = self.TODAY * 7
+        self.ONE_MONTH = self.TODAY * 30 #used for 30 days QRadioButton
 
 
     def on_since_view_changed(self, qdatetime):
@@ -115,3 +121,27 @@ class QtSearchInput(QWidget):
         qdatetime.setSecsSinceEpoch(event.date)
         self.until_widget.setDateTime(qdatetime)
 
+
+
+    def set_timerange(self, timerange):
+        self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(self.now - timerange))
+        self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(self.now))
+
+    def on_select_today(self):
+        self.set_timerange(self.TODAY)
+        self.today_widget.setChecked(True)
+
+    def on_select_lasthour(self):
+        self.set_timerange(self.ONE_HOUR)
+        self.hour_widget.setChecked(True)
+
+    def on_select_30days(self):
+        self.set_timerange(self.ONE_MONTH)
+        self.days_widget.setChecked(True)
+
+    def on_select_all(self):
+        self.model.until = None
+        self.model.since = None
+        self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(0))
+        self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(self.now))
+        self.all_widget.setChecked(True)
