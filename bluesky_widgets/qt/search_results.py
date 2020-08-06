@@ -74,17 +74,17 @@ class _SearchResultsModel(QAbstractTableModel):
         self.model.events.end_reset.connect(self.on_end_reset)
 
     def _process_work_queue(self):
-        if not self._work_queue:
-            # No work to do. Short-circuit.
-            return
-        worker = create_worker(_load_data, self.model.get_data, tuple(self._work_queue))
-        self._work_queue.clear()
-        # Track this worker in case we need to ignore it and cancel due to
-        # model reset.
-        self._active_workers.add(worker)
-        worker.finished.connect(lambda: self._active_workers.discard(worker))
-        worker.yielded.connect(self.on_item_loaded)
-        worker.start()
+        if self._work_queue:
+            worker = create_worker(_load_data, self.model.get_data, tuple(self._work_queue))
+            self._work_queue.clear()
+            # Track this worker in case we need to ignore it and cancel due to
+            # model reset.
+            self._active_workers.add(worker)
+            worker.finished.connect(lambda: self._active_workers.discard(worker))
+            worker.yielded.connect(self.on_item_loaded)
+            worker.start()
+        # Else, no work to do.
+        # Schedule the next processing.
         self._data_loading_timer.singleShot(LOADING_LATENCY, self._process_work_queue)
 
     def on_item_loaded(self, payload):
