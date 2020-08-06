@@ -1,4 +1,5 @@
 from qtpy.QtCore import QDateTime
+from qtpy.QtGui import QButtonGroup
 from qtpy.QtWidgets import (
     QDateTimeEdit,
     QHBoxLayout,
@@ -6,6 +7,8 @@ from qtpy.QtWidgets import (
     QLabel,
     QWidget,
     QPushButton,
+    QRadioButton,
+    QGridLayout
 )
 
 
@@ -21,6 +24,22 @@ class QtSearchInput(QWidget):
     def __init__(self, model, *args, **kwargs):
         self.model = model
         super().__init__(*args, **kwargs)
+
+        # 4 Radiobuttons to quickly select default time period
+        self.all_widget = QRadioButton("All")
+        self.days_widget = QRadioButton("30 Days")
+        self.today_widget = QRadioButton("Today")
+        self.hour_widget = QRadioButton("Last Hour")
+        self.radio_button_group = QButtonGroup()
+        self.radio_button_group.addButton(self.all_widget)
+        self.radio_button_group.addButton(self.days_widget)
+        self.radio_button_group.addButton(self.today_widget)
+        self.radio_button_group.addButton(self.hour_widget)
+        default_period_layout = QGridLayout()
+        default_period_layout.addWidget(self.all_widget, 0, 0, 1, 1)
+        default_period_layout.addWidget(self.days_widget, 0, 1, 1, 1)
+        default_period_layout.addWidget(self.today_widget, 1, 0, 1, 1)
+        default_period_layout.addWidget(self.hour_widget, 1, 1, 1, 1)
 
         # "Since: <datetime picker>"
         self.since_widget = QDateTimeEdit()
@@ -46,6 +65,7 @@ class QtSearchInput(QWidget):
 
         # Stack them up.
         layout = QVBoxLayout()
+        layout.addLayout(default_period_layout)
         layout.addWidget(since_layout_widget)
         layout.addWidget(until_layout_widget)
         layout.addWidget(self.refresh_button)
@@ -67,6 +87,14 @@ class QtSearchInput(QWidget):
         self.model.events.since.connect(self.on_since_model_changed)
         self.model.events.until.connect(self.on_until_model_changed)
 
+        # connect QRadioButtons and change date dropdowns (since/until widgets) accordingly
+        self.today_widget.clicked.connect(on_select_today)
+        self.hour_widget.clicked.connect(on_select_lasthour)
+        self.days_widget.clicked.connect(on_select_30days)
+        self.all_widget.clicked.connect(on_select_all)
+
+
+
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.since = qdatetime.toSecsSinceEpoch()
@@ -86,3 +114,4 @@ class QtSearchInput(QWidget):
         qdatetime = QDateTime()
         qdatetime.setSecsSinceEpoch(event.date)
         self.until_widget.setDateTime(qdatetime)
+
