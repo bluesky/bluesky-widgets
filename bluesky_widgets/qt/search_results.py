@@ -75,7 +75,9 @@ class _SearchResultsModel(QAbstractTableModel):
 
     def _process_work_queue(self):
         if self._work_queue:
-            worker = create_worker(_load_data, self.model.get_data, tuple(self._work_queue))
+            worker = create_worker(
+                _load_data, self.model.get_data, tuple(self._work_queue)
+            )
             self._work_queue.clear()
             # Track this worker in case we need to ignore it and cancel due to
             # model reset.
