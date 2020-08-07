@@ -1,10 +1,5 @@
 from qtpy.QtCore import QDateTime
-from qtpy.QtWidgets import (
-    QDateTimeEdit,
-    QWidget,
-    QPushButton,
-    QFormLayout
-)
+from qtpy.QtWidgets import QDateTimeEdit, QWidget, QPushButton, QFormLayout
 
 
 class QtSearchInput(QWidget):
@@ -27,7 +22,6 @@ class QtSearchInput(QWidget):
         self.since_widget.setCalendarPopup(True)
         self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.layout().addRow("Since:", self.since_widget)
-
 
         # "Until: <datetime picker>"
         self.until_widget = QDateTimeEdit()

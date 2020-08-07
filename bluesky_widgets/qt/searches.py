@@ -1,7 +1,15 @@
 import logging
 
 from qtpy.QtCore import QStringListModel
-from qtpy.QtWidgets import QComboBox, QPushButton, QTabWidget, QVBoxLayout, QWidget, QSpacerItem, QSizePolicy
+from qtpy.QtWidgets import (
+    QComboBox,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+    QSpacerItem,
+    QSizePolicy,
+)
 from .search_input import QtSearchInput
 from .search_results import QtSearchResults
 
@@ -83,7 +91,9 @@ class QtSearch(QWidget):
 
         selector.activated.connect(on_selection)
         self.layout().addWidget(selector)
-        self.layout().addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum))
+        self.layout().addItem(
+            QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        )
 
     def on_go_back(self, event):
         "Move up the tree of subcatalogs by one step."
