@@ -41,8 +41,6 @@ class QtSearchInput(QWidget):
         default_period_layout.addWidget(self.today_widget, 1, 0, 1, 1)
         default_period_layout.addWidget(self.hour_widget, 1, 1, 1, 1)
         self.layout().addRow("When:", default_period_layout)
-        when_widget = QWidget()
-        when_widget.setLayout(default_period_layout)
 
         # "Since: <datetime picker>"
         self.since_widget = QDateTimeEdit()
