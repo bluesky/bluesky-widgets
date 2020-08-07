@@ -112,7 +112,7 @@ class QtSearch(QWidget):
     def on_run_search_cleared(self, event):
         "Clear search input and output."
         for w in self._run_search_widgets:
-            w.close()
+            w.setParent(None)
         self._run_search_widgets.clear()
 
 
