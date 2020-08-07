@@ -1,7 +1,7 @@
 import logging
 
 from qtpy.QtCore import QStringListModel
-from qtpy.QtWidgets import QComboBox, QPushButton, QTabWidget, QVBoxLayout, QWidget
+from qtpy.QtWidgets import QComboBox, QPushButton, QTabWidget, QVBoxLayout, QWidget, QSpacerItem, QSizePolicy
 from .search_input import QtSearchInput
 from .search_results import QtSearchResults
 
@@ -28,13 +28,13 @@ class QtSearch(QWidget):
         super().__init__(*args, **kwargs)
         self.model = model
 
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
 
         # A "Back" button
         self._back_button = QPushButton("Back")
         self._back_button.setEnabled(False)
-        self.layout.addWidget(self._back_button)
+        self.layout().addWidget(self._back_button)
         self._back_button.clicked.connect(model.go_back)
 
         # Hook up model Events to Qt Slots.
@@ -82,7 +82,8 @@ class QtSearch(QWidget):
                 selector.setEnabled(False)
 
         selector.activated.connect(on_selection)
-        self.layout.addWidget(selector)
+        self.layout().addWidget(selector)
+        self.layout().addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
     def on_go_back(self, event):
         "Move up the tree of subcatalogs by one step."
@@ -107,7 +108,7 @@ class QtSearch(QWidget):
             [QtSearchInput(search_input), QtSearchResults(search_results)]
         )
         for w in self._run_search_widgets:
-            self.layout.addWidget(w)
+            self.layout().addWidget(w)
 
     def on_run_search_cleared(self, event):
         "Clear search input and output."
