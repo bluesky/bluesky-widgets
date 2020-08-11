@@ -3,13 +3,12 @@ from qtpy.QtCore import QDateTime
 from qtpy.QtGui import QButtonGroup
 from qtpy.QtWidgets import (
     QDateTimeEdit,
-    QHBoxLayout,
-    QVBoxLayout,
-    QLabel,
     QWidget,
     QPushButton,
+    QFormLayout,
     QRadioButton,
-    QGridLayout
+    QGridLayout,
+    QButtonGroup
 )
 
 
@@ -26,6 +25,7 @@ class QtSearchInput(QWidget):
         self.model = model
         super().__init__(*args, **kwargs)
 
+        self.setLayout(QFormLayout())
         # 4 Radiobuttons to quickly select default time period
         self.all_widget = QRadioButton("All")
         self.days_widget = QRadioButton("30 Days")
@@ -41,38 +41,24 @@ class QtSearchInput(QWidget):
         default_period_layout.addWidget(self.days_widget, 0, 1, 1, 1)
         default_period_layout.addWidget(self.today_widget, 1, 0, 1, 1)
         default_period_layout.addWidget(self.hour_widget, 1, 1, 1, 1)
+        self.layout().addRow("When:", default_period_layout)
 
         # "Since: <datetime picker>"
         self.since_widget = QDateTimeEdit()
         self.since_widget.setCalendarPopup(True)
         self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.layout().addRow("Since:", self.since_widget)
         self.since_widget.dateTimeChanged.connect(self.uncheck_radiobuttons)
-        since_layout = QHBoxLayout()
-        since_layout.addWidget(QLabel("Since:"))
-        since_layout.addWidget(self.since_widget)
-        since_layout_widget = QWidget()
-        since_layout_widget.setLayout(since_layout)
 
         # "Until: <datetime picker>"
         self.until_widget = QDateTimeEdit()
         self.until_widget.setCalendarPopup(True)
         self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.layout().addRow("Until:", self.until_widget)
         self.until_widget.dateTimeChanged.connect(self.uncheck_radiobuttons)
-        until_layout = QHBoxLayout()
-        until_layout.addWidget(QLabel("Until:"))
-        until_layout.addWidget(self.until_widget)
-        until_layout_widget = QWidget()
-        until_layout_widget.setLayout(until_layout)
 
         self.refresh_button = QPushButton("Refresh")
-
-        # Stack them up.
-        layout = QVBoxLayout()
-        layout.addLayout(default_period_layout)
-        layout.addWidget(since_layout_widget)
-        layout.addWidget(until_layout_widget)
-        layout.addWidget(self.refresh_button)
-        self.setLayout(layout)
+        self.layout().addWidget(self.refresh_button)
 
         # Initialize values.
         qdatetime = QDateTime()
@@ -102,7 +88,6 @@ class QtSearchInput(QWidget):
         self.TODAY = self.ONE_HOUR * 24
         self.ONE_WEEK = self.TODAY * 7
         self.ONE_MONTH = self.TODAY * 30 #used for 30 days QRadioButton
-
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
