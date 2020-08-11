@@ -2,13 +2,12 @@ from qtpy import QtCore
 from qtpy.QtCore import (
     QAbstractItemModel,
     QModelIndex,
-    QTimer,
     Qt,
 )
-from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTreeView
+from qtpy.QtWidgets import QAbstractItemView, QTreeView
 
-from databroker import catalog
 from databroker.core import BlueskyEventStream
+
 
 class RunTree(object):
     """Lazily populate the tree as data is requested. """
@@ -29,7 +28,7 @@ class RunTree(object):
         return len(self.children)
 
     def child(self, row):
-        if row >=0 and row < len(self.children):
+        if row >= 0 and row < len(self.children):
             return self.children[row]
         return None
 
@@ -97,6 +96,7 @@ class RunNode(object):
                 if isinstance(self.data[key], dict):
                     child.num_children = len(self.data[key])
                 self.children.append(child)
+
 
 class TreeViewModel(QAbstractItemModel):
     """
