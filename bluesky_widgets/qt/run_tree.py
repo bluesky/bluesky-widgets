@@ -9,7 +9,7 @@ from qtpy.QtWidgets import QAbstractItemView, QTreeView
 from databroker.core import BlueskyEventStream
 
 
-class RunTree(object):
+class RunTree():
     """Lazily populate the tree as data is requested. """
     def __init__(self, run):
         self.run = run
@@ -20,7 +20,7 @@ class RunTree(object):
         start.num_children = len(self.run.metadata['start'])
         stop = RunNode(self.run, 'stop', 'dict', self.run.metadata['stop'], self)
         stop.num_children = len(self.run.metadata['stop'])
-        streams = RunNode(self.run, 'streams', 'events (' + str(len(self.run)) + ')', None, self)
+        streams = RunNode(self.run, 'streams', f"({len(self.run)})", None, self)
         streams.num_children = len(self.run)
         self.children = [uid, start, stop, streams]
 
