@@ -8,7 +8,7 @@ from qtpy.QtWidgets import (
     QFormLayout,
     QRadioButton,
     QGridLayout,
-    QButtonGroup
+    QButtonGroup,
 )
 
 
@@ -62,10 +62,10 @@ class QtSearchInput(QWidget):
 
         # Initialize values.
         qdatetime = QDateTime()
-        qdatetime.setSecsSinceEpoch(self.model.since)
+        qdatetime.setSecsSinceEpoch(self.model.since.timestamp())
         self.since_widget.setDateTime(qdatetime)
         qdatetime = QDateTime()
-        qdatetime.setSecsSinceEpoch(self.model.until)
+        qdatetime.setSecsSinceEpoch(self.model.until.timestamp())
         self.until_widget.setDateTime(qdatetime)
 
         # Changes to the GUI update the model.
@@ -87,7 +87,7 @@ class QtSearchInput(QWidget):
         self.ONE_HOUR = 60 * 60
         self.TODAY = self.ONE_HOUR * 24
         self.ONE_WEEK = self.TODAY * 7
-        self.ONE_MONTH = self.TODAY * 30 #used for 30 days QRadioButton
+        self.ONE_MONTH = self.TODAY * 30  # used for 30 days QRadioButton
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
@@ -96,7 +96,7 @@ class QtSearchInput(QWidget):
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console)
         qdatetime = QDateTime()
-        qdatetime.setSecsSinceEpoch(event.date)
+        qdatetime.setSecsSinceEpoch(event.date.timestamp())
         self.since_widget.setDateTime(qdatetime)
 
     def on_until_view_changed(self, qdatetime):
@@ -106,16 +106,19 @@ class QtSearchInput(QWidget):
     def on_until_model_changed(self, event):
         # When model is updated (e.g. from console)
         qdatetime = QDateTime()
-        qdatetime.setSecsSinceEpoch(event.date)
+        print(event.date)
+        qdatetime.setSecsSinceEpoch(event.date.timestamp())
         self.until_widget.setDateTime(qdatetime)
 
     def on_refresh_clicked(self):
         self.now = time.time()
-        #TODO: since/until widget should update immediately when clicking refresh
+        # TODO: since/until widget should update immediately when clicking refresh
         # check which RButton is selected to update that range
 
     def set_timerange(self, timerange):
-        self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(self.now - timerange))
+        self.since_widget.setDateTime(
+            QDateTime.fromSecsSinceEpoch(self.now - timerange)
+        )
         self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(self.now))
 
     def on_select_today(self):
