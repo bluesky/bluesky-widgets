@@ -1,3 +1,5 @@
+from collections import abc
+
 from qtpy import QtCore
 from qtpy.QtCore import (
     QAbstractItemModel,
@@ -84,16 +86,16 @@ class RunNode(object):
             for key in self.data.read().keys():
                 child = RunNode(self.run, key, '', None, self)
                 self.children.append(child)
-        elif self.data and isinstance(self.data, dict):
+        elif self.data and isinstance(self.data, abc.Mapping):
             for key in self.data:
-                if isinstance(self.data[key], dict):
+                if isinstance(self.data[key], abc.Mapping):
                     value = ''
-                elif isinstance(self.data[key], list):
+                elif isinstance(self.data[key], abc.Iterable):
                     value = str(self.data[key])
                 else:
                     value = self.data[key]
                 child = RunNode(self.run, key, value, self.data[key], self)
-                if isinstance(self.data[key], dict):
+                if isinstance(self.data[key], abc.Mapping):
                     child.num_children = len(self.data[key])
                 self.children.append(child)
 
