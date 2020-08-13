@@ -22,7 +22,7 @@ class RunTree():
         start.num_children = len(self.run.metadata['start'])
         stop = RunNode(self.run, 'stop', 'dict', self.run.metadata['stop'], self)
         stop.num_children = len(self.run.metadata['stop'])
-        streams = RunNode(self.run, 'streams', f"({len(self.run)})", None, self)
+        streams = RunNode(self.run, 'streams', f'({len(self.run)})', None, self)
         streams.num_children = len(self.run)
         self.children = [uid, start, stop, streams]
 
@@ -70,27 +70,43 @@ class RunNode(object):
                 if n == 1:
                     value = '1 event'
                 else:
-                    value = str(n) + ' events'
+                    value = f'{str(n)} events'
             else:
                 value = 'null'
             child = RunNode(self.run, stream, value, self.run[stream], self)
             # Establish how many child nodes there will be.
-            child.num_children = len(self.run[stream].read().keys())
+            stream_keys = self.run[stream].metadata['descriptors'][0]['data_keys']
+            child.num_children = len(stream_keys) + 2
+
             self.children.append(child)
 
     def fill_stream(self, stream):
         # For now just display the keys in the stream.
         node = RunNode(self.run, 'metadata', 'dict', self.data.metadata, self)
-        node.num_children = len(self.data.metadata)
+        node.num_children = len(self.data.metadata) - 1
         self.children.append(node)
-        for key in self.data.read().keys():
-            child = RunNode(self.run, key, '', None, self)
+        descriptors = self.data.metadata['descriptors']
+        if len(descriptors) == 1:
+            node = RunNode(self.run, 'descriptors (1)', '', descriptors[0], self)
+            node.num_children = len(descriptors[0])
+        else:
+            node = RunNode(self.run, f'descriptors ({len(descriptors)})', descriptors, self)
+            node.num_children = len(descriptors)
+
+        self.children.append(node)
+        stream_keys = self.data.metadata['descriptors'][0]['data_keys']
+        for key in stream_keys:
+            value = f"{stream_keys[key]['dtype']} {stream_keys[key]['shape']}"
+            child = RunNode(self.run, key, value, None, self)
             self.children.append(child)
 
     def fill_dict(self, data):
         for key in self.data:
             if isinstance(self.data[key], abc.Mapping):
                 value = ''
+            elif key == 'descriptors':
+                # This is "lifted up" and so skipping so as not to repeat.
+                continue
             elif isinstance(self.data[key], abc.Iterable):
                 value = str(self.data[key])
             else:
