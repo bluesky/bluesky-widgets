@@ -59,45 +59,55 @@ class RunNode(object):
     def child_number(self):
         return self.parent.children.index(self)
 
+    def fill_streams(self):
+        """Fill the streams in."""
+        for stream in self.run:
+            num_events = self.run.metadata['stop']['num_events']
+            if stream in num_events:
+                n = num_events[stream]
+                if n == 0:
+                    value = '0 events'
+                if n == 1:
+                    value = '1 event'
+                else:
+                    value = str(n) + ' events'
+            else:
+                value = 'null'
+            child = RunNode(self.run, stream, value, self.run[stream], self)
+            # Establish how many child nodes there will be.
+            child.num_children = len(self.run[stream].read().keys())
+            self.children.append(child)
+
+    def fill_stream(self, stream):
+        # For now just display the keys in the stream.
+        node = RunNode(self.run, 'metadata', 'dict', self.data.metadata, self)
+        node.num_children = len(self.data.metadata)
+        self.children.append(node)
+        for key in self.data.read().keys():
+            child = RunNode(self.run, key, '', None, self)
+            self.children.append(child)
+
+    def fill_dict(self, data):
+        for key in self.data:
+            if isinstance(self.data[key], abc.Mapping):
+                value = ''
+            elif isinstance(self.data[key], abc.Iterable):
+                value = str(self.data[key])
+            else:
+                value = self.data[key]
+            child = RunNode(self.run, key, value, self.data[key], self)
+            if isinstance(self.data[key], abc.Mapping):
+                child.num_children = len(self.data[key])
+            self.children.append(child)
+
     def fill_children(self):
         """Handle special ones like streams first."""
         if self.key == 'streams':
-            for stream in self.run:
-                num_events = self.run.metadata['stop']['num_events']
-                if stream in num_events:
-                    n = num_events[stream]
-                    if n == 0:
-                        value = '0 events'
-                    if n == 1:
-                        value = '1 event'
-                    else:
-                        value = str(n) + ' events'
-                else:
-                    value = 'null'
-                child = RunNode(self.run, stream, value, self.run[stream], self)
-                # Establish how many child nodes there will be.
-                child.num_children = len(self.run[stream].read().keys())
-                self.children.append(child)
+            self.fill_streams()
         elif self.data and isinstance(self.data, BlueskyEventStream):
-            # For now just display the keys in the stream.
-            node = RunNode(self.run, 'metadata', 'dict', self.data.metadata, self)
-            node.num_children = len(self.data.metadata)
-            self.children.append(node)
-            for key in self.data.read().keys():
-                child = RunNode(self.run, key, '', None, self)
-                self.children.append(child)
+            self.fill_stream(self.data)
         elif self.data and isinstance(self.data, abc.Mapping):
-            for key in self.data:
-                if isinstance(self.data[key], abc.Mapping):
-                    value = ''
-                elif isinstance(self.data[key], abc.Iterable):
-                    value = str(self.data[key])
-                else:
-                    value = self.data[key]
-                child = RunNode(self.run, key, value, self.data[key], self)
-                if isinstance(self.data[key], abc.Mapping):
-                    child.num_children = len(self.data[key])
-                self.children.append(child)
+            self.fill_dict(self.data)
 
 
 class TreeViewModel(QAbstractItemModel):
