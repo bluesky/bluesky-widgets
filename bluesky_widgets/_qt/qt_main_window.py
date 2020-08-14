@@ -53,7 +53,8 @@ class Window:
         self._qt_center = QWidget(self._qt_window)
 
         self._qt_window.setCentralWidget(self._qt_center)
-        self._qt_window.setWindowTitle(self.qt_widget.model.title)
+        if hasattr(self.qt_widget.model, 'title'):
+            self._qt_window.setWindowTitle(self.qt_widget.model.title)
         self._qt_center.setLayout(QHBoxLayout())
         self._status_bar = QStatusBar()
         self._qt_window.setStatusBar(self._status_bar)

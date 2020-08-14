@@ -39,6 +39,15 @@ or using a context manager to launch the Qt application:
    with gui_qt("example"):
        s = Searches()
 
+Stand-alone example Qt application for viewing a run:
+
+.. code:: bash
+
+   python -m bluesky_widgets.examples.qt_run_tree_view
+
+This component expects a run to be passed into it, and will then display a tree
+view summarizing the contents of that run.
+
 Embedding Compoents in Existing Applications
 ============================================
 
