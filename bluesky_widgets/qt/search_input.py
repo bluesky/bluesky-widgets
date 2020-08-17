@@ -79,8 +79,8 @@ class QtSearchInput(QWidget):
         self.refresh_button.clicked.connect(self.model.events.reload)
         self.refresh_button.clicked.connect(self.on_refresh_clicked)
         # Changes to the model update the GUI.
-        # self.model.events.since.connect(self.on_since_model_changed)
-        # self.model.events.until.connect(self.on_until_model_changed)
+        self.model.events.since.connect(self.on_since_model_changed)
+        self.model.events.until.connect(self.on_until_model_changed)
 
         # connect QRadioButtons and change date dropdowns (since/until widgets) accordingly
         self.today_widget.clicked.connect(self.on_select_today)
@@ -101,63 +101,40 @@ class QtSearchInput(QWidget):
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
         print("SINCE model changed")
-        if isinstance(event.date, timedelta):
-            print("TIMEDELTA WAS SELECTED: ", event.date)
-            if self.model.since.days == 1:
-                print("1 day checked")
-                #self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time() - timedelta(days=1).total_seconds()))
-                # qdatetime = QDateTime()
-                # qdatetime.setSecsSinceEpoch(time.time() - timedelta(days=1).total_seconds())
-                # self.since_widget.setDateTime(qdatetime)
-
-            elif self.model.since.days == 30:
-                print("30day checked")
-
-
-            elif self.model.since.min == 60:
-                print("1hour checked")
-
-            #event.date = time.time() - timedelta().total_seconds()
-            # print("since event.date WITH DELTA", event.date, "new", time.time() - timedelta().total_seconds())
-
-
-
-        else:
-            pass
-            # print("ICH AUCH since event.date", event.date)
-            # qdatetime = QDateTime()
-            # qdatetime.setSecsSinceEpoch(event.date.timestamp())
-            # self.uncheck_radiobuttons
-            # self.since_widget.setDateTime(qdatetime)
+        if not isinstance(event.date, timedelta):
+            qdatetime = QDateTime()
+            qdatetime.setSecsSinceEpoch(event.date.timestamp())
+            self.since_widget.setDateTime(qdatetime)
+            self.uncheck_radiobuttons
+            # does a reload make sense?
+            self.model.request_reload()
 
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.until = qdatetime.toSecsSinceEpoch()
-
         print("UNTIL view changed")
 
     def on_until_model_changed(self, event):
         # When model is updated (e.g. from console)
         print("UNTIL model changed")
-        if isinstance(event.date, timedelta):
-            print("event.date for timedelta UNTIL is", event.date)
-        else:
+        if not isinstance(event.date, timedelta):
             qdatetime = QDateTime()
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
             self.until_widget.setDateTime(qdatetime)
+            self.uncheck_radiobuttons
+            self.model.request_reload()
 
     def on_refresh_clicked(self):
         #self.now = time.time()
         self.model.request_reload()
         # TODO: since/until widget should update immediately when clicking refresh
-        # one option is to uncheck RadioButtons
         self.uncheck_radiobuttons()
-        # check which RButton is selected to update that range
+        # TODO: check which RButton is selected to update that range
 
 
     def on_select_today(self):
         self.model.since = timedelta(days=1)
-        # self.on_since_model_changed()
+        self.model.until = timedelta()
         self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()-timedelta(days=1).total_seconds()))
         self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()))
         self.today_widget.setChecked(True)
@@ -166,7 +143,8 @@ class QtSearchInput(QWidget):
 
     def on_select_lasthour(self):
         self.model.since = timedelta(minutes=60)
-
+        self.model.until = timedelta()
+        self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()-timedelta(minutes=60).total_seconds()))
         self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()))
         self.hour_widget.setChecked(True)
         # self.model.events.since.connect(self.on_since_model_changed)
@@ -174,7 +152,8 @@ class QtSearchInput(QWidget):
 
     def on_select_30days(self):
         self.model.since = timedelta(days=30)
-
+        self.model.until = timedelta()
+        self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()-timedelta(days=30).total_seconds()))
         self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()))
         self.days_widget.setChecked(True)
         # self.model.events.since.connect(self.on_since_model_changed)
