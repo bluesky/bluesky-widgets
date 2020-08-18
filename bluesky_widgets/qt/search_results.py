@@ -96,10 +96,12 @@ class _SearchResultsModel(QAbstractTableModel):
         self.dataChanged.emit(index, index, [])
 
     def on_begin_reset(self, event):
+        # The model is about to set a new catalog with a (potentially)
+        # different length and (potentially) different entries. Reset our
+        # state.
         self.beginResetModel()
         self.removeRows(0, self._current_num_rows - 1)
         self._current_num_rows = 0
-        self._catalog_length = len(self.model.catalog)
         for worker in self._active_workers:
             # Cease allowing this worker to mutate _data so that we do not get
             # any stale updates.
@@ -112,6 +114,9 @@ class _SearchResultsModel(QAbstractTableModel):
         self._data.clear()
 
     def on_end_reset(self, event):
+        # The model has its new catalog at this point. Now we can take its
+        # length.
+        self._catalog_length = len(self.model.catalog)
         self.endResetModel()
 
     def canFetchMore(self, parent=None):
