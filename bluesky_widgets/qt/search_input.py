@@ -88,7 +88,6 @@ class QtSearchInput(QWidget):
         self.days_widget.clicked.connect(self.on_select_30days)
         self.all_widget.clicked.connect(self.on_select_all)
 
-        self.now = time.time()
         self.ONE_HOUR = 60 * 60
         self.TODAY = self.ONE_HOUR * 24
         self.ONE_MONTH = self.TODAY * 30  # used for 30 days QRadioButton
@@ -101,18 +100,19 @@ class QtSearchInput(QWidget):
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
         print("SINCE model changed")
+        now = time.time()
         if isinstance(event.date, timedelta):
             if event.date == timedelta(days=1):
-                self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time() + timedelta(days=-1).total_seconds()))
-                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()))
+                self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now + timedelta(days=-1).total_seconds()))
+                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.today_widget.setChecked(True)
             if event.date == timedelta(days=30):
-                self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time() + timedelta(days=-30).total_seconds()))
-                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()))
+                self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now + timedelta(days=-30).total_seconds()))
+                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.days_widget.setChecked(True)
             if event.date == timedelta(minutes=60):
-                self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time() + timedelta(minutes=-60).total_seconds()))
-                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()))
+                self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now + timedelta(minutes=-60).total_seconds()))
+                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.hour_widget.setChecked(True)
         else:
             qdatetime = QDateTime()
@@ -138,7 +138,6 @@ class QtSearchInput(QWidget):
             self.model.request_reload()
 
     def on_refresh_clicked(self):
-        #self.now = time.time()
         self.model.request_reload()
         # TODO: since/until widget should update immediately when clicking refresh
         self.uncheck_radiobuttons()
