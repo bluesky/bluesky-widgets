@@ -1,8 +1,8 @@
 import time
 from datetime import datetime, timedelta
 from qtpy.QtCore import QDateTime
-from qtpy.QtGui import QButtonGroup
 from qtpy.QtWidgets import (
+    QButtonGroup,
     QDateTimeEdit,
     QWidget,
     QPushButton,
