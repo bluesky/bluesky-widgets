@@ -97,6 +97,7 @@ class _SearchResultsModel(QAbstractTableModel):
 
     def on_begin_reset(self, event):
         self.beginResetModel()
+        self.removeRows(0, self._current_num_rows - 1)
         self._current_num_rows = 0
         self._catalog_length = len(self.model.catalog)
         for worker in self._active_workers:
