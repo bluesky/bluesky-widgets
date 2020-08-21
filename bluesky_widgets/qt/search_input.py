@@ -87,19 +87,14 @@ class QtSearchInput(QWidget):
         self.days_widget.clicked.connect(self.on_select_30days)
         self.all_widget.clicked.connect(self.on_select_all)
 
-        self.ONE_HOUR = 60 * 60
-        self.TODAY = self.ONE_HOUR * 24
-        self.ONE_MONTH = self.TODAY * 30  # used for 30 days QRadioButton
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.since = qdatetime.toSecsSinceEpoch()
-        print("SINCE view changed")
+
 
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
-        print("SINCE model changed")
-        now = time.time()
         if isinstance(event.date, timedelta):
             if event.date == timedelta(days=1):
                 self.since_widget.setDateTime(
@@ -127,11 +122,9 @@ class QtSearchInput(QWidget):
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.until = qdatetime.toSecsSinceEpoch()
-        print("UNTIL view changed")
 
     def on_until_model_changed(self, event):
         # When model is updated (e.g. from console)
-        print("UNTIL model changed")
         if not isinstance(event.date, timedelta):
             qdatetime = QDateTime()
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
@@ -160,6 +153,7 @@ class QtSearchInput(QWidget):
     def on_select_all(self):
         # self.model.until = None
         # self.model.since = None
+        #TODO: what time frame to set for all
         self.since_widget.setDateTime(QDateTime.fromSecsSinceEpoch(0))
         self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(time.time()))
         self.all_widget.setChecked(True)
