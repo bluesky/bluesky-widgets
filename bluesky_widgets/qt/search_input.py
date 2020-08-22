@@ -87,14 +87,18 @@ class QtSearchInput(QWidget):
         self.days_widget.clicked.connect(self.on_select_30days)
         self.all_widget.clicked.connect(self.on_select_all)
 
+    def on_refresh_clicked(self):
+        self.model.request_reload()
+        # TODO: since/until widget should update immediately when clicking refresh
+        # TODO: check which RButton is selected to update that range
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.since = qdatetime.toSecsSinceEpoch()
 
-
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
+        now = time.time()
         if isinstance(event.date, timedelta):
             if event.date == timedelta(days=1):
                 self.since_widget.setDateTime(
