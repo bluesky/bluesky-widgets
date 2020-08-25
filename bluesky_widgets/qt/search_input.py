@@ -44,7 +44,7 @@ class QtSearchInput(QWidget):
         self.layout().addRow("When:", default_period_layout)
 
         # Restrict acceptable timedelta values
-        self.allowed = {timedelta(days=1), timedelta(days=30), timedelta(minutes=60)}
+        self.allowed = {timedelta(days=-1), timedelta(days=-30), timedelta(minutes=-60)}
         def time_validator(since=None, until=None):
             """
             Enforce that since and until are values that a UI can represent.
