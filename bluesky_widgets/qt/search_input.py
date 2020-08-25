@@ -132,20 +132,14 @@ class QtSearchInput(QWidget):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
         now = time.time()
         if isinstance(event.date, timedelta):
+            self.since_widget.setDateTime(
+                QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
+            self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
             if event.date == timedelta(days=-1):
-                self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
-                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.today_widget.setChecked(True)
             if event.date == timedelta(days=-30):
-                self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
-                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.days_widget.setChecked(True)
             if event.date == timedelta(minutes=-60):
-                self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
-                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.hour_widget.setChecked(True)
             if event.date == timedelta(seconds=-4861699200):
                 self.since_widget.setDateTime(
@@ -157,8 +151,7 @@ class QtSearchInput(QWidget):
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
             self.since_widget.setDateTime(qdatetime)
             self.uncheck_radiobuttons
-            # does a reload make sense?
-            self.model.request_reload()
+
 
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
