@@ -98,9 +98,11 @@ class QtSearchInput(QWidget):
         # Changes to the GUI update the model.
         self.since_widget.dateTimeChanged.connect(self.on_since_view_changed)
         self.until_widget.dateTimeChanged.connect(self.on_until_view_changed)
+
         # TODO: check what refresh button is doing
         self.refresh_button.clicked.connect(self.model.request_reload)
-        # self.refresh_button.clicked.connect(self.on_refresh_clicked)
+        self.model.events.reload.connect(self.on_reload)
+        self.model.events.query.connect(self.on_reload)
         # Changes to the model update the GUI.
         self.model.events.since.connect(self.on_since_model_changed)
         self.model.events.until.connect(self.on_until_model_changed)
@@ -111,15 +113,14 @@ class QtSearchInput(QWidget):
         self.days_widget.clicked.connect(self.on_select_30days)
         self.all_widget.clicked.connect(self.on_select_all)
 
-    def on_reload(self):
+    def on_reload(self, event):
         now = time.time()
-        if isinstance(self.model.since, timedelta):
+        if isinstance(event.date, timedelta):
             self.since_widget.setDateTime(
-                QDateTime.fromSecsSinceEpoch(now + self.model.since.total_seconds()))
-        if isinstance(self.model.until, timedelta):
+                QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
+        if isinstance(event.date, timedelta):
             self.until_widget.setDateTime(
-                QDateTime.fromSecsSinceEpoch(now + self.model.until.total_seconds()))
-
+                QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
         # TODO: since/until widget should update immediately when clicking refresh
         # TODO: check which RButton is selected to update that range
 
