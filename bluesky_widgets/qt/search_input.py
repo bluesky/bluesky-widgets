@@ -173,19 +173,19 @@ class QtSearchInput(QWidget):
             self.model.request_reload()
 
     def on_select_today(self):
-        self.model.since = timedelta(days=1)
+        self.model.since = timedelta(days=-1)
         self.model.until = timedelta()
 
     def on_select_lasthour(self):
-        self.model.since = timedelta(minutes=60)
+        self.model.since = timedelta(minutes=-60)
         self.model.until = timedelta()
 
     def on_select_30days(self):
-        self.model.since = timedelta(days=30)
+        self.model.since = timedelta(days=-30)
         self.model.until = timedelta()
 
     def on_select_all(self):
-        self.model.since = timedelta(seconds=4861699200)
+        self.model.since = timedelta(seconds=-4861699200)
         self.model.until = timedelta()
         # TODO: Add print command to see what Scientist's birthday was set as since date
         # we could have a set to choose from randomly ;-)
