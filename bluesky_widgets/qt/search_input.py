@@ -131,24 +131,24 @@ class QtSearchInput(QWidget):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
         now = time.time()
         if isinstance(event.date, timedelta):
-            if event.date == timedelta(days=1):
+            if event.date == timedelta(days=-1):
                 self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now - event.date.total_seconds()))
+                    QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
                 self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.today_widget.setChecked(True)
-            if event.date == timedelta(days=30):
+            if event.date == timedelta(days=-30):
                 self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now - event.date.total_seconds()))
+                    QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
                 self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.days_widget.setChecked(True)
-            if event.date == timedelta(minutes=60):
+            if event.date == timedelta(minutes=-60):
                 self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now - event.date.total_seconds()))
+                    QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
                 self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.hour_widget.setChecked(True)
-            if event.date == timedelta(seconds=4861699200):
+            if event.date == timedelta(seconds=-4861699200):
                 self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(-event.date.total_seconds()))
+                    QDateTime.fromSecsSinceEpoch(event.date.total_seconds()))
                 self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
                 self.all_widget.setChecked(True)
         else:
