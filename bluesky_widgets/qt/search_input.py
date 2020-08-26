@@ -10,7 +10,7 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QGridLayout,
 )
-from ..components.search.search_input import SearchInput
+
 
 class QtSearchInput(QWidget):
     """
@@ -52,6 +52,7 @@ class QtSearchInput(QWidget):
         self.layout().addRow("When:", default_period_layout)
 
         # TODO: rethink if restriction to acceptable timedelta values is required
+        # from ..components.search.search_input import SearchInput
         # self.allowed = {timedelta(days=-1), timedelta(days=-30), timedelta(minutes=-60), timedelta(days=-7),
         #                 timedelta(days=-365)}
         # def time_validator(since=None, until=None):
@@ -176,8 +177,6 @@ class QtSearchInput(QWidget):
             self.until_widget.setDateTime(qdatetime)
             self.uncheck_radiobuttons
             self.model.request_reload()
-
-
 
     def on_select_24h(self):
         self.model.since = timedelta(days=-1)
