@@ -41,13 +41,13 @@ class QtSearchInput(QWidget):
         self.radio_button_group.addButton(self.today_widget)
         self.radio_button_group.addButton(self.hour_widget)
         default_period_layout = QGridLayout()
-        default_period_layout.setHorizontalSpacing(100)
-        default_period_layout.setVerticalSpacing(5)
+        default_period_layout.setHorizontalSpacing(85)
+        default_period_layout.setVerticalSpacing(10)
         default_period_layout.addWidget(self.all_widget, 0, 0, 1, 2)
-        default_period_layout.addWidget(self.year_widget, 0, 1, 1, 2)
-        default_period_layout.addWidget(self.month_widget, 1, 0, 1, 2)
-        default_period_layout.addWidget(self.week_widget, 1, 1, 1, 2)
-        default_period_layout.addWidget(self.today_widget, 2, 0, 1, 2)
+        default_period_layout.addWidget(self.year_widget, 1, 0, 1, 2)
+        default_period_layout.addWidget(self.month_widget, 2, 0, 1, 2)
+        default_period_layout.addWidget(self.week_widget, 0, 1, 1, 2)
+        default_period_layout.addWidget(self.today_widget, 1, 1, 1, 2)
         default_period_layout.addWidget(self.hour_widget, 2, 1, 1, 2)
         self.layout().addRow("When:", default_period_layout)
 
@@ -143,12 +143,16 @@ class QtSearchInput(QWidget):
             self.since_widget.setDateTime(
                 QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
             self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
-            if event.date == timedelta(days=-1):
-                self.today_widget.setChecked(True)
-            if event.date == timedelta(days=-30):
-                self.days_widget.setChecked(True)
             if event.date == timedelta(minutes=-60):
                 self.hour_widget.setChecked(True)
+            if event.date == timedelta(days=-1):
+                self.today_widget.setChecked(True)
+            if event.date == timedelta(days=-7):
+                self.week_widget.setChecked(True)
+            if event.date == timedelta(days=-30):
+                self.month_widget.setChecked(True)
+            if event.date == timedelta(days=-365):
+                self.year_widget.setChecked(True)
             if event.date == timedelta(seconds=-4861699200):
                 self.since_widget.setDateTime(
                     QDateTime.fromSecsSinceEpoch(event.date.total_seconds()))
