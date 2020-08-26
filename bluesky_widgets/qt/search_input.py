@@ -26,25 +26,34 @@ class QtSearchInput(QWidget):
         super().__init__(*args, **kwargs)
 
         self.setLayout(QFormLayout())
-        # 4 Radiobuttons to quickly select default time period
+        # Radiobuttons to quickly select default time period
         self.all_widget = QRadioButton("All")
-        self.days_widget = QRadioButton("30 Days")
-        self.today_widget = QRadioButton("Last 24h")
-        self.hour_widget = QRadioButton("Last 1 Hour")
+        self.year_widget = QRadioButton("1 Year")
+        self.month_widget = QRadioButton("30 Days")
+        self.week_widget = QRadioButton("1 Week")
+        self.today_widget = QRadioButton("24h")
+        self.hour_widget = QRadioButton("1 Hour")
         self.radio_button_group = QButtonGroup()
         self.radio_button_group.addButton(self.all_widget)
-        self.radio_button_group.addButton(self.days_widget)
+        self.radio_button_group.addButton(self.year_widget)
+        self.radio_button_group.addButton(self.month_widget)
+        self.radio_button_group.addButton(self.week_widget)
         self.radio_button_group.addButton(self.today_widget)
         self.radio_button_group.addButton(self.hour_widget)
         default_period_layout = QGridLayout()
-        default_period_layout.addWidget(self.all_widget, 0, 0, 1, 1)
-        default_period_layout.addWidget(self.days_widget, 0, 1, 1, 1)
-        default_period_layout.addWidget(self.today_widget, 1, 0, 1, 1)
-        default_period_layout.addWidget(self.hour_widget, 1, 1, 1, 1)
+        default_period_layout.setHorizontalSpacing(100)
+        default_period_layout.setVerticalSpacing(5)
+        default_period_layout.addWidget(self.all_widget, 0, 0, 1, 2)
+        default_period_layout.addWidget(self.year_widget, 0, 1, 1, 2)
+        default_period_layout.addWidget(self.month_widget, 1, 0, 1, 2)
+        default_period_layout.addWidget(self.week_widget, 1, 1, 1, 2)
+        default_period_layout.addWidget(self.today_widget, 2, 0, 1, 2)
+        default_period_layout.addWidget(self.hour_widget, 2, 1, 1, 2)
         self.layout().addRow("When:", default_period_layout)
 
         # Restrict acceptable timedelta values
-        self.allowed = {timedelta(days=-1), timedelta(days=-30), timedelta(minutes=-60)}
+        self.allowed = {timedelta(days=-1), timedelta(days=-30), timedelta(minutes=-60), timedelta(days=-7),
+                        timedelta(days=-365)}
         def time_validator(since=None, until=None):
             """
             Enforce that since and until are values that a UI can represent.
@@ -99,7 +108,6 @@ class QtSearchInput(QWidget):
         self.since_widget.dateTimeChanged.connect(self.on_since_view_changed)
         self.until_widget.dateTimeChanged.connect(self.on_until_view_changed)
 
-        # TODO: check what refresh button is doing
         self.refresh_button.clicked.connect(self.model.request_reload)
         self.model.events.reload.connect(self.on_reload)
         self.model.events.query.connect(self.on_reload)
@@ -108,12 +116,14 @@ class QtSearchInput(QWidget):
         self.model.events.until.connect(self.on_until_model_changed)
 
         # connect QRadioButtons and change date dropdowns (since/until widgets) accordingly
-        self.today_widget.clicked.connect(self.on_select_today)
-        self.hour_widget.clicked.connect(self.on_select_lasthour)
-        self.days_widget.clicked.connect(self.on_select_30days)
+        self.hour_widget.clicked.connect(self.on_select_hour)
+        self.today_widget.clicked.connect(self.on_select_24h)
+        self.week_widget.clicked.connect(self.on_select_week)
+        self.month_widget.clicked.connect(self.on_select_month)
+        self.year_widget.clicked.connect(self.on_select_year)
         self.all_widget.clicked.connect(self.on_select_all)
 
-    def on_reload(self):
+    def on_reload(self, event):
         now = time.time()
         if isinstance(self.model.since, timedelta):
             self.since_widget.setDateTime(
@@ -121,8 +131,6 @@ class QtSearchInput(QWidget):
         if isinstance(self.model.until, timedelta):
             self.until_widget.setDateTime(
                 QDateTime.fromSecsSinceEpoch(now + self.model.until.total_seconds()))
-        # TODO: since/until widget should update immediately when clicking refresh
-        # TODO: check which RButton is selected to update that range
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
@@ -152,7 +160,6 @@ class QtSearchInput(QWidget):
             self.since_widget.setDateTime(qdatetime)
             self.uncheck_radiobuttons
 
-
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.until = qdatetime.toSecsSinceEpoch()
@@ -166,28 +173,39 @@ class QtSearchInput(QWidget):
             self.uncheck_radiobuttons
             self.model.request_reload()
 
-    def on_select_today(self):
+
+
+    def on_select_24h(self):
         self.model.since = timedelta(days=-1)
         self.model.until = timedelta()
 
-    def on_select_lasthour(self):
+    def on_select_hour(self):
         self.model.since = timedelta(minutes=-60)
         self.model.until = timedelta()
 
-    def on_select_30days(self):
+    def on_select_week(self):
+        self.model.since = timedelta(days=-7)
+        self.model.until = timedelta()
+
+    def on_select_month(self):
         self.model.since = timedelta(days=-30)
+        self.model.until = timedelta()
+
+    def on_select_year(self):
+        self.model.since = timedelta(days=-365)
         self.model.until = timedelta()
 
     def on_select_all(self):
         self.model.since = timedelta(seconds=-4861699200)
         self.model.until = timedelta()
-        # TODO: Add print command to see what Scientist's birthday was set as since date
-        # we could have a set to choose from randomly ;-)
+        print("Search for all catalogs since Ada Lovelace's Birthday")
 
     def uncheck_radiobuttons(self):
         self.radio_button_group.setExclusive(False)
         self.all_widget.setChecked(False)
-        self.days_widget.setChecked(False)
+        self.year_widget.setChecked(False)
+        self.month_widget.setChecked(False)
+        self.week_widget.setChecked(False)
         self.today_widget.setChecked(False)
         self.hour_widget.setChecked(False)
         self.radio_button_group.setExclusive(True)
