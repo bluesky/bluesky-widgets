@@ -3,6 +3,8 @@ Select some runs and click the button. Their IDs will be printed to the
 terminal. In a real application, this could kick off data processing, export,
 or visualization.
 """
+from datetime import datetime
+
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.components.search.searches import SearchList, Search
@@ -76,7 +78,7 @@ def main():
         searches[0]
         searches.active  # i.e. current tab
         searches.active.input.since  # time range
-        searches.active.input.until = "2040"
+        searches.active.input.until = datetime(2040, 1, 1)
         searches.active.results
         searches.active.selection_as_catalog
         searches.active.selected_uids

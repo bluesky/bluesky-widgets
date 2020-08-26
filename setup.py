@@ -47,7 +47,7 @@ setup(
     long_description=readme,
     author="Brookhaven National Lab",
     author_email="dallan@bnl.gov",
-    url="https://github.com/danielballan/bluesky-widgets",
+    url="https://github.com/bluesky/bluesky-widgets",
     python_requires=">={}".format(".".join(str(n) for n in min_version)),
     packages=find_packages(exclude=["docs", "tests"]),
     entry_points={
