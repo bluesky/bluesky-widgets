@@ -51,32 +51,32 @@ class QtSearchInput(QWidget):
         default_period_layout.addWidget(self.hour_widget, 2, 1, 1, 2)
         self.layout().addRow("When:", default_period_layout)
 
-        # Restrict acceptable timedelta values
-        self.allowed = {timedelta(days=-1), timedelta(days=-30), timedelta(minutes=-60), timedelta(days=-7),
-                        timedelta(days=-365)}
-        def time_validator(since=None, until=None):
-            """
-            Enforce that since and until are values that a UI can represent.
-            This is an example similar to what will be used in the Qt UI.
-            """
-            now = timedelta()
-            if isinstance(since, timedelta):
-                if not (until is None or until == now):
-                    raise ValueError(
-                        "This UI cannot express since=timedelta(...) unless until "
-                        "is timedelta() or None."
-                    )
-                for item in allowed:
-                    if since == item:
-                        break
-                else:
-                    # No matches
-                    raise ValueError(
-                        "This UI can only express since as a timedelta if it is "
-                        f"one of {allowed}. The value {since} is not allowed"
-                    )
-        s = SearchInput()
-        s.time_validator = time_validator
+        # TODO: rethink if restriction to acceptable timedelta values is required
+        # self.allowed = {timedelta(days=-1), timedelta(days=-30), timedelta(minutes=-60), timedelta(days=-7),
+        #                 timedelta(days=-365)}
+        # def time_validator(since=None, until=None):
+        #     """
+        #     Enforce that since and until are values that a UI can represent.
+        #     This is an example similar to what will be used in the Qt UI.
+        #     """
+        #     now = timedelta()
+        #     if isinstance(since, timedelta):
+        #         if not (until is None or until == now):
+        #             raise ValueError(
+        #                 "This UI cannot express since=timedelta(...) unless until "
+        #                 "is timedelta() or None."
+        #             )
+        #         for item in allowed:
+        #             if since == item:
+        #                 break
+        #         else:
+        #             # No matches
+        #             raise ValueError(
+        #                 "This UI can only express since as a timedelta if it is "
+        #                 f"one of {allowed}. The value {since} is not allowed"
+        #             )
+        # s = SearchInput()
+        # s.time_validator = time_validator
 
         # "Since: <datetime picker>"
         self.since_widget = QDateTimeEdit()
