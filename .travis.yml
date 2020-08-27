@@ -88,7 +88,7 @@ install:
       sudo /sbin/start-stop-daemon --start --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1920x1200x24 -ac +extension GLX +render -noreset
       sleep 3
     fi
-  - conda create -y -n testenv python=$TRAVIS_PYTHON_VERSION
+  - conda create -y -n testenv -c conda-forge python=$TRAVIS_PYTHON_VERSION
   - conda activate testenv
   - |
     set -e
@@ -105,6 +105,7 @@ install:
         echo "Unknown Qt package $QT"
         exit 1
     fi
+  - conda install -y -c conda-forge numcodecs
   - pip install --upgrade pip setuptools numpy
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
