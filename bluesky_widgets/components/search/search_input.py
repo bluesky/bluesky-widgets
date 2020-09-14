@@ -36,10 +36,6 @@ class SearchInput:
             reload=Event,
         )
         self._time_validator = None
-        # Initialize defaults. Some front ends (e.g. Qt) cannot have a null
-        # state, so we pick an arbitrary range.
-        self.since = datetime.now() - timedelta(days=365)
-        self.until = datetime.now() + timedelta(days=365)
 
     @property
     def time_validator(self):

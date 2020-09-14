@@ -95,14 +95,6 @@ class QtSearchInput(QWidget):
         self.refresh_button = QPushButton("Refresh")
         self.layout().addWidget(self.refresh_button)
 
-        # Initialize values.
-        qdatetime = QDateTime()
-        qdatetime.setSecsSinceEpoch(self.model.since.timestamp())
-        self.since_widget.setDateTime(qdatetime)
-        qdatetime = QDateTime()
-        qdatetime.setSecsSinceEpoch(self.model.until.timestamp())
-        self.until_widget.setDateTime(qdatetime)
-
         # Changes to the GUI update the model.
         self.since_widget.dateTimeChanged.connect(self.on_since_view_changed)
         self.until_widget.dateTimeChanged.connect(self.on_until_view_changed)
@@ -115,12 +107,14 @@ class QtSearchInput(QWidget):
         self.model.events.until.connect(self.on_until_model_changed)
 
         # connect QRadioButtons and change date dropdowns (since/until widgets) accordingly
-        self.hour_widget.clicked.connect(self.on_select_hour)
-        self.today_widget.clicked.connect(self.on_select_24h)
-        self.week_widget.clicked.connect(self.on_select_week)
-        self.month_widget.clicked.connect(self.on_select_month)
-        self.year_widget.clicked.connect(self.on_select_year)
-        self.all_widget.clicked.connect(self.on_select_all)
+        self.hour_widget.toggled.connect(self.on_toggle_hour)
+        self.today_widget.toggled.connect(self.on_toggle_24h)
+        self.week_widget.toggled.connect(self.on_toggle_week)
+        self.month_widget.toggled.connect(self.on_toggle_month)
+        self.year_widget.toggled.connect(self.on_toggle_year)
+        self.all_widget.toggled.connect(self.on_toggle_all)
+
+        self.all_widget.setChecked(True)
 
     def on_reload(self, event):
         now = datetime.now().timestamp()
@@ -161,11 +155,13 @@ class QtSearchInput(QWidget):
                 # No checkbox associated with this custom timedelta
                 pass
         else:
+            # Must be a datetime
             if event.date == ADA_LOVELACE_BIRTHDAY:
                 self.all_widget.setChecked(True)
+            else:
+                self.uncheck_radiobuttons()
             qdatetime = QDateTime()
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
-            self.uncheck_radiobuttons()
         with _blocked(self.since_widget):
             self.since_widget.setDateTime(qdatetime)
         with _blocked(self.until_widget):
@@ -189,30 +185,36 @@ class QtSearchInput(QWidget):
             with _blocked(self.until_widget):
                 self.until_widget.setDateTime(qdatetime)
 
-    def on_select_24h(self):
-        self.model.since = timedelta(days=-1)
-        self.model.until = timedelta()
+    def on_toggle_24h(self):
+        if self.today_widget.isChecked():
+            self.model.since = timedelta(days=-1)
+            self.model.until = timedelta()
 
-    def on_select_hour(self):
-        self.model.since = timedelta(minutes=-60)
-        self.model.until = timedelta()
+    def on_toggle_hour(self):
+        if self.hour_widget.isChecked():
+            self.model.since = timedelta(minutes=-60)
+            self.model.until = timedelta()
 
-    def on_select_week(self):
-        self.model.since = timedelta(days=-7)
-        self.model.until = timedelta()
+    def on_toggle_week(self):
+        if self.week_widget.isChecked():
+            self.model.since = timedelta(days=-7)
+            self.model.until = timedelta()
 
-    def on_select_month(self):
-        self.model.since = timedelta(days=-30)
-        self.model.until = timedelta()
+    def on_toggle_month(self):
+        if self.month_widget.isChecked():
+            self.model.since = timedelta(days=-30)
+            self.model.until = timedelta()
 
-    def on_select_year(self):
-        self.model.since = timedelta(days=-365)
-        self.model.until = timedelta()
+    def on_toggle_year(self):
+        if self.year_widget.isChecked():
+            self.model.since = timedelta(days=-365)
+            self.model.until = timedelta()
 
-    def on_select_all(self):
+    def on_toggle_all(self):
         # Search for all catalogs since Ada Lovelace's Birthday.
-        self.model.since = ADA_LOVELACE_BIRTHDAY
-        self.model.until = timedelta()
+        if self.all_widget.isChecked():
+            self.model.since = ADA_LOVELACE_BIRTHDAY
+            self.model.until = timedelta()
 
     def uncheck_radiobuttons(self):
         self.radio_button_group.setExclusive(False)
