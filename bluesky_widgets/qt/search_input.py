@@ -1,5 +1,4 @@
-import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from qtpy.QtCore import QDateTime
 from qtpy.QtWidgets import (
     QButtonGroup,
@@ -125,7 +124,7 @@ class QtSearchInput(QWidget):
         self.all_widget.clicked.connect(self.on_select_all)
 
     def on_reload(self, event):
-        now = time.time()
+        now = datetime.now().timestamp()
         if isinstance(self.model.since, timedelta):
             self.since_widget.setDateTime(
                 QDateTime.fromSecsSinceEpoch(now + self.model.since.total_seconds()))
@@ -139,7 +138,7 @@ class QtSearchInput(QWidget):
 
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
-        now = time.time()
+        now = datetime.now().timestamp()
         if isinstance(event.date, timedelta):
             self.since_widget.setDateTime(
                 QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
