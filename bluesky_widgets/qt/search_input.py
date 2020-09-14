@@ -160,7 +160,7 @@ class QtSearchInput(QWidget):
             qdatetime = QDateTime()
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
             self.since_widget.setDateTime(qdatetime)
-            self.uncheck_radiobuttons
+            self.uncheck_radiobuttons()
 
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
@@ -172,8 +172,7 @@ class QtSearchInput(QWidget):
             qdatetime = QDateTime()
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
             self.until_widget.setDateTime(qdatetime)
-            self.uncheck_radiobuttons
-            self.model.request_reload()
+            self.uncheck_radiobuttons()
 
     def on_select_24h(self):
         self.model.since = timedelta(days=-1)
