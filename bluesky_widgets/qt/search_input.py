@@ -1,3 +1,4 @@
+import contextlib
 from datetime import datetime, timedelta
 from qtpy.QtCore import QDateTime
 from qtpy.QtWidgets import (
@@ -124,11 +125,13 @@ class QtSearchInput(QWidget):
     def on_reload(self, event):
         now = datetime.now().timestamp()
         if isinstance(self.model.since, timedelta):
-            self.since_widget.setDateTime(
-                QDateTime.fromSecsSinceEpoch(now + self.model.since.total_seconds()))
+            with _blocked(self.since_widget):
+                self.since_widget.setDateTime(
+                    QDateTime.fromSecsSinceEpoch(now + self.model.since.total_seconds()))
         if isinstance(self.model.until, timedelta):
-            self.until_widget.setDateTime(
-                QDateTime.fromSecsSinceEpoch(now + self.model.until.total_seconds()))
+            with _blocked(self.until_widget):
+                self.until_widget.setDateTime(
+                    QDateTime.fromSecsSinceEpoch(now + self.model.until.total_seconds()))
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
@@ -143,29 +146,30 @@ class QtSearchInput(QWidget):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
         now = datetime.now().timestamp()
         if isinstance(event.date, timedelta):
-            self.since_widget.setDateTime(
-                QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds()))
-            self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
+            qdatetime = QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds())
             if event.date == timedelta(minutes=-60):
                 self.hour_widget.setChecked(True)
-            if event.date == timedelta(days=-1):
+            elif event.date == timedelta(days=-1):
                 self.today_widget.setChecked(True)
-            if event.date == timedelta(days=-7):
+            elif event.date == timedelta(days=-7):
                 self.week_widget.setChecked(True)
-            if event.date == timedelta(days=-30):
+            elif event.date == timedelta(days=-30):
                 self.month_widget.setChecked(True)
-            if event.date == timedelta(days=-365):
+            elif event.date == timedelta(days=-365):
                 self.year_widget.setChecked(True)
-            if event.date == timedelta(seconds=-4861699200):
-                self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(event.date.total_seconds()))
-                self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
-                self.all_widget.setChecked(True)
+            else:
+                # No checkbox associated with this custom timedelta
+                pass
         else:
+            if event.date == ADA_LOVELACE_BIRTHDAY:
+                self.all_widget.setChecked(True)
             qdatetime = QDateTime()
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
-            self.since_widget.setDateTime(qdatetime)
             self.uncheck_radiobuttons()
+        with _blocked(self.since_widget):
+            self.since_widget.setDateTime(qdatetime)
+        with _blocked(self.until_widget):
+            self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
 
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
@@ -177,12 +181,13 @@ class QtSearchInput(QWidget):
             self.model.since = now + self.model.since
 
     def on_until_model_changed(self, event):
-        # When model is updated (e.g. from console)
+        # When model is updated (e.g. from console or by clicking a QRadioButton)
         if not isinstance(event.date, timedelta):
             qdatetime = QDateTime()
             qdatetime.setSecsSinceEpoch(event.date.timestamp())
-            self.until_widget.setDateTime(qdatetime)
             self.uncheck_radiobuttons()
+            with _blocked(self.until_widget):
+                self.until_widget.setDateTime(qdatetime)
 
     def on_select_24h(self):
         self.model.since = timedelta(days=-1)
@@ -205,9 +210,9 @@ class QtSearchInput(QWidget):
         self.model.until = timedelta()
 
     def on_select_all(self):
-        self.model.since = timedelta(seconds=-4861699200)
+        # Search for all catalogs since Ada Lovelace's Birthday.
+        self.model.since = ADA_LOVELACE_BIRTHDAY
         self.model.until = timedelta()
-        print("Search for all catalogs since Ada Lovelace's Birthday")
 
     def uncheck_radiobuttons(self):
         self.radio_button_group.setExclusive(False)
@@ -218,3 +223,14 @@ class QtSearchInput(QWidget):
         self.today_widget.setChecked(False)
         self.hour_widget.setChecked(False)
         self.radio_button_group.setExclusive(True)
+
+
+@contextlib.contextmanager
+def _blocked(qobject):
+    "Block signals from this object inside the context."
+    qobject.blockSignals(True)
+    yield
+    qobject.blockSignals(False)
+
+
+ADA_LOVELACE_BIRTHDAY = datetime(1815, 12, 10)
