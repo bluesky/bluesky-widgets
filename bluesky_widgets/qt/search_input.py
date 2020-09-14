@@ -83,14 +83,12 @@ class QtSearchInput(QWidget):
         self.since_widget.setCalendarPopup(True)
         self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.layout().addRow("Since:", self.since_widget)
-        self.since_widget.dateTimeChanged.connect(self.uncheck_radiobuttons)
 
         # "Until: <datetime picker>"
         self.until_widget = QDateTimeEdit()
         self.until_widget.setCalendarPopup(True)
         self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.layout().addRow("Until:", self.until_widget)
-        self.until_widget.dateTimeChanged.connect(self.uncheck_radiobuttons)
 
         # Refresh Button
         self.refresh_button = QPushButton("Refresh")
