@@ -79,7 +79,7 @@ def test_time_input_relative_from_model(qtbot, delta, radio_button):
 
     # And a radio button is checked.
     radio_button_widget = getattr(view, radio_button)
-    radio_button_widget.isChecked()
+    assert radio_button_widget.isChecked()
 
 
 @pytest.mark.parametrize('delta, radio_button', DELTAS_AND_BUTTONS)
@@ -116,4 +116,4 @@ def test_time_input_from_radio_buttons(qtbot, delta, radio_button):
     assert actual_until != new_actual_until
 
     # And button should still be checked.
-    radio_button_widget.isChecked()
+    assert radio_button_widget.isChecked()
