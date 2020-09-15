@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import time
 import pytest
 from qtpy.QtCore import QDateTime
-from ...qt.search_input import QtSearchInput
+from ...qt.search_input import QtSearchInput, ADA_LOVELACE_BIRTHDAY
 from ...components.search.search_input import SearchInput
 
 
@@ -11,6 +11,26 @@ def as_qdatetime(datetime):
     qdatetime = QDateTime()
     qdatetime.setSecsSinceEpoch(datetime.timestamp())
     return qdatetime
+
+
+def test_initial_state(qtbot):
+    "Check that 'All' is checked and since/until are set as expected."
+    model = SearchInput()
+    view = QtSearchInput(model)
+    TOLERANCE = timedelta(seconds=10)
+
+    # Check state of model...
+    assert model.since == ADA_LOVELACE_BIRTHDAY
+    # ...and view.
+    actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
+    assert actual_since == ADA_LOVELACE_BIRTHDAY
+
+    assert model.until == timedelta(0)
+    actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
+    assert actual_until - datetime.now() < TOLERANCE
+
+    # Verify that 'All' radio button is checked.
+    assert view.all_widget.isChecked()
 
 
 def test_time_input_absolute_from_model(qtbot):
