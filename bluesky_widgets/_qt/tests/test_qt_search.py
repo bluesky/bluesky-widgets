@@ -26,3 +26,4 @@ def test_searches(make_test_searches):
     searches = make_test_searches()
     searches[0].input.since = datetime(1980, 2, 2)
     searches[0].input.since = datetime(1985, 11, 15)
+    searches[0].input.since = timedelta(days=-1)
