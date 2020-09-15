@@ -225,4 +225,8 @@ def _blocked(qobject):
     qobject.blockSignals(False)
 
 
+# We need some concrete datetime to show in the "Since" datetime picker when
+# the "All" button is checked. It should be some time old enough that it isn't
+# likely to leave out wanted data. We cheekily choose this birthday as that
+# time.
 ADA_LOVELACE_BIRTHDAY = datetime(1815, 12, 10)
