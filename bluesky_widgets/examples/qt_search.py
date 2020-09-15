@@ -78,7 +78,7 @@ def main():
         searches[0]
         searches.active  # i.e. current tab
         searches.active.input.since  # time range
-        searches.active.input.until = datetime(2040, 1, 1)
+        searches.active.input.until
         searches.active.results
         searches.active.selection_as_catalog
         searches.active.selected_uids

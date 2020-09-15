@@ -130,11 +130,6 @@ class QtSearchInput(QWidget):
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.since = qdatetime.toSecsSinceEpoch()
-        # The UI will be confusing if 'since' is absolute but 'until' is
-        # relative and continually updating, so ensure 'until' is absolute.
-        if isinstance(self.model.until, timedelta):
-            now = datetime.now()
-            self.model.until = now + self.model.until
 
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
@@ -170,11 +165,6 @@ class QtSearchInput(QWidget):
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
         self.model.until = qdatetime.toSecsSinceEpoch()
-        # The UI will be confusing if 'until' is absolute but 'since' is
-        # relative and continually updating, so ensure 'since' is absolute.
-        if isinstance(self.model.since, timedelta):
-            now = datetime.now()
-            self.model.since = now + self.model.since
 
     def on_until_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
