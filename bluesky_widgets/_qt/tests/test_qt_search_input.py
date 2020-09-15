@@ -77,7 +77,7 @@ def test_time_input_relative_from_model(qtbot, delta, radio_button):
     actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
     assert abs(actual_until - expected_until) < TOLERANCE
 
-    # And a radio button checks.
+    # And a radio button is checked.
     radio_button_widget = getattr(view, radio_button)
     radio_button_widget.isChecked()
 
@@ -107,12 +107,13 @@ def test_time_input_from_radio_buttons(qtbot, delta, radio_button):
     # should update, reevaluating their relative times with respect to the
     # current time.
     time.sleep(1)
-
     model.request_reload()
+
     # Since and until should update with respect to current time.
     new_actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
     new_actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
     assert actual_since != new_actual_since
     assert actual_until != new_actual_until
+
     # And button should still be checked.
     radio_button_widget.isChecked()
