@@ -84,15 +84,16 @@ class QtSearch(QWidget):
             name = names[index]
             selector.setEnabled(False)
 
-            def on_failure():
-                logger.exception("Failed to select %r", name)
+            def on_errored(err):
+                logger.exception("Failed to select %r", name, exc_info=err)
+                # Reset the combobox selection to an empty value and enable it.
                 selector.setCurrentIndex(-1)
                 selector.setEnabled(True)
 
             worker = create_worker(
                 self.model.enter,
                 name,
-                _connect={"errored": on_failure}
+                _connect={"errored": on_errored}
             )
 
         selector.activated.connect(on_selection)
