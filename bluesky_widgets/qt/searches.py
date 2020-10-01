@@ -12,6 +12,7 @@ from qtpy.QtWidgets import (
 )
 from .search_input import QtSearchInput
 from .search_results import QtSearchResults
+from .threading import create_worker
 
 logger = logging.getLogger(__name__)
 
@@ -81,13 +82,18 @@ class QtSearch(QWidget):
 
         def on_selection(index):
             name = names[index]
-            try:
-                self.model.enter(name)
-            except Exception:
+            selector.setEnabled(False)
+
+            def on_failure():
                 logger.exception("Failed to select %r", name)
                 selector.setCurrentIndex(-1)
-            else:
-                selector.setEnabled(False)
+                selector.setEnabled(True)
+
+            worker = create_worker(
+                self.model.enter,
+                name,
+                _connect={"errored": on_failure}
+            )
 
         selector.activated.connect(on_selection)
         self.layout().addWidget(selector)
