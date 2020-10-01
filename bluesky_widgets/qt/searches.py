@@ -47,9 +47,7 @@ class QtSearch(QWidget):
         self._back_button.clicked.connect(model.go_back)
 
         # Hook up model Events to Qt Slots.
-        self.model.events.enter.connect(self.on_enter)
         self.model.events.go_back.connect(self.on_go_back)
-        self.model.events.run_search_ready.connect(self.on_run_search_ready)
         self.model.events.run_search_cleared.connect(self.on_run_search_cleared)
 
         self._selector_widgets = []  # QComboBoxes
@@ -69,12 +67,6 @@ class QtSearch(QWidget):
             # box.
             self._initialize_selector(list(model.current_catalog))
 
-    def on_enter(self, event=None):
-        "We are entering a subcatalog."
-        names = list(event.catalog)
-        self._initialize_selector(names)
-        self._back_button.setEnabled(True)
-
     def _initialize_selector(self, names):
         "Create a combobox to select from subcatalogs."
         selector = QtSubcatalogSelector(names)
@@ -90,10 +82,24 @@ class QtSearch(QWidget):
                 selector.setCurrentIndex(-1)
                 selector.setEnabled(True)
 
-            worker = create_worker(
+            def on_success(return_value):
+                # return_value is None
+                if self.model.run_search is None:
+                    # We have a Catalog of Catalogs.
+                    names = list(self.model.current_catalog)
+                    self._initialize_selector(names)
+                else:
+                    # We have a Catalog of Runs.
+                    self._initialize_run_search(
+                        self.model.run_search.search_input,
+                        self.model.run_search.search_results
+                    )
+                self._back_button.setEnabled(True)
+
+            create_worker(
                 self.model.enter,
                 name,
-                _connect={"errored": on_errored}
+                _connect={"errored": on_errored, "returned": on_success}
             )
 
         selector.activated.connect(on_selection)
@@ -112,11 +118,6 @@ class QtSearch(QWidget):
         if not breadcrumbs:
             # This is the last widget. Disable back button.
             self._back_button.setEnabled(False)
-
-    def on_run_search_ready(self, event):
-        "We have a catalog of Runs."
-        self._initialize_run_search(event.search_input, event.search_results)
-        self._back_button.setEnabled(True)
 
     def _initialize_run_search(self, search_input, search_results):
         "Create search input and output for a catalog of Runs."
