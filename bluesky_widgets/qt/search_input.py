@@ -10,12 +10,13 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QGridLayout,
 )
-from ..components.search.search_input import TIMEZONE, secs_since_epoch
+from ..components.search.search_input import LOCAL_TIMEZONE, secs_since_epoch
 
 
 def as_qdatetime(datetime):
     "Create QDateTime set as specified by datetime."
-    return QDateTime.fromSecsSinceEpoch(secs_since_epoch(datetime))
+    return QDateTime.fromSecsSinceEpoch(
+        secs_since_epoch(datetime) - datetime.utcoffset() / timedelta(seconds=1))
 
 
 class QtSearchInput(QWidget):
@@ -123,7 +124,7 @@ class QtSearchInput(QWidget):
         self.all_widget.setChecked(True)
 
     def on_reload(self, event):
-        now = datetime.now(TIMEZONE)
+        now = datetime.now(LOCAL_TIMEZONE)
         if isinstance(self.model.since, timedelta):
             with _blocked(self.since_widget):
                 self.since_widget.setDateTime(as_qdatetime(now + self.model.since))
@@ -137,7 +138,7 @@ class QtSearchInput(QWidget):
 
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
-        now = datetime.now(TIMEZONE)
+        now = datetime.now(LOCAL_TIMEZONE)
         if isinstance(event.date, timedelta):
             qdatetime = as_qdatetime(now + event.date)
             if event.date == timedelta(minutes=-60):
@@ -231,4 +232,4 @@ def _blocked(qobject):
 # the "All" button is checked. It should be some time old enough that it isn't
 # likely to leave out wanted data. We cheekily choose this birthday as that
 # time.
-ADA_LOVELACE_BIRTHDAY = datetime(1815, 12, 10, tzinfo=TIMEZONE)
+ADA_LOVELACE_BIRTHDAY = datetime(1815, 12, 10, tzinfo=LOCAL_TIMEZONE)

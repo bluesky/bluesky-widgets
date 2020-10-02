@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 
-import tzlocal
+import dateutil.tz
 
 from .queries import TimeRange, InvertedRange
 from ...utils.event import EmitterGroup, Event
 
-TIMEZONE = tzlocal.get_localzone()
-_epoch = datetime(1970, 1, 1, 0, 0, tzinfo=TIMEZONE)
+LOCAL_TIMEZONE = dateutil.tz.tzlocal()
+_epoch = datetime(1970, 1, 1, 0, 0, tzinfo=LOCAL_TIMEZONE)
 
 
 def secs_since_epoch(datetime):
