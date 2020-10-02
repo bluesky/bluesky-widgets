@@ -2,15 +2,29 @@ from datetime import datetime, timedelta
 import time
 import pytest
 from qtpy.QtCore import QDateTime
-from ...qt.search_input import QtSearchInput, ADA_LOVELACE_BIRTHDAY
-from ...components.search.search_input import SearchInput
+from ...qt.search_input import QtSearchInput, ADA_LOVELACE_BIRTHDAY, as_qdatetime
+from ...components.search.search_input import SearchInput, LOCAL_TIMEZONE
 
 
-def as_qdatetime(datetime):
-    "Create QDateTime set as specified by datetime."
-    qdatetime = QDateTime()
-    qdatetime.setSecsSinceEpoch(datetime.timestamp())
-    return qdatetime
+def as_datetime(qdatetime):
+    assert isinstance(qdatetime, QDateTime)
+    return qdatetime.toPyDateTime().replace(tzinfo=LOCAL_TIMEZONE)
+
+
+def datetime_round_trip(dt):
+    return as_datetime(as_qdatetime(dt))
+
+
+def test_datetime_and_QDateTime_round_trip():
+    """
+    Converting datetime -> QDateTime -> datetime should round trip.
+
+    Test on a recent time (now) and an old time (ADA_LOVELACE_BIRTHDAY).
+    """
+    # Current time with only seconds resolution
+    now = datetime.now(LOCAL_TIMEZONE).replace(microsecond=0)
+    assert datetime_round_trip(now) == now
+    assert datetime_round_trip(ADA_LOVELACE_BIRTHDAY) == ADA_LOVELACE_BIRTHDAY
 
 
 def test_initial_state(qtbot):
