@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from ..search_input import SearchInput
+from ..search_input import SearchInput, LOCAL_TIMEZONE
 
 
 def test_instantiation():
@@ -18,8 +18,8 @@ def test_since_datetime():
         events.append(event)
 
     s.events.since.connect(cb)
-    s.since = datetime(2015, 9, 5)
-    assert s.since == datetime(2015, 9, 5)
+    s.since = datetime(2015, 9, 5, tzinfo=LOCAL_TIMEZONE)
+    assert s.since == datetime(2015, 9, 5, tzinfo=LOCAL_TIMEZONE)
     assert len(events) == 1
     assert "time" in s.query
     assert "$gte" in s.query["time"]
@@ -50,8 +50,8 @@ def test_until_datetime():
         events.append(event)
 
     s.events.until.connect(cb)
-    s.until = datetime(2015, 9, 5)
-    assert s.until == datetime(2015, 9, 5)
+    s.until = datetime(2015, 9, 5, tzinfo=LOCAL_TIMEZONE)
+    assert s.until == datetime(2015, 9, 5, tzinfo=LOCAL_TIMEZONE)
     assert len(events) == 1
     assert "time" in s.query
     assert "$lt" in s.query["time"]
@@ -119,6 +119,6 @@ def test_time_validator():
     with pytest.raises(ValueError):
         s.since = timedelta(days=-2)
     with pytest.raises(ValueError):
-        s.until = datetime(2015, 9, 5)
+        s.until = datetime(2015, 9, 5, tzinfo=LOCAL_TIMEZONE)
     with pytest.raises(ValueError):
         s.until = timedelta(days=-1)
