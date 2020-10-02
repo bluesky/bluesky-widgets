@@ -36,12 +36,12 @@ def test_initial_state(qtbot):
     # Check state of model...
     assert model.since == ADA_LOVELACE_BIRTHDAY
     # ...and view.
-    actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
+    actual_since = as_datetime(view.since_widget.dateTime())
     assert actual_since == ADA_LOVELACE_BIRTHDAY
 
     assert model.until == timedelta(0)
-    actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
-    assert actual_until - datetime.now() < TOLERANCE
+    actual_until = as_datetime(view.until_widget.dateTime())
+    assert actual_until - datetime.now(LOCAL_TIMEZONE) < TOLERANCE
 
     # Verify that 'All' radio button is checked.
     assert view.all_widget.isChecked()
@@ -53,15 +53,23 @@ def test_time_input_absolute_from_model(qtbot):
     view = QtSearchInput(model)
 
     # Set since.
-    expected_since = datetime(1980, 2, 2)
+    expected_since = datetime(1980, 2, 2, tzinfo=LOCAL_TIMEZONE)
     model.since = expected_since
-    actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
+    assert model.since == expected_since
+    # Set with naive datetime, should be silently converted to local time.
+    model.since = expected_since.replace(tzinfo=None)  # naive
+    assert model.since == expected_since
+    actual_since = as_datetime(view.since_widget.dateTime())
     assert actual_since == expected_since
 
     # Set until.
-    expected_until = datetime(1986, 11, 15)
+    expected_until = datetime(1986, 11, 15, tzinfo=LOCAL_TIMEZONE)
     model.until = expected_until
-    actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
+    assert model.until == expected_until
+    # Set with naive datetime, should be silently converted to local time.
+    model.until = expected_until.replace(tzinfo=None)  # naive
+    assert model.until == expected_until
+    actual_until = as_datetime(view.until_widget.dateTime())
     assert actual_until == expected_until
 
 
@@ -71,15 +79,15 @@ def test_time_input_absolute_from_datetime_picker(qtbot):
     view = QtSearchInput(model)
 
     # Set since.
-    expected_since = datetime(1980, 2, 2)
+    expected_since = datetime(1980, 2, 2, tzinfo=LOCAL_TIMEZONE)
     view.since_widget.setDateTime(as_qdatetime(expected_since))
-    actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
+    actual_since = as_datetime(view.since_widget.dateTime())
     assert actual_since == expected_since
 
     # Set until.
-    expected_until = datetime(1986, 11, 15)
+    expected_until = datetime(1986, 11, 15, tzinfo=LOCAL_TIMEZONE)
     view.until_widget.setDateTime(as_qdatetime(expected_until))
-    actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
+    actual_until = as_datetime(view.until_widget.dateTime())
     assert actual_until == expected_until
 
 
@@ -101,14 +109,14 @@ def test_time_input_relative_from_model(qtbot, delta, radio_button):
     TOLERANCE = timedelta(seconds=1)
 
     # Set since.
-    expected_since = datetime.now() + delta
+    expected_since = datetime.now(LOCAL_TIMEZONE) + delta
     model.since = delta
-    actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
+    actual_since = as_datetime(view.since_widget.dateTime())
     assert abs(actual_since - expected_since) < TOLERANCE
 
     # And until updates automatically.
-    expected_until = datetime.now()
-    actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
+    expected_until = datetime.now(LOCAL_TIMEZONE)
+    actual_until = as_datetime(view.until_widget.dateTime())
     assert abs(actual_until - expected_until) < TOLERANCE
 
     # And a radio button is checked.
@@ -128,13 +136,13 @@ def test_time_input_from_radio_buttons(qtbot, delta, radio_button):
     radio_button_widget.setChecked(True)
 
     # Check since.
-    expected_since = datetime.now() + delta
-    actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
+    expected_since = datetime.now(LOCAL_TIMEZONE) + delta
+    actual_since = as_datetime(view.since_widget.dateTime())
     assert abs(actual_since - expected_since) < TOLERANCE
 
     # Check until.
-    expected_until = datetime.now()
-    actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
+    expected_until = datetime.now(LOCAL_TIMEZONE)
+    actual_until = as_datetime(view.until_widget.dateTime())
     assert abs(actual_until - expected_until) < TOLERANCE
 
     # Additionally, when the model reloads new results, the QDateTime widets
@@ -144,8 +152,8 @@ def test_time_input_from_radio_buttons(qtbot, delta, radio_button):
     model.request_reload()
 
     # Since and until should update with respect to current time.
-    new_actual_since = datetime.fromtimestamp(view.since_widget.dateTime().toSecsSinceEpoch())
-    new_actual_until = datetime.fromtimestamp(view.until_widget.dateTime().toSecsSinceEpoch())
+    new_actual_since = as_datetime(view.since_widget.dateTime())
+    new_actual_until = as_datetime(view.until_widget.dateTime())
     assert actual_since != new_actual_since
     assert actual_until != new_actual_until
 
