@@ -79,8 +79,11 @@ class SearchInput:
             self.time_validator(since=since, until=self.until)
         if isinstance(since, (int, float)):
             since = datetime.fromtimestamp(since)
-        if isinstance(since, datetime) and since == self.since:
-            return
+        if isinstance(since, datetime):
+            if since == self.since:
+                return
+            if since.tzinfo is None:
+                since = since.replace(tzinfo=LOCAL_TIMEZONE)
         self._since = since
         self.events.since(date=since)
 
@@ -97,8 +100,11 @@ class SearchInput:
             self.time_validator(since=self.since, until=until)
         if isinstance(until, (int, float)):
             until = datetime.fromtimestamp(until)
-        if isinstance(until, datetime) and until == self.until:
-            return
+        if isinstance(until, datetime):
+            if until == self.until:
+                return
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=LOCAL_TIMEZONE)
         self._until = until
         self.events.until(date=until)
 
