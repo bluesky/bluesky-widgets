@@ -5,7 +5,12 @@ import tzlocal
 from .queries import TimeRange, InvertedRange
 from ...utils.event import EmitterGroup, Event
 
-TIMEZONE = tzlocal.get_localzone().zone
+TIMEZONE = tzlocal.get_localzone()
+_epoch = datetime(1970, 1, 1, 0, 0, tzinfo=TIMEZONE)
+
+
+def secs_since_epoch(datetime):
+    return (datetime - _epoch) / timedelta(seconds=1)
 
 
 def ensure_abs(*abs_or_rel_times):

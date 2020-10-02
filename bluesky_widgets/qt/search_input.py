@@ -10,6 +10,12 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QGridLayout,
 )
+from ..components.search.search_input import TIMEZONE, secs_since_epoch
+
+
+def as_qdatetime(datetime):
+    "Create QDateTime set as specified by datetime."
+    return QDateTime.fromSecsSinceEpoch(secs_since_epoch(datetime))
 
 
 class QtSearchInput(QWidget):
@@ -117,25 +123,23 @@ class QtSearchInput(QWidget):
         self.all_widget.setChecked(True)
 
     def on_reload(self, event):
-        now = datetime.now().timestamp()
+        now = datetime.now(TIMEZONE)
         if isinstance(self.model.since, timedelta):
             with _blocked(self.since_widget):
-                self.since_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now + self.model.since.total_seconds()))
+                self.since_widget.setDateTime(as_qdatetime(now + self.model.since))
         if isinstance(self.model.until, timedelta):
             with _blocked(self.until_widget):
-                self.until_widget.setDateTime(
-                    QDateTime.fromSecsSinceEpoch(now + self.model.until.total_seconds()))
+                self.until_widget.setDateTime(as_qdatetime(now + self.model.until))
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
-        self.model.since = qdatetime.toSecsSinceEpoch()
+        self.model.since = qdatetime.toPyDateTime()
 
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
-        now = datetime.now().timestamp()
+        now = datetime.now(TIMEZONE)
         if isinstance(event.date, timedelta):
-            qdatetime = QDateTime.fromSecsSinceEpoch(now + event.date.total_seconds())
+            qdatetime = as_qdatetime(now + event.date)
             if event.date == timedelta(minutes=-60):
                 self.hour_widget.setChecked(True)
             elif event.date == timedelta(days=-1):
@@ -155,22 +159,20 @@ class QtSearchInput(QWidget):
                 self.all_widget.setChecked(True)
             else:
                 self.uncheck_radiobuttons()
-            qdatetime = QDateTime()
-            qdatetime.setSecsSinceEpoch(event.date.timestamp())
+            qdatetime = as_qdatetime(event.date)
         with _blocked(self.since_widget):
             self.since_widget.setDateTime(qdatetime)
         with _blocked(self.until_widget):
-            self.until_widget.setDateTime(QDateTime.fromSecsSinceEpoch(now))
+            self.until_widget.setDateTime(as_qdatetime(now))
 
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
-        self.model.until = qdatetime.toSecsSinceEpoch()
+        self.model.until = qdatetime.toPyDateTime()
 
     def on_until_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
         if not isinstance(event.date, timedelta):
-            qdatetime = QDateTime()
-            qdatetime.setSecsSinceEpoch(event.date.timestamp())
+            qdatetime = as_qdatetime(event.date)
             self.uncheck_radiobuttons()
             with _blocked(self.until_widget):
                 self.until_widget.setDateTime(qdatetime)
@@ -229,4 +231,4 @@ def _blocked(qobject):
 # the "All" button is checked. It should be some time old enough that it isn't
 # likely to leave out wanted data. We cheekily choose this birthday as that
 # time.
-ADA_LOVELACE_BIRTHDAY = datetime(1815, 12, 10)
+ADA_LOVELACE_BIRTHDAY = datetime(1815, 12, 10, tzinfo=TIMEZONE)
