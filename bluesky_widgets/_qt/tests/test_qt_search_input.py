@@ -8,7 +8,7 @@ from ...components.search.search_input import SearchInput, LOCAL_TIMEZONE
 
 def as_datetime(qdatetime):
     assert isinstance(qdatetime, QDateTime)
-    return qdatetime.toPyDateTime().replace(tzinfo=LOCAL_TIMEZONE)
+    return QDateTime.toPython(qdatetime).replace(tzinfo=LOCAL_TIMEZONE)
 
 
 def datetime_round_trip(dt):

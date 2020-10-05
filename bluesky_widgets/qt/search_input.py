@@ -134,7 +134,7 @@ class QtSearchInput(QWidget):
 
     def on_since_view_changed(self, qdatetime):
         # When GUI is updated
-        self.model.since = qdatetime.toPyDateTime()
+        self.model.since = QDateTime.toPython(qdatetime)
 
     def on_since_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
@@ -168,7 +168,7 @@ class QtSearchInput(QWidget):
 
     def on_until_view_changed(self, qdatetime):
         # When GUI is updated
-        self.model.until = qdatetime.toPyDateTime()
+        self.model.until = QDateTime.toPython(qdatetime)
 
     def on_until_model_changed(self, event):
         # When model is updated (e.g. from console or by clicking a QRadioButton)
