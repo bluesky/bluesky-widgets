@@ -1,11 +1,16 @@
 from datetime import datetime, timedelta
 
-import tzlocal
+import dateutil.tz
 
 from .queries import TimeRange, InvertedRange
 from ...utils.event import EmitterGroup, Event
 
-TIMEZONE = tzlocal.get_localzone().zone
+LOCAL_TIMEZONE = dateutil.tz.tzlocal()
+_epoch = datetime(1970, 1, 1, 0, 0, tzinfo=LOCAL_TIMEZONE)
+
+
+def secs_since_epoch(datetime):
+    return (datetime - _epoch) / timedelta(seconds=1)
 
 
 def ensure_abs(*abs_or_rel_times):
@@ -36,10 +41,6 @@ class SearchInput:
             reload=Event,
         )
         self._time_validator = None
-        # Initialize defaults. Some front ends (e.g. Qt) cannot have a null
-        # state, so we pick an arbitrary range.
-        self.since = datetime.now() - timedelta(days=365)
-        self.until = datetime.now() + timedelta(days=365)
 
     @property
     def time_validator(self):
@@ -78,8 +79,11 @@ class SearchInput:
             self.time_validator(since=since, until=self.until)
         if isinstance(since, (int, float)):
             since = datetime.fromtimestamp(since)
-        if isinstance(since, datetime) and since == self.since:
-            return
+        if isinstance(since, datetime):
+            if since == self.since:
+                return
+            if since.tzinfo is None:
+                since = since.replace(tzinfo=LOCAL_TIMEZONE)
         self._since = since
         self.events.since(date=since)
 
@@ -96,8 +100,11 @@ class SearchInput:
             self.time_validator(since=self.since, until=until)
         if isinstance(until, (int, float)):
             until = datetime.fromtimestamp(until)
-        if isinstance(until, datetime) and until == self.until:
-            return
+        if isinstance(until, datetime):
+            if until == self.until:
+                return
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=LOCAL_TIMEZONE)
         self._until = until
         self.events.until(date=until)
 

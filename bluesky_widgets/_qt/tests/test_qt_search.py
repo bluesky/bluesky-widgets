@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytest
 from ...examples.qt_search import Searches
 
@@ -22,11 +22,8 @@ def make_test_searches(qtbot, request):
 
 
 def test_searches(make_test_searches):
-    make_test_searches()
-
-
-def test_manipulating_times(make_test_searches):
+    "An integration test"
     searches = make_test_searches()
-    searches[0].input.since = 0
+    searches[0].input.since = datetime(1980, 2, 2)
     searches[0].input.since = datetime(1985, 11, 15)
-    searches[0].input.until = datetime(1985, 11, 15)
+    searches[0].input.since = timedelta(days=-1)
