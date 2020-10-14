@@ -16,7 +16,8 @@ from ..components.search.search_input import LOCAL_TIMEZONE, secs_since_epoch
 def as_qdatetime(datetime):
     "Create QDateTime set as specified by datetime."
     return QDateTime.fromSecsSinceEpoch(
-        secs_since_epoch(datetime) - datetime.utcoffset() / timedelta(seconds=1))
+        secs_since_epoch(datetime) - datetime.utcoffset() / timedelta(seconds=1)
+    )
 
 
 class QtSearchInput(QWidget):

@@ -9,7 +9,10 @@ class ListModel:
     def __init__(self, iterable=None):
         self.__internal_list = list(iterable or [])
         self.events = EmitterGroup(
-            source=self, auto_connect=True, added=Event, removed=Event,
+            source=self,
+            auto_connect=True,
+            added=Event,
+            removed=Event,
         )
 
     def __getitem__(self, index):
