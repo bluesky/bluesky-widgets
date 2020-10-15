@@ -11,18 +11,19 @@ from qtpy.QtWidgets import QAbstractItemView, QTreeView
 from databroker.core import BlueskyEventStream
 
 
-class RunTree():
+class RunTree:
     """Lazily populate the tree as data is requested. """
+
     def __init__(self, run):
         self.run = run
         self.children = []
 
-        uid = RunNode(self.run, 'uid', self.run.metadata['start']['uid'], None, self)
-        start = RunNode(self.run, 'start', 'dict', self.run.metadata['start'], self)
-        start.num_children = len(self.run.metadata['start'])
-        stop = RunNode(self.run, 'stop', 'dict', self.run.metadata['stop'], self)
-        stop.num_children = len(self.run.metadata['stop'])
-        streams = RunNode(self.run, 'streams', f'({len(self.run)})', None, self)
+        uid = RunNode(self.run, "uid", self.run.metadata["start"]["uid"], None, self)
+        start = RunNode(self.run, "start", "dict", self.run.metadata["start"], self)
+        start.num_children = len(self.run.metadata["start"])
+        stop = RunNode(self.run, "stop", "dict", self.run.metadata["stop"], self)
+        stop.num_children = len(self.run.metadata["stop"])
+        streams = RunNode(self.run, "streams", f"({len(self.run)})", None, self)
         streams.num_children = len(self.run)
         self.children = [uid, start, stop, streams]
 
@@ -62,39 +63,41 @@ class RunNode(object):
     def fill_streams(self):
         """Fill the streams in."""
         for stream in self.run:
-            num_events = self.run.metadata['stop']['num_events']
+            num_events = self.run.metadata["stop"]["num_events"]
             if stream in num_events:
                 n = num_events[stream]
                 if n == 0:
-                    value = '0 events'
+                    value = "0 events"
                 if n == 1:
-                    value = '1 event'
+                    value = "1 event"
                 else:
-                    value = f'{str(n)} events'
+                    value = f"{str(n)} events"
             else:
-                value = 'null'
+                value = "null"
             child = RunNode(self.run, stream, value, self.run[stream], self)
             # Establish how many child nodes there will be.
-            stream_keys = self.run[stream].metadata['descriptors'][0]['data_keys']
+            stream_keys = self.run[stream].metadata["descriptors"][0]["data_keys"]
             child.num_children = len(stream_keys) + 2
 
             self.children.append(child)
 
     def fill_stream(self, stream):
         # For now just display the keys in the stream.
-        node = RunNode(self.run, 'metadata', 'dict', self.data.metadata, self)
+        node = RunNode(self.run, "metadata", "dict", self.data.metadata, self)
         node.num_children = len(self.data.metadata) - 1
         self.children.append(node)
-        descriptors = self.data.metadata['descriptors']
+        descriptors = self.data.metadata["descriptors"]
         if len(descriptors) == 1:
-            node = RunNode(self.run, 'descriptors (1)', '', descriptors[0], self)
+            node = RunNode(self.run, "descriptors (1)", "", descriptors[0], self)
             node.num_children = len(descriptors[0])
         else:
-            node = RunNode(self.run, f'descriptors ({len(descriptors)})', descriptors, self)
+            node = RunNode(
+                self.run, f"descriptors ({len(descriptors)})", descriptors, self
+            )
             node.num_children = len(descriptors)
 
         self.children.append(node)
-        stream_keys = self.data.metadata['descriptors'][0]['data_keys']
+        stream_keys = self.data.metadata["descriptors"][0]["data_keys"]
         for key in stream_keys:
             value = f"{stream_keys[key]['dtype']} {stream_keys[key]['shape']}"
             child = RunNode(self.run, key, value, None, self)
@@ -103,8 +106,8 @@ class RunNode(object):
     def fill_dict(self, data):
         for key in self.data:
             if isinstance(self.data[key], abc.Mapping):
-                value = ''
-            elif key == 'descriptors':
+                value = ""
+            elif key == "descriptors":
                 # This is "lifted up" and so skipping so as not to repeat.
                 continue
             elif isinstance(self.data[key], abc.Iterable):
@@ -118,7 +121,7 @@ class RunNode(object):
 
     def fill_children(self):
         """Handle special ones like streams first."""
-        if self.key == 'streams':
+        if self.key == "streams":
             self.fill_streams()
         elif self.data and isinstance(self.data, BlueskyEventStream):
             self.fill_stream(self.data)

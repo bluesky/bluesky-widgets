@@ -93,15 +93,15 @@ def test_time_input_absolute_from_datetime_picker(qtbot):
 
 # timedeltas and attribute name of corresponding QRadioButton on QtSearchInput
 DELTAS_AND_BUTTONS = [
-        (timedelta(hours=-1), 'hour_widget'),
-        (timedelta(days=-1), 'today_widget'),
-        (timedelta(weeks=-1), 'week_widget'),
-        (timedelta(days=-30), 'month_widget'),
-        (timedelta(days=-365), 'year_widget'),
+    (timedelta(hours=-1), "hour_widget"),
+    (timedelta(days=-1), "today_widget"),
+    (timedelta(weeks=-1), "week_widget"),
+    (timedelta(days=-30), "month_widget"),
+    (timedelta(days=-365), "year_widget"),
 ]
 
 
-@pytest.mark.parametrize('delta, radio_button', DELTAS_AND_BUTTONS)
+@pytest.mark.parametrize("delta, radio_button", DELTAS_AND_BUTTONS)
 def test_time_input_relative_from_model(qtbot, delta, radio_button):
     "Set the model to a timedelta and verify that the view updates."
     model = SearchInput()
@@ -124,7 +124,7 @@ def test_time_input_relative_from_model(qtbot, delta, radio_button):
     assert radio_button_widget.isChecked()
 
 
-@pytest.mark.parametrize('delta, radio_button', DELTAS_AND_BUTTONS)
+@pytest.mark.parametrize("delta, radio_button", DELTAS_AND_BUTTONS)
 def test_time_input_from_radio_buttons(qtbot, delta, radio_button):
     "Check the radio buttons in the view and verify that the model updates."
     model = SearchInput()
