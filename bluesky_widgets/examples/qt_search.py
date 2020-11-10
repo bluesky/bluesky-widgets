@@ -9,35 +9,7 @@ from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
-
-from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget
-
-
-class SearchesWidget(QWidget):
-    """
-    Combine the QtSearches widget with a button that processes selected Runs.
-    """
-
-    def __init__(self, model, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.model = model
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        layout.addWidget(QtSearches(model))
-
-        # Add a button that does something with the currently-selected Runs
-        # when you click it.
-        go_button = QPushButton("Process Selected Runs")
-        layout.addWidget(go_button)
-        go_button.clicked.connect(self.on_click)
-
-    def on_click(self):
-        for uid, run in self.model.active.selection_as_catalog.items():
-            # Pretend to kick off data processing or something.
-            print(
-                f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"
-            )
-
+from bluesky_widgets.qt.search import QtSearchList
 
 class ExampleApp:
     """
@@ -55,7 +27,7 @@ class ExampleApp:
         super().__init__()
         self.title = title
         self.searches = SearchList()
-        widget = SearchesWidget(self.searches)
+        widget = QtSearchList(self.searches)
         self._window = Window(widget, show=show)
 
         # Initialize with a two search tabs: one with some generated example data...

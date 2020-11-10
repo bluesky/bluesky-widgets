@@ -716,3 +716,10 @@ class SearchList(ListModel):
         for item in self:
             if item.active:
                 return item
+
+    def handle_click(self):   
+        for uid, run in self.model.active.selection_as_catalog.items():
+            # Pretend to kick off data processing or something.
+            print(
+                f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"
+            )

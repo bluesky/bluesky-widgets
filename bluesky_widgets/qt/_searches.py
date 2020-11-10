@@ -16,6 +16,29 @@ from ._search_results import QtSearchResults
 logger = logging.getLogger(__name__)
 
 
+class QtSearchList(QWidget):
+    """
+    Combine the QtSearches widget with a button that processes selected Runs.
+    This is a View for the SearchList model.
+    """
+
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = model
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        layout.addWidget(QtSearches(model))
+
+        # Add a button that does something with the currently-selected Runs
+        # when you click it.
+        go_button = QPushButton("Process Selected Runs")
+        layout.addWidget(go_button)
+        go_button.clicked.connect(self.on_click)
+
+    def on_click(self):
+        self.model.handle_click()
+
+
 class QtSubcatalogSelector(QComboBox):
     """
     ComboBox for selecting a subcatalog from a catalog-of-catalogs.
