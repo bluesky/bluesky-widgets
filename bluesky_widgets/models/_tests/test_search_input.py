@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from ..search_input import SearchInput, LOCAL_TIMEZONE
+from ..search import SearchInput, LOCAL_TIMEZONE
 
 
 def test_instantiation():

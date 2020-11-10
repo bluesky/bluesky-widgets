@@ -1,4 +1,4 @@
-from ..searches import Search, SearchList
+from ..search import Search, SearchList
 
 
 def test_search_list_mutually_exclusive_active_item():
