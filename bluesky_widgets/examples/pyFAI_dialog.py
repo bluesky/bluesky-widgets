@@ -882,7 +882,7 @@ def main():
     # Begin modifications for bluesky_widgets
 
     from qtpy.QtWidgets import QDialog
-    from bluesky_widgets.components.search.searches import Search
+    from bluesky_widgets.models.search.searches import Search
     from bluesky_widgets.qt.searches import QtSearch
     from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
     from bluesky_widgets.examples.utils.add_search_mixin import columns
