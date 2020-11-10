@@ -45,7 +45,7 @@ class ExampleApp:
 
     A key point here is that the model `searches` is public and can be
     manipuated from a console, but the view `_window` and all Qt-related
-    models are private. The public `show()` and `close()` methods are the
+    components are private. The public `show()` and `close()` methods are the
     only view-specific actions that are exposed to the user. Thus, this could
     be implemented in another UI framework with no change to the user-facing
     programmatic interface.
