@@ -76,7 +76,7 @@ class ExampleApp:
 
 def main():
     print(__doc__)
-    with gui_qt():
+    with gui_qt("Example App"):
         app = ExampleApp()
 
         # We can access and modify the model as in...
