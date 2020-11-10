@@ -10,7 +10,7 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QGridLayout,
 )
-from ..components.search.search_input import LOCAL_TIMEZONE, secs_since_epoch
+from ..models.search.search_input import LOCAL_TIMEZONE, secs_since_epoch
 
 
 def as_qdatetime(datetime):
@@ -60,7 +60,7 @@ class QtSearchInput(QWidget):
         self.layout().addRow("When:", default_period_layout)
 
         # TODO: rethink if restriction to acceptable timedelta values is required
-        # from ..components.search.search_input import SearchInput
+        # from ..models.search.search_input import SearchInput
         # self.allowed = {timedelta(days=-1), timedelta(days=-30), timedelta(minutes=-60), timedelta(days=-7),
         #                 timedelta(days=-365)}
         # def time_validator(since=None, until=None):

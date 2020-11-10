@@ -5,7 +5,7 @@ or visualization.
 """
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
-from bluesky_widgets.components.search.searches import SearchList, Search
+from bluesky_widgets.models.search.searches import SearchList, Search
 from bluesky_widgets.qt.searches import QtSearches
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
@@ -45,7 +45,7 @@ class ExampleApp:
 
     A key point here is that the model `searches` is public and can be
     manipuated from a console, but the view `_window` and all Qt-related
-    components are private. The public `show()` and `close()` methods are the
+    models are private. The public `show()` and `close()` methods are the
     only view-specific actions that are exposed to the user. Thus, this could
     be implemented in another UI framework with no change to the user-facing
     programmatic interface.
