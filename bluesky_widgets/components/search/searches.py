@@ -127,9 +127,9 @@ class Search:
             old = self._root_catalog
         new = old[name]
 
-        # Touch an attribute that will trigger a connection attempt. (It's here
+        # Access an entry to trigger a connection attempt. (It's here
         # that an error would be raised if, say, a database is unreachable.)
-        new.metadata
+        next(new.items())
 
         # If we get this far, it worked.
         self._subcatalogs.append(new)
