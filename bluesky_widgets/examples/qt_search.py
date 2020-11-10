@@ -39,47 +39,55 @@ class SearchesWidget(QWidget):
             )
 
 
-class Searches(SearchList):
+class ExampleApp:
     """
     A user-facing model composed with a Qt widget and window.
+
+    A key point here is that the model `searches` is public and can be
+    manipuated from a console, but the view `_window` and all Qt-related
+    components are private. The public `show()` and `close()` methods are the
+    only view-specific actions that are exposed to the user. Thus, this could
+    be implemented in another UI framework with no change to the user-facing
+    programmatic interface.
     """
 
-    def __init__(self, *, show=True, title=""):
+    def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        widget = SearchesWidget(self)
-        self.window = Window(widget, show=show)
+        self.searches = SearchList()
+        widget = SearchesWidget(self.searches)
+        self._window = Window(widget, show=show)
 
         # Initialize with a two search tabs: one with some generated example data...
-        self.append(Search(get_catalog(), columns=columns))
+        self.searches.append(Search(get_catalog(), columns=columns))
         # ...and one listing any and all catalogs discovered on the system.
         from databroker import catalog
 
-        self.append(Search(catalog, columns=columns))
+        self.searches.append(Search(catalog, columns=columns))
 
     def show(self):
         """Resize, show, and raise the window."""
-        self.window.show()
+        self._window.show()
 
     def close(self):
         """Close the window."""
-        self.window.close()
+        self._window.close()
 
 
 def main():
     print(__doc__)
-    with gui_qt("Example Application"):
-        searches = Searches(title="Example Application")
+    with gui_qt("Example App"):
+        app = ExampleApp()
 
         # We can access and modify the model as in...
-        len(searches)
-        searches[0]
-        searches.active  # i.e. current tab
-        searches.active.input.since  # time range
-        searches.active.input.until
-        searches.active.results
-        searches.active.selection_as_catalog
-        searches.active.selected_uids
+        len(app.searches)
+        app.searches[0]
+        app.searches.active  # i.e. current tab
+        app.searches.active.input.since  # time range
+        app.searches.active.input.until
+        app.searches.active.results
+        app.searches.active.selection_as_catalog
+        app.searches.active.selected_uids
 
 
 if __name__ == "__main__":
