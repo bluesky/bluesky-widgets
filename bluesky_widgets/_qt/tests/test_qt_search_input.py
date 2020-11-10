@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import time
 import pytest
 from qtpy.QtCore import QDateTime
-from ...qt.search_input import QtSearchInput, ADA_LOVELACE_BIRTHDAY, as_qdatetime
+from ...qt.search import QtSearchInput, ADA_LOVELACE_BIRTHDAY, as_qdatetime
 from ...models.search import SearchInput, LOCAL_TIMEZONE
 
 

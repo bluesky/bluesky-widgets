@@ -10,8 +10,8 @@ from qtpy.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
 )
-from .search_input import QtSearchInput
-from .search_results import QtSearchResults
+from ._search_input import QtSearchInput
+from ._search_results import QtSearchResults
 
 logger = logging.getLogger(__name__)
 
