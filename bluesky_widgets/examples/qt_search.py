@@ -9,13 +9,27 @@ from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
+from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
 
-from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
-
-class SearchesWidget(QWidget):
+class SearchListWithButton(SearchList):
     """
-    Combine the QtSearches widget with a button that processes selected Runs.
+    A SearchList model with a method to handle a click event.
+    """
+
+    def handle_click(self):
+        for uid, run in self.active.selection_as_catalog.items():
+            # Pretend to kick off data processing or something.
+            print(
+                f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"
+            )
+
+
+class QtSearchListWithButton(QWidget):
+    """
+    A view for SearchListWithButton.
+
+    Combines the QtSearches widget with a button that processes the selected Runs.
     """
 
     def __init__(self, model, *args, **kwargs):
@@ -32,11 +46,7 @@ class SearchesWidget(QWidget):
         go_button.clicked.connect(self.on_click)
 
     def on_click(self):
-        for uid, run in self.model.active.selection_as_catalog.items():
-            # Pretend to kick off data processing or something.
-            print(
-                f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"
-            )
+        self.model.handle_click()
 
 
 class ExampleApp:
@@ -54,8 +64,8 @@ class ExampleApp:
     def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        self.searches = SearchList()
-        widget = SearchesWidget(self.searches)
+        self.searches = SearchListWithButton()
+        widget = QtSearchListWithButton(self.searches)
         self._window = Window(widget, show=show)
 
         # Initialize with a two search tabs: one with some generated example data...
