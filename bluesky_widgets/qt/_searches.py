@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 class QtSearchList(QWidget):
     """
-    Combine the QtSearches widget with a button that processes selected Runs.
     This is a View for the SearchList model.
     """
 
@@ -35,6 +34,12 @@ class QtSearchList(QWidget):
         layout.addWidget(go_button)
         go_button.clicked.connect(self.on_click)
 
+
+class QtSearchListWithButton(QtSearchList):
+    """
+    Combine the QtSearcheslist widget with a button that processes selected Runs.
+    This is a View for the SearchListWithButton model.
+    """
     def on_click(self):
         self.model.handle_click()
 

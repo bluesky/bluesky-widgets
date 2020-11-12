@@ -717,8 +717,13 @@ class SearchList(ListModel):
             if item.active:
                 return item
 
+
+class SearchListWithButton(SearchList):
+    """
+    Model for a list of Search models with a button.
+    """
     def handle_click(self):   
-        for uid, run in self.model.active.selection_as_catalog.items():
+        for uid, run in self.active.selection_as_catalog.items():
             # Pretend to kick off data processing or something.
             print(
                 f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"

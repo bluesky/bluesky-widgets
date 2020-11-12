@@ -5,11 +5,11 @@ or visualization.
 """
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
-from bluesky_widgets.models.search import SearchList, Search
+from bluesky_widgets.models.search import SearchListWithButton, Search
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
-from bluesky_widgets.qt.search import QtSearchList
+from bluesky_widgets.qt.search import QtSearchListWithButton
 
 class ExampleApp:
     """
@@ -26,8 +26,8 @@ class ExampleApp:
     def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        self.searches = SearchList()
-        widget = QtSearchList(self.searches)
+        self.searches = SearchListWithButton()
+        widget = QtSearchListWithButton(self.searches)
         self._window = Window(widget, show=show)
 
         # Initialize with a two search tabs: one with some generated example data...
