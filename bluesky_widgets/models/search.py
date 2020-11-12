@@ -716,23 +716,3 @@ class SearchList(ListModel):
         for item in self:
             if item.active:
                 return item
-
-
-class SearchListWithButton(SearchList):
-    """
-    Model for a list of Search models with a button.
-    """
-
-    def __init__(self, *args, handle_click=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._handle_click = handle_click
-
-    def handle_click(self):
-        if self._handle_click is None:
-            raise NotImplementedError(
-                "This class must either be subclassed to override the "
-                "handle_click method, or have a process function passed "
-                "in at init time via the handle_click parameter."
-            )
-        else:
-            return self._handle_click()

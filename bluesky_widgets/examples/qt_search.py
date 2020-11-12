@@ -5,14 +5,40 @@ or visualization.
 """
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
-from bluesky_widgets.models.search import SearchListWithButton, Search
+from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
 from bluesky_widgets.qt.search import QtSearchListWithButton
 
 
+class SearchListWithButton(SearchList):
+    """
+    Add a button to the SearchList model.
+    This is an example about how to make reusable class
+    that will be extended by an application.
+    """
+
+    def __init__(self, *args, handle_click=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._handle_click = handle_click
+
+    def handle_click(self):
+        if self._handle_click is None:
+            raise NotImplementedError(
+                "This class must either be subclassed to override the "
+                "handle_click method, or have a process function passed "
+                "in at init time via the handle_click parameter."
+            )
+        else:
+            return self._handle_click()
+
+
 class SearchListWithButtonExample(SearchListWithButton):
+    """
+    Specialize the bluesky-widget model for the application.
+    """
+
     def handle_click(self):   
         for uid, run in self.active.selection_as_catalog.items():
             # Pretend to kick off data processing or something.
