@@ -11,6 +11,15 @@ from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
 from bluesky_widgets.qt.search import QtSearchListWithButton
 
+class SearchListWithButtonExample(SearchListWithButton):
+    def handle_click(self):   
+        for uid, run in self.active.selection_as_catalog.items():
+            # Pretend to kick off data processing or something.
+            print(
+                f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"
+            )
+
+
 class ExampleApp:
     """
     A user-facing model composed with a Qt widget and window.
@@ -26,7 +35,7 @@ class ExampleApp:
     def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        self.searches = SearchListWithButton()
+        self.searches = SearchListWithButtonExample()
         widget = QtSearchListWithButton(self.searches)
         self._window = Window(widget, show=show)
 
