@@ -14,7 +14,8 @@ from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
 
 class SearchListWithButton(SearchList):
     """
-    Specialize the bluesky-widget model for the application.
+    Specialize the bluesky-widget model for the application, 
+    by adding a method to handle click events.
     """
 
     def handle_click(self):   
