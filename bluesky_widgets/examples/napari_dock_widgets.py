@@ -1,4 +1,5 @@
 import napari
+import numpy as np
 
 from bluesky_widgets.examples.qt_search import SearchListWithButton, QtSearchListWithButton
 from bluesky_widgets.examples.utils.add_search_mixin import extract_results_row_from_run
@@ -30,7 +31,6 @@ class NapariDatabroker(napari.Viewer):
         self.searches = SearchListWithButton(process=self.process)
         self.state = None
 
-
     def add_search(self, catalog, columns=extract_results_row_from_run):
         """
         Add a new Search form.
@@ -55,8 +55,8 @@ class NapariDatabroker(napari.Viewer):
         return self.searches.active
 
     def process(self):
-        self.state = 123123
-        print(self.state)
+        image = np.random.rand(200, 200)
+        self.add_image(image)
 
 
 with napari.gui_qt():
