@@ -11,6 +11,7 @@ from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
 from bluesky_widgets.qt.search import QtSearchListWithButton
 
+
 class SearchListWithButtonExample(SearchListWithButton):
     def handle_click(self):   
         for uid, run in self.active.selection_as_catalog.items():
