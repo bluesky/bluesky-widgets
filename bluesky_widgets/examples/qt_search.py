@@ -14,28 +14,6 @@ from bluesky_widgets.qt.search import QtSearchListWithButton
 
 class SearchListWithButton(SearchList):
     """
-    Add a button to the SearchList model.
-    This is an example about how to make reusable class
-    that will be extended by an application.
-    """
-
-    def __init__(self, *args, handle_click=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._handle_click = handle_click
-
-    def handle_click(self):
-        if self._handle_click is None:
-            raise NotImplementedError(
-                "This class must either be subclassed to override the "
-                "handle_click method, or have a process function passed "
-                "in at init time via the handle_click parameter."
-            )
-        else:
-            return self._handle_click()
-
-
-class SearchListWithButtonExample(SearchListWithButton):
-    """
     Specialize the bluesky-widget model for the application.
     """
 
@@ -62,7 +40,7 @@ class ExampleApp:
     def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        self.searches = SearchListWithButtonExample()
+        self.searches = SearchListWithButton()
         widget = QtSearchListWithButton(self.searches)
         self._window = Window(widget, show=show)
 
