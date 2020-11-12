@@ -19,12 +19,17 @@ class RunList(ListModel):
 """
 Vendored from databroker.queries
 """
+
+
 class InvertedRange(ValueError):
     ...
+
 
 """
 Vendored from databroker.queries
 """
+
+
 class Query(collections.abc.Mapping):
     """
     This represents a MongoDB query.
@@ -63,9 +68,12 @@ class Query(collections.abc.Mapping):
             f"{', '.join(f'{k}={v}' for k, v in self.kwargs.items())})"
         )
 
+
 """
 Vendored from databroker.queries
 """
+
+
 class TimeRange(Query):
     """
     A search query representing a time range.
@@ -223,11 +231,11 @@ def normalize_human_friendly_time(val, tz):
 
     return (val - epoch).total_seconds()
 
+
 # fill in the placeholder we left in the previous docstring
 normalize_human_friendly_time.__doc__ = normalize_human_friendly_time.__doc__.format(
     _doc_ts_formats
 )
-
 
 
 def secs_since_epoch(datetime):
