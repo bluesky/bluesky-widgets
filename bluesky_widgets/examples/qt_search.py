@@ -14,11 +14,11 @@ from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
 
 class SearchListWithButton(SearchList):
     """
-    Specialize the bluesky-widget model for the application, 
+    Specialize the bluesky-widget model for the application,
     by adding a method to handle click events.
     """
 
-    def handle_click(self):   
+    def handle_click(self):
         for uid, run in self.active.selection_as_catalog.items():
             # Pretend to kick off data processing or something.
             print(
@@ -44,10 +44,10 @@ class QtSearchListWithButton(QWidget):
         go_button = QPushButton("Process Selected Runs")
         layout.addWidget(go_button)
         go_button.clicked.connect(self.on_click)
-        
+
     def on_click(self):
         self.model.handle_click()
-    
+
 
 class ExampleApp:
     """
