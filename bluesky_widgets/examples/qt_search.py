@@ -17,7 +17,7 @@ class SearchListWithButton(SearchList):
     A SearchList model with a method to handle a click event.
     """
 
-    def handle_click(self):
+    def process(self):
         for uid, run in self.active.selection_as_catalog.items():
             # Pretend to kick off data processing or something.
             print(
@@ -46,7 +46,7 @@ class QtSearchListWithButton(QWidget):
         go_button.clicked.connect(self.on_click)
 
     def on_click(self):
-        self.model.handle_click()
+        self.model.process()
 
 
 class ExampleApp:
