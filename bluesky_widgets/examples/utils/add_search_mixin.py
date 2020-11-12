@@ -1,4 +1,4 @@
-from bluesky_widgets.models.search.searches import Search
+from bluesky_widgets.models.search import Search
 
 headings = (
     "Unique ID",

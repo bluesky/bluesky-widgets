@@ -10,7 +10,7 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QGridLayout,
 )
-from ..models.search.search_input import LOCAL_TIMEZONE, secs_since_epoch
+from ..models.search import LOCAL_TIMEZONE, secs_since_epoch
 
 
 def as_qdatetime(datetime):
