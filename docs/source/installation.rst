@@ -16,7 +16,7 @@ The examples perform data generation and access using some bluesky projects:::
 
 and they use Qt:::
     
-    $ pip instal qtpy pyqt5
+    $ pip install qtpy pyqt5
 
 Finally, install the project itself:::
 
