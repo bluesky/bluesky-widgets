@@ -18,23 +18,31 @@ class QtViewer(QWidget):
         self._figures = {}
         # Map AxesSpec to matplotlib.axes.Axes
         self._axes = {}
-        # Axes
+        # Map id(LineSpec) to matplotlib Line artist
+        self._lines = {}
         layout = QVBoxLayout()
         self._tabs = _QtViewerTabs()
         layout.addWidget(self._tabs)
         self.setLayout(layout)
 
         self.model.axes.events.added.connect(self._on_axes_added)
-        self.model.lines.events.added.connect(self._on_lines_added)
+        self.model.lines.events.added.connect(self._on_line_added)
+        self.model.lines.events.removed.connect(self._on_line_removed)
 
     def _on_axes_added(self, event):
         axes_spec = event.item
         fig, axes, tab = _make_figure_tab()
         self._figures[tab] = fig
         self._axes[axes_spec] = axes
+        # Use matplotlib's user-configurable ID so that we can look up the
+        # AxesSpec from the axes if we need to.
+        axes.set_gid(axes_spec.uuid)
         self._tabs.addTab(tab, "Title")  # TODO Add title to axes_spec?
 
-    def _on_lines_added(self, event):
+    def _on_axes_removed(self, event):
+        ...
+
+    def _on_line_added(self, event):
         line = event.item
         run = line.run
         x, y = line.func(run)
@@ -43,6 +51,11 @@ class QtViewer(QWidget):
 
         # Initialize artist with currently-available data.
         (artist,) = axes.plot(x, y)
+        self._lines[line] = artist
+        # Use matplotlib's user-configurable ID so that we can look up the
+        # LineSpec from the line artist if we need to.
+        artist.set_gid(line.uuid)
+
         # IMPORTANT: Schedule matplotlib to redraw the canvas to include this
         # update at the next opportunity. Without this, the view may remain
         # stale indefinitely.
@@ -59,6 +72,13 @@ class QtViewer(QWidget):
 
             run.events.new_data.connect(update)
             run.events.completed.connect(lambda: run.events.new_data.disconnect(update))
+
+    def _on_line_removed(self, event):
+        line = event.item
+        artist = self._lines.pop(line)
+        artist.remove()
+        axes = self._axes[line.axes]
+        axes.figure.canvas.draw_idle()
 
 
 class _QtViewerTabs(QTabWidget):

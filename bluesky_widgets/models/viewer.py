@@ -1,4 +1,7 @@
 from collections import defaultdict, namedtuple
+import dataclasses
+import typing
+import uuid as uuid_module
 
 # from ..utils.event import Event, EventEmitter
 from ..utils.list import ListModel
@@ -24,6 +27,46 @@ AxesSpec = namedtuple("AxesSpec", ["x_label", "y_label"])
 LineSpec = namedtuple("LineSpec", ["func", "run", "axes", "args", "kwargs"])
 
 
+@dataclasses.dataclass(frozen=True)
+class Spec:
+    uuid: uuid_module.UUID = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        # Setting an attribute on a frozen dataclass requires an invasive
+        # operation.
+        object.__setattr__(self, "uuid", uuid_module.uuid4())
+
+    def __hash__(self):
+        return self.uuid.int
+
+
+@dataclasses.dataclass(frozen=True)
+class AxesSpec(Spec):
+    "Specify a set of axes (specifically, matplotlib.axes.Axes)"
+    x_label: str
+    y_label: str
+
+    def __hash__(self):
+        # The dataclass decorator overrides the implementation in the base
+        # class if __hash__ is not explicitly defined in this class.
+        return self.uuid.int
+
+
+@dataclasses.dataclass(frozen=True)
+class LineSpec(Spec):
+    "Specify how to extract data for and stylize a line."
+    func: callable
+    run: typing.Any  # may be bluesky_live or databroker BlueskyRun
+    axes: AxesSpec
+    args: tuple
+    kwargs: dict
+
+    def __hash__(self):
+        # The dataclass decorator overrides the implementation in the base
+        # class if __hash__ is not explicitly defined in this class.
+        return self.uuid.int
+
+
 def consumer(run):
     def func(run):
         ds = run.primary.read()
@@ -42,7 +85,8 @@ class Viewer:
         self.consumers = ConsumerList()
         self.axes = AxesList()
         self.lines = LineList()
-        self._ownership = defaultdict(set)
+        # Map Run uid to list of artifacts.
+        self._ownership = defaultdict(list)
 
     def _on_run_added(self, event):
         run = event.item
@@ -52,12 +96,14 @@ class Viewer:
                 if line.axes not in self.axes:
                     self.axes.append(line.axes)
                 self.lines.append(line)
-                # self._ownership[run].add(line)
+                uid = run.metadata["start"]["uid"]
+                self._ownership[uid].append(line)
 
     def _on_run_removed(self, event):
         run = event.item
         # Clean up all the lines for this Run.
-        for line in self._owernship[run]:
-            if line in self.lines:
-                self.lines.remove(line)
-        self._ownership.pop(run)
+        uid = run.metadata["start"]["uid"]
+        for artifact in self._ownership[uid]:
+            if artifact in self.lines:
+                self.lines.remove(artifact)
+        del self._ownership[uid]
