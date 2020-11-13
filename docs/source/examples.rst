@@ -48,8 +48,8 @@ Stand-alone example Qt application for viewing a run:
 This component expects a run to be passed into it, and will then display a tree
 view summarizing the contents of that run.
 
-Embedding Compoents in Existing Applications
-============================================
+Embedding Components in Existing Applications
+=============================================
 
 Napari
 ======
