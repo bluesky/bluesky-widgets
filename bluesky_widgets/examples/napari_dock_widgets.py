@@ -1,7 +1,6 @@
 import napari
 import numpy as np
 
-#from bluesky_widgets.examples.qt_search import QtSearchListWithButton
 from bluesky_widgets.examples.utils.add_search_mixin import extract_results_row_from_run
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.get_run_images import generate_thumbnail
@@ -57,8 +56,7 @@ class QtSearchListWithButton(QWidget):
         Add whatever we want to the event by passing it as a kwarg, in this case the images kwarg.
         Can access images in the callback by accessing Event.images.
         """
-
-        thumbnails = [generate_thumbnail(self.model.active.current_catalog[uid]) for uid in self.model.active.selection_as_catalog]
+        thumbnails = [generate_thumbnail(run) for _, run in self.model.active.selection_as_catalog.items()]
         self.model.events.view_images(images=thumbnails)
 
 
@@ -97,8 +95,8 @@ class NapariDatabroker(napari.Viewer):
         """
         Handle a view_images event.
         """
-        for image in view_images.images:
-            self.add_image(image))
+        for thumbnail in view_images.images:
+            self.add_image(thumbnail)
 
 
 with napari.gui_qt():
