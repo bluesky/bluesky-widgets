@@ -43,6 +43,10 @@ class QtViewer(QWidget):
 
         # Initialize artist with currently-available data.
         (artist,) = axes.plot(x, y)
+        # IMPORTANT: Schedule matplotlib to redraw the canvas to include this
+        # update at the next opportunity. Without this, the view may remain
+        # stale indefinitely.
+        axes.figure.canvas.draw_idle()
 
         # If this is connected to a streaming data source and is not yet
         # complete, listen for updates.
@@ -51,6 +55,7 @@ class QtViewer(QWidget):
             def update():
                 x, y = line.func(run)
                 artist.set_data(x, y)
+                axes.figure.canvas.draw_idle()
 
             run.events.new_data.connect(update)
             run.events.completed.connect(lambda: run.events.new_data.disconnect(update))
