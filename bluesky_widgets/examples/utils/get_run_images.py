@@ -14,7 +14,7 @@ def generate_thumbnail(run):
     
     Returns
     -------
-    image: np.array
+    image: np.array, None
     """
 
     uid = run.metadata['start']['uid']
@@ -24,8 +24,9 @@ def generate_thumbnail(run):
         # Just grab the first stream.
         stream_name = list(run)[0]
     else:
-        print(f"No image data found in Run {uid:.8}", file=sys.stderr)
+        print(f"No image data found in Run {uid:.8}")
     dataset = run[stream_name].to_dask()
+    
     # Find the first column that looks like an image.
     # Grab a slice from the middle because that is most likely to be interesting.
     for column in dataset:
@@ -37,8 +38,8 @@ def generate_thumbnail(run):
             image = dataset[column][xarr.shape[0] // 2, xarr.shape[1] // 2]
             break
     else:
-        print(f"No image data found in Run {uid:.8}", file=sys.stderr)
+        print(f"No image data found in Run {uid:.8}")
         return None
-    imsave(path, image)
-    print(f"Wrote {column!r} from Run {uid:.8} to {path}", file=sys.stderr)
-    return path
+
+    print(f"Found {column!r} from Run {uid}")
+    return image
