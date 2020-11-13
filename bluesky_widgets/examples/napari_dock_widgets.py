@@ -4,6 +4,7 @@ import numpy as np
 #from bluesky_widgets.examples.qt_search import QtSearchListWithButton
 from bluesky_widgets.examples.utils.add_search_mixin import extract_results_row_from_run
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.examples.utils.get_run_images import generate_thumbnail
 from bluesky_widgets.models.search import Search, SearchList
 from bluesky_widgets.utils.event import Event
 from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
@@ -56,7 +57,8 @@ class QtSearchListWithButton(QWidget):
         Add whatever we want to the event by passing it as a kwarg, in this case the images kwarg.
         Can access images in the callback by accessing Event.images.
         """
-        self.model.events.view_images(images="asdasdasda")
+        thumbnails = [generate_thumbnail(run) for run in self.model.searches.active.results]
+        self.model.events.view_images(images=thumbnails)
 
 
 class NapariDatabroker(napari.Viewer):
@@ -94,7 +96,7 @@ class NapariDatabroker(napari.Viewer):
         """
         Handle a view_images event.
         """
-        event.thing
+        print(view_images.images)
         self.image = np.random.rand(200, 200)
         self.add_image(self.image)
 
