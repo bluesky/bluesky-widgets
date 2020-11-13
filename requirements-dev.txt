@@ -6,7 +6,7 @@ coverage
 databroker
 flake8
 napari
-ophyd
+ophyd>=1.5.3
 pytest
 pytest-qt
 qtpy

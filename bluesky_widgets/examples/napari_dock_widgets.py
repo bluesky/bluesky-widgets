@@ -57,7 +57,13 @@ class QtSearchListWithButton(QWidget):
         Add whatever we want to the event by passing it as a kwarg, in this case the images kwarg.
         Can access images in the callback by accessing Event.images.
         """
-        thumbnails = [generate_thumbnail(run) for run in self.model.searches.active.results]
+        #print(self.model.active.current_catalog, type(self.model.active.current_catalog))
+        #for uid in self.model.active.selection_as_catalog:
+        #    run = self.model.active.current_catalog[uid]
+        #    print(run, type(run))
+        #    print(generate_thumbnail(run))
+        thumbnails = [generate_thumbnail(self.model.active.current_catalog[uid]) for uid in self.model.active.selection_as_catalog]
+        #thumbnails = generate_thumbnail(self.model.active.results.acti)
         self.model.events.view_images(images=thumbnails)
 
 
@@ -96,9 +102,11 @@ class NapariDatabroker(napari.Viewer):
         """
         Handle a view_images event.
         """
-        print(view_images.images)
-        self.image = np.random.rand(200, 200)
-        self.add_image(self.image)
+        for image in view_images.images:
+            self.add_image(image)
+        #print(view_images.images)
+        #self.image = np.random.rand(200, 200)
+        #self.add_image(self.image)
 
 
 with napari.gui_qt():
