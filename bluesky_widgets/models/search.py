@@ -12,10 +12,6 @@ LOCAL_TIMEZONE = dateutil.tz.tzlocal()
 _epoch = datetime(1970, 1, 1, 0, 0, tzinfo=LOCAL_TIMEZONE)
 
 
-class RunList(ListModel):
-    ...
-
-
 """
 Vendored from databroker.queries
 """
