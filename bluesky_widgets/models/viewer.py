@@ -27,53 +27,6 @@ AxesSpec = namedtuple("AxesSpec", ["x_label", "y_label"])
 LineSpec = namedtuple("LineSpec", ["func", "run", "axes", "args", "kwargs"])
 
 
-@dataclasses.dataclass(frozen=True)
-class Spec:
-    uuid: uuid_module.UUID = dataclasses.field(init=False)
-
-    def __post_init__(self):
-        # Setting an attribute on a frozen dataclass requires an invasive
-        # operation.
-        object.__setattr__(self, "uuid", uuid_module.uuid4())
-
-    def __hash__(self):
-        return self.uuid.int
-
-
-@dataclasses.dataclass(frozen=True)
-class AxesSpec(Spec):
-    """
-    Specify a set of axes.
-
-    The names here are targetting matplotlib.axes.Axes but could in principle
-    be used by a view that uses a different plotting library.
-    """
-    x_label: str
-    y_label: str
-
-    def __hash__(self):
-        # The dataclass decorator overrides the implementation in the base
-        # class if __hash__ is not explicitly defined in this class.
-        return self.uuid.int
-
-
-@dataclasses.dataclass(frozen=True)
-class LineSpec(Spec):
-    """
-    Specify how to extract data for and stylize a line.
-    """
-    func: callable
-    run: typing.Any  # may be bluesky_live or databroker BlueskyRun
-    axes: AxesSpec
-    args: tuple
-    kwargs: dict  # DANGER: This ought to be a frozendict.
-
-    def __hash__(self):
-        # The dataclass decorator overrides the implementation in the base
-        # class if __hash__ is not explicitly defined in this class.
-        return self.uuid.int
-
-
 def consumer(run):
     def func(run):
         ds = run.primary.read()
