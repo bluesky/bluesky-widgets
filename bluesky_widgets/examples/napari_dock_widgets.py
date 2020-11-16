@@ -1,5 +1,4 @@
 import napari
-import numpy as np
 
 from bluesky_widgets.examples.utils.add_search_mixin import extract_results_row_from_run
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
@@ -18,6 +17,7 @@ class SearchListWithButton(SearchList):
     then it would automatically receive view_images events without
     needing to use view_images.connect.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -25,7 +25,7 @@ class SearchListWithButton(SearchList):
         # The kwarg view_images defines the name of the events that are emitted.
         # Event is the event type.
         self.events.add(view_images=Event)
-    
+
 
 class QtSearchListWithButton(QWidget):
     """
@@ -52,11 +52,14 @@ class QtSearchListWithButton(QWidget):
     def on_click(self):
         """
         Receive the qt signal, and emmit a view_images event.
-        
+
         Add whatever we want to the event by passing it as a kwarg, in this case the images kwarg.
         Can access images in the callback by accessing Event.images.
         """
-        thumbnails = [generate_thumbnail(run) for _, run in self.model.active.selection_as_catalog.items()]
+        thumbnails = [
+            generate_thumbnail(run)
+            for _, run in self.model.active.selection_as_catalog.items()
+        ]
         self.model.events.view_images(images=thumbnails)
 
 
@@ -73,13 +76,13 @@ class NapariDatabroker(napari.Viewer):
         Add a new Search form.
         """
         headings = (
-                    "Unique ID",
-                    "Transient Scan ID",
-                    "Plan Name",
-                    "Start Time",
-                    "Duration",
-                    "Exit Status",
-                   )
+            "Unique ID",
+            "Transient Scan ID",
+            "Plan Name",
+            "Start Time",
+            "Duration",
+            "Exit Status",
+        )
 
         search = Search(catalog, columns=(headings, extract_results_row_from_run))
         self.searches.append(search)

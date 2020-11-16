@@ -1,32 +1,28 @@
-import sys
-from imageio import imsave
-
-
 def generate_thumbnail(run):
     """
     Return one thumbnail image to represent a Run if any image-like data can be found.
-    
+
     Logs details to the stderr.
-    
+
     Parameters
     ----------
     run: BlueskyRun
-    
+
     Returns
     -------
     image: np.array, None
     """
 
-    uid = run.metadata['start']['uid']
-    if 'primary' in run:
-        stream_name = 'primary'
+    uid = run.metadata["start"]["uid"]
+    if "primary" in run:
+        stream_name = "primary"
     elif list(run):
         # Just grab the first stream.
         stream_name = list(run)[0]
     else:
         print(f"No image data found in Run {uid:.8}")
     dataset = run[stream_name].to_dask()
-    
+
     # Find the first column that looks like an image.
     # Grab a slice from the middle because that is most likely to be interesting.
     for column in dataset:
