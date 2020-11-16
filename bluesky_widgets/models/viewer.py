@@ -4,22 +4,22 @@ import typing
 import uuid as uuid_module
 
 # from ..utils.event import Event, EventEmitter
-from ..utils.list import ListModel
+from ..utils.list import EventedList
 
 
-class AxesList(ListModel):
+class AxesList(EventedList):
     ...
 
 
-class LineList(ListModel):
+class LineList(EventedList):
     ...
 
 
-class RunList(ListModel):
+class RunList(EventedList):
     ...
 
 
-class ConsumerList(ListModel):
+class ConsumerList(EventedList):
     ...
 
 

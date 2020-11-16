@@ -5,7 +5,7 @@ whether I need the more complex Typed and MultiIndexed aspects.
 from .event import EmitterGroup, Event
 
 
-class ListModel:
+class EventedList:
     def __init__(self, iterable=None):
         self.__internal_list = list(iterable or [])
         self.events = EmitterGroup(
