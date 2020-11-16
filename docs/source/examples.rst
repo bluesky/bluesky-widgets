@@ -46,7 +46,19 @@ Stand-alone example Qt application for viewing a run:
    python -m bluesky_widgets.examples.qt_run_tree_view
 
 This component expects a run to be passed into it, and will then display a tree
-view summarizing the contents of that run.
+view summarizing the contents of that run. To run this in an IPython console:
+
+.. code:: bash
+
+   pip install ipython
+   ipython --gui=qt
+
+.. code:: python
+
+   from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+   from bluesky_widgets.examples.qt_run_tree_view import RunTree
+   tree = RunTree()
+   tree.set_run(get_catalog()[-1])
 
 Embedding Components in Existing Applications
 =============================================
