@@ -1,4 +1,5 @@
 from collections import defaultdict, namedtuple
+from warnings import warn
 
 
 AxesSpec = namedtuple("AxesSpec", ["x_label", "y_label"])
@@ -19,36 +20,20 @@ def consumer(run):
 
 
 
-"""
-    omit_single_point_plot = Bool(True, config=True)
-    line_class = Type()
+def lines(run):
+    start_doc = run.metadata["start"]
+    dimensions = start_doc.get('hints', {}).get('dimensions', guess_dimensions(start_doc))
+    dim_streams = set(stream for _, stream in dimensions)
+    if len(dim_streams) > 1:
+        raise NotImplementedError
+    
+    omit_single_point_plot = True  # TODO Make this configurable?
+    if omit_single_point_plot and start_doc.get('num_points') == 1:
+        return []
+    if len(dimensions) > 1:
+        return []  # This is a job for Grid.
 
-    @default('line_class')
-    def default_line_class(self):
-        # By defining the default value of line_class dynamically here, we
-        # avoid importing matplotlib if some non-matplotlib line_class is
-        # specfied by configuration.
-        from ..artists.mpl.line import Line
-        return Line
-
-    def __init__(self, fig_manager, dimensions):
-        self.update_config(load_config())
-        self.fig_manager = fig_manager
-        self.start_doc = None
-        self.dimensions = dimensions
-        self.dim_streams = set(stream for _, stream in self.dimensions)
-        if len(self.dim_streams) > 1:
-            raise NotImplementedError
-
-    def __call__(self, name, start_doc):
-        self.start_doc = start_doc
-        return [], [self.subfactory]
-
-    def subfactory(self, name, descriptor_doc):
-        if self.omit_single_point_plot and self.start_doc.get('num_points') == 1:
-            return []
-        if len(self.dimensions) > 1:
-            return []  # This is a job for Grid.
+    def new_stream(stream):
         fields = set(hinted_fields(descriptor_doc))
         # Filter out the fields with a data type or shape that we cannot
         # represent in a line plot.
@@ -60,10 +45,10 @@ def consumer(run):
             if ndim != 0:
                 fields.discard(field)
 
-        callbacks = []
-        dim_stream, = self.dim_streams  # TODO Handle multiple dim_streams.
+        specs = []
+        dim_stream, = dim_streams  # TODO Handle multiple dim_streams.
         if descriptor_doc.get('name') == dim_stream:
-            dimension, = self.dimensions
+            dimension, = dimensions
             x_keys, stream_name = dimension
             fields -= set(x_keys)
             assert stream_name == dim_stream  # TODO Handle multiple dim_streams.
@@ -112,8 +97,95 @@ def consumer(run):
                     ax.set_xlabel(x_key)
                     fig.tight_layout()
             # TODO Plot other streams against time.
-        for callback in callbacks:
-            callback('start', self.start_doc)
-            callback('descriptor', descriptor_doc)
         return callbacks
-"""
+
+    from warnings import warn
+
+
+    def guess_dimensions(start_doc):
+        """
+        Parameters
+        ----------
+        Prepare a guess about the dimensions (independent variables).
+        start_doc : dict
+        Returns
+        -------
+        dimensions : list
+            looks like a plan's 'dimensions' hint, but guessed from heuristics
+        """
+        motors = start_doc.get('motors')
+        if motors is not None:
+            return [([motor], 'primary') for motor in motors]
+            # For example, if this was a 2D grid scan, we would have:
+            # [(['x'], 'primary'), (['y'], 'primary')]
+        else:
+            # There is no motor, so we will guess this is a time series.
+            return [(['time'], 'primary')]
+
+
+    def hinted_fields(descriptor):
+        # Figure out which columns to put in the table.
+        obj_names = list(descriptor['object_keys'])
+        # We will see if these objects hint at whether
+        # a subset of their data keys ('fields') are interesting. If they
+        # did, we'll use those. If these didn't, we know that the RunEngine
+        # *always* records their complete list of fields, so we can use
+        # them all unselectively.
+        columns = []
+        for obj_name in obj_names:
+            try:
+                fields = descriptor.get('hints', {}).get(obj_name, {})['fields']
+            except KeyError:
+                fields = descriptor['object_keys'][obj_name]
+            columns.extend(fields)
+        return columns
+
+
+    def extract_hints_info(start_doc):
+        """
+        Parameters
+        ----------
+        start_doc : dict
+        Returns
+        -------
+        stream_name, dim_fields, all_dim_fields
+        """
+        plan_hints = start_doc.get('hints', {})
+
+        # Use the guess if there is not hint about dimensions.
+        dimensions = plan_hints.get('dimensions')
+        if dimensions is None:
+            dimensions = guess_dimensions(start_doc)
+
+        # Do all the 'dimensions' belong to the same Event stream? If not, that is
+        # too complicated for this implementation, so we ignore the plan's
+        # dimensions hint and fall back on guessing.
+        if len(set(stream_name for fields, stream_name in dimensions)) != 1:
+            dimensions = guess_dimensions(start_doc)
+            warn("We are ignoring the dimensions hinted because we cannot "
+                "combine streams.")
+
+        # for each dimension, choose one field only
+        # the plan can supply a list of fields. It's assumed the first
+        # of the list is always the one plotted against
+        # fields could be just one field, like ['time'] or ['x'], but for an "inner
+        # product scan", it could be multiple fields like ['x', 'y'] being scanned
+        # over jointly. In that case, we just plot against the first one.
+        dim_fields = [first_field for (first_field, *_), stream_name in dimensions]
+
+        # Make distinction between flattened fields and plotted fields.
+        # Motivation for this is that when plotting, we find dependent variable
+        # by finding elements that are not independent variables
+        all_dim_fields = [field
+                        for fields, stream_name in dimensions
+                            for field in fields]  # noqa
+
+        # Above we checked that all the dimensions belonged to the same Event
+        # stream, so we can take the stream_name from any item in the list of
+        # dimensions, and we'll get the same result. Might as well use the first
+        # one.
+        _, dim_stream = dimensions[0]  # so dim_stream is like 'primary'
+        # TO DO -- Do we want to return all of these? Maybe we should just return
+        # 'dimensions' and let the various callback_factories do whatever
+        # transformations they need.
+        return dim_stream, dim_fields, all_dim_fields
