@@ -76,6 +76,16 @@ class Viewer:
         self._overplot = False
 
     @property
+    def _axes_spec_to_axes(self):
+        "Maps AxesSpec -> List[Axes]"
+        # In the future we could construct and update this at write time rather
+        # than reconstructing it at access time.
+        d = defaultdict(list)
+        for axes in self.axes:
+            d[axes.spec].append(axes)
+        return dict(d)
+
+    @property
     def overplot(self):
         """
         When adding lines, share axes where possible.
@@ -91,9 +101,15 @@ class Viewer:
         for consumer in self.consumers:
             line_specs = consumer(run)
             for line_spec in line_specs:
-                axes = new_axes(line_spec.axes_spec)
+                # Do we need new Axes for this line?
+                if self.overplot and (line_spec.axes_spec in self._axes_spec_to_axes):
+                    # Overplotting is turned on, and we have a matching
+                    # AxesSpec, so we will reuse the first matching Axes.
+                    axes = self._axes_spec_to_axes[line_spec.axes_spec][0]
+                else:
+                    axes = new_axes(line_spec.axes_spec)
+                    self.axes.append(axes)
                 line = new_line(line_spec, axes)
-                self.axes.append(line.axes)
                 self.lines.append(line)
                 uid = run.metadata["start"]["uid"]
                 self._ownership[uid].append(line)
