@@ -1,4 +1,4 @@
-from collections import defaultdict, namedtuple
+from collections import namedtuple
 from warnings import warn
 
 
@@ -26,22 +26,31 @@ def prompt_line_builder(run):
     return [LineSpec(func, run, axes_spec, (), {})]
 
 
-def streaming_line_builder(run, lines):
-    start_doc = run.metadata["start"]
-    dimensions = start_doc.get("hints", {}).get(
-        "dimensions", guess_dimensions(start_doc)
-    )
-    dim_streams = set(stream for _, stream in dimensions)
-    if len(dim_streams) > 1:
-        raise NotImplementedError
+class StreamingPlotBuilder:
+    def __init__(self):
+        self.events = EmitterGroup(
+            source=self, lines=Event, grids=Event, image_stacks=Event
+        )
 
-    omit_single_point_plot = True  # TODO Make this configurable?
-    if omit_single_point_plot and start_doc.get("num_points") == 1:
-        return []
-    if len(dimensions) > 1:
-        return []  # This is a job for Grid.
 
-    def new_stream(stream):
+class BestEffortLineBuilder:
+    def __call__(self, run):
+        start_doc = run.metadata["start"]
+        dimensions = start_doc.get("hints", {}).get(
+            "dimensions", guess_dimensions(start_doc)
+        )
+        dim_streams = set(stream for _, stream in dimensions)
+        if len(dim_streams) > 1:
+            raise NotImplementedError
+
+        omit_single_point_plot = True  # TODO Make this configurable?
+        if omit_single_point_plot and start_doc.get("num_points") == 1:
+            return
+        if len(dimensions) > 1:
+            return  # This is a job for Grid.
+        run.events.new_stream.connect(self.on_new_stream)
+
+    def on_new_stream(stream):
         fields = set(hinted_fields(descriptor_doc))
         # Filter out the fields with a data type or shape that we cannot
         # represent in a line plot.

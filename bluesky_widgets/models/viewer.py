@@ -75,42 +75,21 @@ def new_line(spec, axes):
     return Line(uuid_module.uuid4(), spec, axes)
 
 
-class LineManager:
-    def __init__(self):
-        self.line_specs = LineSpecList()
-        self._overplot = False
-
-    @property
-    def overplot(self):
-        """
-        When adding lines, share axes where possible.
-        """
-        return self._overplot
-
-    @overplot.setter
-    def overplot(self, value):
-        self._overplot = bool(value)
-
-
-class GridManager:
-    ...
-
-
-class ImageStackManager:
-    ...
-
-
 class Viewer:
     def __init__(self):
         self.runs = RunList()
         self.runs.events.added.connect(self._on_run_added)
         self.runs.events.removed.connect(self._on_run_removed)
-        self.axes = AxesList()  # contains Axes
+        self.axes = AxesList()
         self.line_manager = LineManager()
         self.line_manager.line_specs.events.added.connect(self._on_line_spec_added)
         self.lines = LineList()
-        self.streaming_builders = StreamingBuilderList()
         self.prompt_builders = PromptBuilderList()
+        self.prompt_builders.added.connect(self._on_prompt_builder_added)
+        self.prompt_builders.removed.connect(self._on_prompt_builder_removed)
+        self.streaming_builders = StreamingBuilderList()
+        self.streaming_builders.added.connect(self._on_streaming_builder_added)
+        self.streaming_builders.removed.connect(self._on_streaming_builder_removed)
         # Map Run uid to list of artifacts.
         self._ownership = defaultdict(list)
 
@@ -127,25 +106,29 @@ class Viewer:
     def _on_run_added(self, event):
         "Callback run when a Run is added to self.runs"
         run = event.item
+        # If the BlueskyRun is complete, feed the "prompt" builders
+        # immediately.
         if run.metadata["stop"] is not None:
             self._feed_prompt_builders(run)
+        # Otherwise, it is supports streaming, set up a callback to run the
+        # "prompt" builders whenever it completes.
         elif hasattr(run, "events"):
             self.events.completed.connect(self._on_run_complete)
 
     def _on_run_complete(self, event):
         "Callback run with a streaming BlueskyRun is complete."
-        self._feed_prompt_builders(event.source)
+        for builder in self.prompt_builders:
+            self._feed_prompt_builder(event.source, builder)
         self.events.completed.disconnect(self._on_run_complete)
 
-    def _feed_prompt_builders(self, run):
+    def _feed_prompt_builder(self, run, builder):
         "Pass a complete BlueskyRun to the prompt_builders."
-        for builder in self.prompt_builders:
-            specs = builder(run)
-            for spec in specs:
-                if isinstance(spec, LineSpec):
-                    self.line_manager.line_specs.append(spec)
-                else:
-                    raise TypeError("Unrecognized builder type")
+        specs = builder(run)
+        for spec in specs:
+            if isinstance(spec, LineSpec):
+                self.line_manager.line_specs.append(spec)
+            else:
+                raise TypeError("Unrecognized builder type")
 
     def _on_run_removed(self, event):
         "Callback run when a Run is removed from self.runs"
@@ -156,6 +139,30 @@ class Viewer:
             if artifact in self.lines:
                 self.lines.remove(artifact)
         del self._ownership[uid]
+
+    def _on_prompt_builder_added(self, event):
+        builder = event.item
+        for run in self.runs:
+            # If the BlueskyRun is complete, feed the new "prompt" builder.
+            if run.metadata["stop"] is not None:
+                self._feed_prompt_builders(run, builder)
+
+    def _on_prompt_builder_removed(self, event):
+        # TODO Remove its artifacts? That may not be the user intention.
+        ...
+
+    def _on_streaming_builder_added(self, event):
+        builder = event.item
+        builder.events.lines.connect(self._on_line_spec_added)
+        builder.events.grids.connect(self._on_grid_spec_added)
+        builder.events.image_stacks.connect(self._on_image_stack_spec_added)
+
+    def _on_streaming_builder_removed(self, event):
+        builder = event.item
+        builder.events.lines.disconnect(self._on_line_spec_added)
+        builder.events.grids.disconnect(self._on_grid_spec_added)
+        builder.events.image_stacks.disconnect(self._on_image_stack_spec_added)
+        # TODO Remove its artifacts? That may not be the user intention.
 
     def _on_line_spec_added(self, event):
         line_spec = event.item
@@ -173,3 +180,9 @@ class Viewer:
         self.lines.append(line)
         uid = line_spec.run.metadata["start"]["uid"]
         self._ownership[uid].append(line)
+
+    def _on_grid_spec_added(self, event):
+        ...
+
+    def _on_image_stack_spec_added(self, event):
+        ...
