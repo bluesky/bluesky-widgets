@@ -1,6 +1,4 @@
 from collections import defaultdict, namedtuple
-import dataclasses
-import typing
 import uuid as uuid_module
 
 # from ..utils.event import Event, EventEmitter
@@ -23,8 +21,36 @@ class ConsumerList(EventedList):
     ...
 
 
+class HashByUUID:
+    "Mixin class for providing a hash based on `uuid` attribute."
+
+    def __hash__(self):
+        # Expects to be mixed in with a class that exposes self.uuid: uuid.UUID
+        return self.uuid.int
+
+
 AxesSpec = namedtuple("AxesSpec", ["x_label", "y_label"])
-LineSpec = namedtuple("LineSpec", ["func", "run", "axes", "args", "kwargs"])
+"Describes axes"
+
+_AxesTuple = namedtuple("Axes", ["uuid", "spec"])
+Axes = type("Axes", (HashByUUID, _AxesTuple), {})
+
+"Identifies a particular set of Axes"
+
+LineSpec = namedtuple("LineSpec", ["func", "run", "axes_spec", "args", "kwargs"])
+"Describes a line (both data and style)"
+
+_LineTuple = namedtuple("Line", ["uuid", "spec", "axes"])
+Line = type("Line", (HashByUUID, _LineTuple), {})
+"Identfies a particular line"
+
+
+def new_axes(spec):
+    return Axes(uuid_module.uuid4(), spec)
+
+
+def new_line(spec, axes):
+    return Line(uuid_module.uuid4(), spec, axes)
 
 
 def consumer(run):
@@ -32,9 +58,9 @@ def consumer(run):
         ds = run.primary.read()
         return ds["motor"], ds["det"]
 
-    axes = AxesSpec("motor", "det")
+    axes_spec = AxesSpec("motor", "det")
 
-    return [LineSpec(func, run, axes, (), {})]
+    return [LineSpec(func, run, axes_spec, (), {})]
 
 
 class Viewer:
@@ -43,8 +69,8 @@ class Viewer:
         self.runs.events.added.connect(self._on_run_added)
         self.runs.events.removed.connect(self._on_run_removed)
         self.consumers = ConsumerList()
-        self.axes = AxesList()
-        self.lines = LineList()
+        self.axes = AxesList()  # contains Axes
+        self.lines = LineList()  # contains Lines
         # Map Run uid to list of artifacts.
         self._ownership = defaultdict(list)
         self._overplot = False
@@ -63,10 +89,11 @@ class Viewer:
     def _on_run_added(self, event):
         run = event.item
         for consumer in self.consumers:
-            lines = consumer(run)
-            for line in lines:
-                if line.axes not in self.axes:
-                    self.axes.append(line.axes)
+            line_specs = consumer(run)
+            for line_spec in line_specs:
+                axes = new_axes(line_spec.axes_spec)
+                line = new_line(line_spec, axes)
+                self.axes.append(line.axes)
                 self.lines.append(line)
                 uid = run.metadata["start"]["uid"]
                 self._ownership[uid].append(line)

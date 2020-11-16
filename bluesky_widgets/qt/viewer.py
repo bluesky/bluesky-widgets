@@ -16,9 +16,9 @@ class QtViewer(QWidget):
         self.model = model
         # Map widget in tab to matplotlib figure.
         self._figures = {}
-        # Map AxesSpec to matplotlib.axes.Axes
+        # Map Axes to matplotlib.axes.Axes
         self._axes = {}
-        # Map id(LineSpec) to matplotlib Line artist
+        # Map Line to matplotlib Line artist
         self._lines = {}
         layout = QVBoxLayout()
         self._tabs = _QtViewerTabs()
@@ -44,8 +44,8 @@ class QtViewer(QWidget):
 
     def _on_line_added(self, event):
         line = event.item
-        run = line.run
-        x, y = line.func(run)
+        run = line.spec.run
+        x, y = line.spec.func(run)
         # Look up matplotlib.axes.Axes from AxesSpec.
         axes = self._axes[line.axes]
 
@@ -66,7 +66,7 @@ class QtViewer(QWidget):
         if hasattr(run, "events") and run.metadata.stop is not None:
 
             def update():
-                x, y = line.func(run)
+                x, y = line.spec.func(run)
                 artist.set_data(x, y)
                 axes.figure.canvas.draw_idle()
 
