@@ -3,6 +3,23 @@ import uuid as uuid_module
 
 # from ..utils.event import Event, EventEmitter
 from ..utils.list import EventedList
+from ..heuristics import LineSpec
+
+
+class AxesSpecList(EventedList):
+    ...
+
+
+class LineSpecList(EventedList):
+    ...
+
+
+class GridSpecList(EventedList):
+    ...
+
+
+class ImageStackSpecList(EventedList):
+    ...
 
 
 class AxesList(EventedList):
@@ -13,11 +30,23 @@ class LineList(EventedList):
     ...
 
 
+class GridList(EventedList):
+    ...
+
+
+class ImageStackList(EventedList):
+    ...
+
+
 class RunList(EventedList):
     ...
 
 
-class ConsumerList(EventedList):
+class PromptBuilderList(EventedList):
+    ...
+
+
+class StreamingBuilderList(EventedList):
     ...
 
 
@@ -46,27 +75,10 @@ def new_line(spec, axes):
     return Line(uuid_module.uuid4(), spec, axes)
 
 
-class Viewer:
+class LineManager:
     def __init__(self):
-        self.runs = RunList()
-        self.runs.events.added.connect(self._on_run_added)
-        self.runs.events.removed.connect(self._on_run_removed)
-        self.consumers = ConsumerList()
-        self.axes = AxesList()  # contains Axes
-        self.lines = LineList()  # contains Lines
-        # Map Run uid to list of artifacts.
-        self._ownership = defaultdict(list)
+        self.line_specs = LineSpecList()
         self._overplot = False
-
-    @property
-    def _axes_spec_to_axes(self):
-        "Maps AxesSpec -> List[Axes]"
-        # In the future we could construct and update this at write time rather
-        # than reconstructing it at access time.
-        d = defaultdict(list)
-        for axes in self.axes:
-            d[axes.spec].append(axes)
-        return dict(d)
 
     @property
     def overplot(self):
@@ -79,25 +91,64 @@ class Viewer:
     def overplot(self, value):
         self._overplot = bool(value)
 
+
+class GridManager:
+    ...
+
+
+class ImageStackManager:
+    ...
+
+
+class Viewer:
+    def __init__(self):
+        self.runs = RunList()
+        self.runs.events.added.connect(self._on_run_added)
+        self.runs.events.removed.connect(self._on_run_removed)
+        self.axes = AxesList()  # contains Axes
+        self.line_manager = LineManager()
+        self.line_manager.line_specs.events.added.connect(self._on_line_spec_added)
+        self.lines = LineList()
+        self.streaming_builders = StreamingBuilderList()
+        self.prompt_builders = PromptBuilderList()
+        # Map Run uid to list of artifacts.
+        self._ownership = defaultdict(list)
+
+    @property
+    def _axes_spec_to_axes(self):
+        "Maps AxesSpec -> List[Axes]"
+        # In the future we could construct and update this at write time rather
+        # than reconstructing it at access time.
+        d = defaultdict(list)
+        for axes in self.axes:
+            d[axes.spec].append(axes)
+        return dict(d)
+
     def _on_run_added(self, event):
+        "Callback run when a Run is added to self.runs"
         run = event.item
-        for consumer in self.consumers:
-            line_specs = consumer(run)
-            for line_spec in line_specs:
-                # Do we need new Axes for this line?
-                if self.overplot and (line_spec.axes_spec in self._axes_spec_to_axes):
-                    # Overplotting is turned on, and we have a matching
-                    # AxesSpec, so we will reuse the first matching Axes.
-                    axes = self._axes_spec_to_axes[line_spec.axes_spec][0]
+        if run.metadata["stop"] is not None:
+            self._feed_prompt_builders(run)
+        elif hasattr(run, "events"):
+            self.events.completed.connect(self._on_run_complete)
+
+    def _on_run_complete(self, event):
+        "Callback run with a streaming BlueskyRun is complete."
+        self._feed_prompt_builders(event.source)
+        self.events.completed.disconnect(self._on_run_complete)
+
+    def _feed_prompt_builders(self, run):
+        "Pass a complete BlueskyRun to the prompt_builders."
+        for builder in self.prompt_builders:
+            specs = builder(run)
+            for spec in specs:
+                if isinstance(spec, LineSpec):
+                    self.line_manager.line_specs.append(spec)
                 else:
-                    axes = new_axes(line_spec.axes_spec)
-                    self.axes.append(axes)
-                line = new_line(line_spec, axes)
-                self.lines.append(line)
-                uid = run.metadata["start"]["uid"]
-                self._ownership[uid].append(line)
+                    raise TypeError("Unrecognized builder type")
 
     def _on_run_removed(self, event):
+        "Callback run when a Run is removed from self.runs"
         run = event.item
         # Clean up all the lines for this Run.
         uid = run.metadata["start"]["uid"]
@@ -105,3 +156,20 @@ class Viewer:
             if artifact in self.lines:
                 self.lines.remove(artifact)
         del self._ownership[uid]
+
+    def _on_line_spec_added(self, event):
+        line_spec = event.item
+        # Do we need new Axes for this line?
+        if self.line_manager.overplot and (
+            line_spec.axes_spec in self._axes_spec_to_axes
+        ):
+            # Overplotting is turned on, and we have a matching
+            # AxesSpec, so we will reuse the first matching Axes.
+            axes = self._axes_spec_to_axes[line_spec.axes_spec][0]
+        else:
+            axes = new_axes(line_spec.axes_spec)
+            self.axes.append(axes)
+        line = new_line(line_spec, axes)
+        self.lines.append(line)
+        uid = line_spec.run.metadata["start"]["uid"]
+        self._ownership[uid].append(line)
