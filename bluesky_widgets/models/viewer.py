@@ -29,16 +29,9 @@ class HashByUUID:
         return self.uuid.int
 
 
-AxesSpec = namedtuple("AxesSpec", ["x_label", "y_label"])
-"Describes axes"
-
 _AxesTuple = namedtuple("Axes", ["uuid", "spec"])
 Axes = type("Axes", (HashByUUID, _AxesTuple), {})
-
 "Identifies a particular set of Axes"
-
-LineSpec = namedtuple("LineSpec", ["func", "run", "axes_spec", "args", "kwargs"])
-"Describes a line (both data and style)"
 
 _LineTuple = namedtuple("Line", ["uuid", "spec", "axes"])
 Line = type("Line", (HashByUUID, _LineTuple), {})
@@ -51,16 +44,6 @@ def new_axes(spec):
 
 def new_line(spec, axes):
     return Line(uuid_module.uuid4(), spec, axes)
-
-
-def consumer(run):
-    def func(run):
-        ds = run.primary.read()
-        return ds["motor"], ds["det"]
-
-    axes_spec = AxesSpec("motor", "det")
-
-    return [LineSpec(func, run, axes_spec, (), {})]
 
 
 class Viewer:

@@ -6,7 +6,8 @@ or visualization.
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.models.search import SearchList, Search
-from bluesky_widgets.models.viewer import Viewer, consumer
+from bluesky_widgets.models.viewer import Viewer
+from bluesky_widgets.heuristics import consumer
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.qt.viewer import QtViewer
 from bluesky_widgets.utils.event import Event
