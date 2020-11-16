@@ -58,7 +58,7 @@ view summarizing the contents of that run. To run this in an IPython console:
    from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
    from bluesky_widgets.examples.qt_run_tree_view import RunTree
    tree = RunTree()
-   tree.set_run(get_catalog()[-1])
+   tree.run = get_catalog()[-1]
 
 Embedding Components in Existing Applications
 =============================================
