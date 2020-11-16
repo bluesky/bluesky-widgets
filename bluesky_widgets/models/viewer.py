@@ -47,6 +47,18 @@ class Viewer:
         self.lines = LineList()
         # Map Run uid to list of artifacts.
         self._ownership = defaultdict(list)
+        self._overplot = False
+
+    @property
+    def overplot(self):
+        """
+        When adding lines, share axes where possible.
+        """
+        return self._overplot
+
+    @overplot.setter
+    def overplot(self, value):
+        self._overplot = bool(value)
 
     def _on_run_added(self, event):
         run = event.item
