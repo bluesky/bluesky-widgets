@@ -144,6 +144,16 @@ class TreeViewModel(QAbstractItemModel):
         self._current_num_rows = len(self._catalog)
         self._catalog_length = len(self._catalog)
 
+    def setRun(self, bs_run):
+        self.beginResetModel()
+        self._catalog = bs_run
+        self._run_tree = RunTree(bs_run)
+
+        # State related to dynamically adding rows
+        self._current_num_rows = len(self._catalog)
+        self._catalog_length = len(self._catalog)
+        self.endResetModel()
+
     def index(self, row, column, parent=QModelIndex()):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()

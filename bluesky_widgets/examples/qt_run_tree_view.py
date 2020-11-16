@@ -23,8 +23,18 @@ class Views(QWidget):
         # You can set your own catalog/run here or use this synthetic data.
         self._run = get_catalog()[-1]
 
-        widget = QtTreeView(self, self._run)
-        self.window = Window(widget, show=show)
+        self.widget = QtTreeView(self, self._run)
+
+class RunTree:
+    """
+    A user-facing model composed with a Qt widget and window.
+    """
+
+    def __init__(self, *, show=True, title="Bluesky run tree"):
+        super().__init__()
+        self.title = title
+        self.view = Views()
+        self._window = Window(self.view.widget, show=show)
 
     def show(self):
         """Resize, show, and raise the window."""
@@ -33,7 +43,6 @@ class Views(QWidget):
     def close(self):
         """Close the window."""
         self.window.close()
-
 
 def main():
     print(__doc__)
