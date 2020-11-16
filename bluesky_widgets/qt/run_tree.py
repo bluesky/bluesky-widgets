@@ -14,8 +14,8 @@ from databroker.core import BlueskyEventStream
 class RunTree:
     """Lazily populate the tree as data is requested. """
 
-    def __init__(self, run):
-        self.run = run
+    def __init__(self, bs_run):
+        self.run = bs_run
         self.children = []
 
         uid = RunNode(self.run, "uid", self.run.metadata["start"]["uid"], None, self)
@@ -223,12 +223,21 @@ class QtTreeView(QTreeView):
     Tree view showing a run
     """
 
-    def __init__(self, parent=None, bs_run=None):
+    def __init__(self, model, parent=None):
         super(QtTreeView, self).__init__(parent)
-        self._run = bs_run
+        self.model = model
 
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setSortingEnabled(False)
         self.setAlternatingRowColors(True)
-        self._abstract_item_model = TreeViewModel(bs_run)
+
+        # Initialize model.
+        self._abstract_item_model = TreeViewModel(model.run)
+        self.setModel(self._abstract_item_model)
+
+        # Listen for future changes to model.
+        self.model.events.run.connect(self.on_run_changed)
+
+    def on_run_changed(self, event):
+        self._abstract_item_model = TreeViewModel(event.run)
         self.setModel(self._abstract_item_model)
