@@ -138,20 +138,18 @@ class TreeViewModel(QAbstractItemModel):
         super(TreeViewModel, self).__init__(parent)
 
         self._catalog = bs_run
-        self._run_tree = RunTree(bs_run)
-
-        # State related to dynamically adding rows
-        self._current_num_rows = len(self._catalog)
-        self._catalog_length = len(self._catalog)
+        if bs_run is not None:
+            self._run_tree = RunTree(bs_run)
+        else:
+            self._run_tree = None
 
     def setRun(self, bs_run):
         self.beginResetModel()
         self._catalog = bs_run
-        self._run_tree = RunTree(bs_run)
-
-        # State related to dynamically adding rows
-        self._current_num_rows = len(self._catalog)
-        self._catalog_length = len(self._catalog)
+        if bs_run is not None:
+            self._run_tree = RunTree(bs_run)
+        else:
+            self._run_tree = None
         self.endResetModel()
 
     def index(self, row, column, parent=QModelIndex()):
@@ -190,7 +188,7 @@ class TreeViewModel(QAbstractItemModel):
     def rowCount(self, parent=QModelIndex()):
         if parent.isValid():
             return parent.internalPointer().child_count()
-        elif not parent.isValid():
+        elif not parent.isValid() and self._run_tree is not None:
             return self._run_tree.count()
         return 0
 

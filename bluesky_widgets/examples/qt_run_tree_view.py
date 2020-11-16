@@ -19,11 +19,10 @@ class Views(QWidget):
     def __init__(self, *, show=True, title=""):
         super().__init__()
         self.title = title
+        self.widget = QtTreeView(self)
 
-        # You can set your own catalog/run here or use this synthetic data.
-        self._run = get_catalog()[-1]
-
-        self.widget = QtTreeView(self, self._run)
+    def set_run(self, bs_run):
+        self.widget.model().setRun(bs_run)
 
 class RunTree:
     """
@@ -35,6 +34,10 @@ class RunTree:
         self.title = title
         self.view = Views()
         self._window = Window(self.view.widget, show=show)
+
+    def set_run(self, bs_run):
+        """Set the active run to the one supplied."""
+        self.view.set_run(bs_run)
 
     def show(self):
         """Resize, show, and raise the window."""
@@ -48,6 +51,11 @@ def main():
     print(__doc__)
     with gui_qt("Example Application"):
         views = Views(title="Example Application")
+
+        # You can set your own catalog/run here or use this synthetic data.
+        run = get_catalog()[-1]
+        views.set_run(run)
+
         views.show()
 
 
