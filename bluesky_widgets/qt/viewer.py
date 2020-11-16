@@ -30,17 +30,17 @@ class QtViewer(QWidget):
         self.model.lines.events.removed.connect(self._on_line_removed)
 
     def _on_axes_added(self, event):
-        axes_spec = event.item
+        axes_model = event.item
         fig, axes, tab = _make_figure_tab()
         self._figures[tab] = fig
-        self._axes[axes_spec] = axes
+        self._axes[axes_model] = axes
         # Use matplotlib's user-configurable ID so that we can look up the
         # AxesSpec from the axes if we need to.
-        axes.set_gid(axes_spec.uuid)
-        self._tabs.addTab(tab, "Title")  # TODO Add title to axes_spec?
+        axes.set_gid(axes_model.uuid)
+        self._tabs.addTab(tab, "Title")  # TODO Add title to AxesSpec?
 
-        axes.set_xlabel(axes_spec.x_label)
-        axes.set_ylabel(axes_spec.y_label)
+        axes.set_xlabel(axes_model.spec.x_label)
+        axes.set_ylabel(axes_model.spec.y_label)
         fig.tight_layout()
 
     def _on_axes_removed(self, event):
