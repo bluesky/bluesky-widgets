@@ -42,7 +42,12 @@ class Spec:
 
 @dataclasses.dataclass(frozen=True)
 class AxesSpec(Spec):
-    "Specify a set of axes (specifically, matplotlib.axes.Axes)"
+    """
+    Specify a set of axes.
+
+    The names here are targetting matplotlib.axes.Axes but could in principle
+    be used by a view that uses a different plotting library.
+    """
     x_label: str
     y_label: str
 
@@ -54,12 +59,14 @@ class AxesSpec(Spec):
 
 @dataclasses.dataclass(frozen=True)
 class LineSpec(Spec):
-    "Specify how to extract data for and stylize a line."
+    """
+    Specify how to extract data for and stylize a line.
+    """
     func: callable
     run: typing.Any  # may be bluesky_live or databroker BlueskyRun
     axes: AxesSpec
     args: tuple
-    kwargs: dict
+    kwargs: dict  # DANGER: This ought to be a frozendict.
 
     def __hash__(self):
         # The dataclass decorator overrides the implementation in the base
