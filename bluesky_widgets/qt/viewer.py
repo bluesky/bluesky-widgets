@@ -39,6 +39,10 @@ class QtViewer(QWidget):
         axes.set_gid(axes_spec.uuid)
         self._tabs.addTab(tab, "Title")  # TODO Add title to axes_spec?
 
+        axes.set_xlabel(axes_spec.x_label)
+        axes.set_ylabel(axes_spec.y_label)
+        fig.tight_layout()
+
     def _on_axes_removed(self, event):
         ...
 

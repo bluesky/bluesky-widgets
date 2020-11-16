@@ -10,6 +10,13 @@ LineSpec = namedtuple("LineSpec", ["func", "run", "axes_spec", "args", "kwargs"]
 
 
 def prompt_line_builder(run):
+    """
+    This is a simple example.
+
+    This makes a hard-coded assumption that the data has columns "motor" and
+    "det" in the primary stream.
+    """
+
     def func(run):
         ds = run.primary.read()
         return ds["motor"], ds["det"]
@@ -19,7 +26,7 @@ def prompt_line_builder(run):
     return [LineSpec(func, run, axes_spec, (), {})]
 
 
-def lines(run):
+def streaming_line_builder(run, lines):
     start_doc = run.metadata["start"]
     dimensions = start_doc.get("hints", {}).get(
         "dimensions", guess_dimensions(start_doc)
@@ -99,8 +106,6 @@ def lines(run):
                         x_units = descriptor_doc["data_keys"][x_key].get("units")
                     if x_units:
                         xlabel += f" [{x_units}]"
-                    ax.set_xlabel(x_key)
-                    fig.tight_layout()
             # TODO Plot other streams against time.
         return callbacks
 
