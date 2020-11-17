@@ -1,4 +1,5 @@
 import collections.abc
+import logging
 
 from qtpy.QtWidgets import (
     QTabWidget,
@@ -117,3 +118,12 @@ def _make_figure_tab(*args, **kwargs):
     layout.addWidget(toolbar)
     tab.setLayout(layout)
     return fig, axes, tab
+
+
+def _quiet_mpl_noisy_logger():
+    "Do not filter or silence it, but avoid defaulting to the logger of last resort."
+    logger = logging.getLogger("matplotlib.legend")
+    logger.addHandler(logging.NullHandler())
+
+
+_quiet_mpl_noisy_logger()
