@@ -230,7 +230,7 @@ class Viewer:
             if artifact in self.lines:
                 self.lines.remove(artifact)
         # Clean up caches.
-        del self._figure_ownership[uid]
+        del self._figure_ownership[figure_spec.uuid]
         for axes_spec in figure_spec.axes_specs:
             del self._axes_to_figure[axes_spec.uuid]
 

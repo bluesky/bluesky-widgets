@@ -17,25 +17,26 @@ class QtViewer(QWidget):
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
-        # Map widget in tab to matplotlib figure.
+        # Map Figure UUID to widget.
         self._figures = {}
         # Map Axes UUID to matplotlib.axes.Axes
         self._axes = {}
         # Map Line UUID to matplotlib Line artist
         self._lines = {}
         layout = QVBoxLayout()
-        self._tabs = _QtViewerTabs()
+        self._tabs = _QtViewerTabs(model.figures)
         layout.addWidget(self._tabs)
         self.setLayout(layout)
 
         self.model.figures.events.added.connect(self._on_figure_added)
+        self.model.figures.events.removed.connect(self._on_figure_removed)
         self.model.lines.events.added.connect(self._on_line_added)
         self.model.lines.events.removed.connect(self._on_line_removed)
 
     def _on_figure_added(self, event):
         figure_spec = event.item
-        fig, axes_list, tab = _make_figure_tab(len(figure_spec.axes_specs))
-        self._figures[tab] = fig
+        fig, axes_list, tab = _make_figure_tab(figure_spec)
+        self._figures[figure_spec.uuid] = tab
         for axes_spec, axes in zip(figure_spec.axes_specs, axes_list):
             axes.set_xlabel(axes_spec.x_label)
             axes.set_ylabel(axes_spec.y_label)
@@ -49,7 +50,13 @@ class QtViewer(QWidget):
         self._tabs.addTab(tab, figure_spec.title)
 
     def _on_figure_removed(self, event):
-        ...
+        # A Search has been removed from the SearchList model.
+        # Close the associated tab and clean up the associated state.
+        figure_spec = event.item
+        widget = self._figures[figure_spec.uuid]
+        index = self._tabs.indexOf(widget)
+        self._tabs.removeTab(index)
+        del self._figures[figure_spec.uuid]
 
     def _on_line_added(self, event):
         line_spec = event.item
@@ -95,16 +102,34 @@ class QtViewer(QWidget):
 
 
 class _QtViewerTabs(QTabWidget):
-    ...
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = model
+        self.setTabsClosable(True)
+        self.tabCloseRequested.connect(self.close_tab)
+
+    def close_tab(self, index):
+        # When closing is initiated from the view, remove the associated
+        # model.
+        widget = self.widget(index)
+        self.model.remove(widget.model)
 
 
-def _make_figure_tab(*args, **kwargs):
+class FigureTab(QWidget):
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = model
+
+
+def _make_figure_tab(figure_spec):
     "Create a Figure in a QWidget. Pass args, kwargs to pyplot.subplots()."
     matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
     import matplotlib.pyplot as plt  # noqa
 
-    tab = QWidget()
-    fig, axes = plt.subplots(*args, **kwargs)
+    tab = FigureTab(figure_spec)
+    # TODO Let FigureSpec give different options to subplots here,
+    # but verify that number of axes created matches the number of axes_specs.
+    fig, axes = plt.subplots(len(figure_spec.axes_specs))
     # Handl return type instability in plt.subplots.
     if not isinstance(axes, collections.abc.Iterable):
         axes = [axes]
