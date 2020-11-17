@@ -6,8 +6,8 @@ def define_spec(typename, field_names, *, rename=False, defaults=None, module=No
     """
     This is a wrapper around namedtuple that adds a uuid field with a default value.
 
-    This allows it to be hashable even when the contents are mutable, by making
-    the uuid the "identity" of the object.
+    Also, these are *never* hashable, unlike namedtuple which is *sometimes*
+    hashable.
     """
     if isinstance(field_names, str):
         # namedtuple support field_names as space- or comma-separated string
@@ -33,8 +33,12 @@ def define_spec(typename, field_names, *, rename=False, defaults=None, module=No
                 kwargs.update({"uuid": uuid_module.uuid4()})
             return super().__new__(cls, *args, **kwargs)
 
-        def __hash__(self):
-            return self.uuid.int
+        # namedtuples are *sometimes* hashable depending on whether their
+        # contents are hashable. We will make specs *never* hashable because
+        # they are likely to have mutable (non-hashable) contents in many
+        # cases, and the right way to build hashes with them is to use their
+        # uuid attribute.
+        __hash__ = None
 
         def __eq__(self, other):
 
@@ -45,6 +49,7 @@ def define_spec(typename, field_names, *, rename=False, defaults=None, module=No
     result.__qualname__ = typename
 
     # This makes pickling work, just as it is done in namedtuple itself.
+    # This is lifted straight from the Python standard library.
 
     # For pickling to work, the __module__ variable needs to be set to the frame
     # where the named tuple is created.  Bypass this step in environments where

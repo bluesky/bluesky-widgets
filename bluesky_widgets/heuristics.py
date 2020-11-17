@@ -100,13 +100,30 @@ class LastNLines(StreamingPlotBuilder):
         self._x = x
         self._y = y
         self._stream_name = stream_name
-        # Make one AxesSpec which we will use throughout the whole lifecycle.
+        self._axes = None
+
+    def new_plot(self):
+        # If we already have a plot, forget about it and its lines. We just
+        # want to forget about them, not *remove* them from the Viewer, so we
+        # will block notification of the removal.
+        if self._axes is not None:
+            try:
+                self.figures.events.removed.block()
+                self.lines.events.removed.block()
+                self.figures.clear()
+                self.lines.clear()
+            finally:
+                self.figures.events.removed.unblock()
+                self.lines.events.removed.unblock()
         axes_spec = AxesSpec(self.x, self.y)
         figure_spec = FigureSpec((axes_spec,), f"{self.y} v {self.x}")
         self.figures.append(figure_spec)
         self._axes = axes_spec
 
     def add_line(self, run):
+        # Create a plot if we do not have one.
+        if self._axes is None:
+            self.new_plot()
         # If necessary, removes lines to make room for the new line.
         while len(self.lines) >= self.N:
             self.lines.pop()

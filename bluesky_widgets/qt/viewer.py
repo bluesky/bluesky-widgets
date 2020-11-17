@@ -18,9 +18,9 @@ class QtViewer(QWidget):
         self.model = model
         # Map widget in tab to matplotlib figure.
         self._figures = {}
-        # Map Axes to matplotlib.axes.Axes
+        # Map Axes UUID to matplotlib.axes.Axes
         self._axes = {}
-        # Map Line to matplotlib Line artist
+        # Map Line UUID to matplotlib Line artist
         self._lines = {}
         layout = QVBoxLayout()
         self._tabs = _QtViewerTabs()
@@ -39,7 +39,7 @@ class QtViewer(QWidget):
             axes.set_xlabel(axes_spec.x_label)
             axes.set_ylabel(axes_spec.y_label)
 
-            self._axes[axes_spec] = axes
+            self._axes[axes_spec.uuid] = axes
             # Use matplotlib's user-configurable ID so that we can look up the
             # AxesSpec from the axes if we need to.
             axes.set_gid(axes_spec.uuid)
@@ -55,11 +55,11 @@ class QtViewer(QWidget):
         run = line_spec.run
         x, y = line_spec.func(run)
         # Look up matplotlib.axes.Axes from AxesSpec.
-        axes = self._axes[line_spec.axes_spec]
+        axes = self._axes[line_spec.axes_spec.uuid]
 
         # Initialize artist with currently-available data.
         (artist,) = axes.plot(x, y, *line_spec.args, **line_spec.kwargs)
-        self._lines[line_spec] = artist
+        self._lines[line_spec.uuid] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # LineSpec from the line artist if we need to.
         artist.set_gid(line_spec.uuid)
@@ -86,9 +86,10 @@ class QtViewer(QWidget):
 
     def _on_line_removed(self, event):
         line_spec = event.item
-        line_artist = self._lines.pop(line_spec)
+        line_artist = self._lines.pop(line_spec.uuid)
         line_artist.remove()
-        axes = self._axes[line_spec.axes_spec]
+        axes = self._axes[line_spec.axes_spec.uuid]
+        axes.legend(loc="best")  # Update the legend.
         axes.figure.canvas.draw_idle()
 
 
