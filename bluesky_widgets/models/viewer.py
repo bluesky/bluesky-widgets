@@ -104,7 +104,7 @@ class Viewer:
         # immediately.
         if run.metadata["stop"] is not None:
             for builder in self.prompt_builders:
-                self._feed_prompt_builder(run, builder)
+                self._prompt_builder_processor.process_specs(builder(run))
         # Otherwise, if it supports streaming, set up a callback to run the
         # "prompt" builders whenever it completes.
         elif hasattr(run, "events"):
@@ -113,13 +113,8 @@ class Viewer:
     def _on_run_complete(self, event):
         "Callback run with a streaming BlueskyRun is complete."
         for builder in self.prompt_builders:
-            self._feed_prompt_builder(event.source, builder)
+            self._prompt_builder_processor.process_specs(builder(event.run))
         self.events.completed.disconnect(self._on_run_complete)
-
-    def _feed_prompt_builder(self, run, builder):
-        "Pass a complete BlueskyRun to the prompt_builders and capture returns."
-        specs = builder(run)
-        self._prompt_builder_processor.process_specs(specs)
 
     def _on_run_removed(self, event):
         "Callback run when a Run is removed from self.runs"
@@ -136,7 +131,7 @@ class Viewer:
         for run in self.runs:
             # If the BlueskyRun is complete, feed the new "prompt" builder.
             if run.metadata["stop"] is not None:
-                self._feed_prompt_builders(run, builder)
+                self._prompt_builder_processor.process_specs(builder(run))
 
     def _on_prompt_builder_removed(self, event):
         # TODO Remove its artifacts? That may not be the user intention.
@@ -211,8 +206,13 @@ class Viewer:
 
 
 class _PromptBuilderProcessor(StreamingPlotBuilder):
+    """
+    This wraps a "prompt builder" (simple function) in StreamingPlotBuilder.
+    """
+
     def __init__(self):
         super().__init__()
+        # Map which EventedList each type should go to.
         self.type_map = {
             FigureSpec: self.figures,
             LineSpec: self.lines,
