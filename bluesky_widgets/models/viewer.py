@@ -276,7 +276,9 @@ class Viewer:
             # but intentionally did not notify the Viewer).
             pass
         finally:
-            list_.events.removed.unblock(callback=self._on_line_spec_removed_from_builder)
+            list_.events.removed.unblock(
+                callback=self._on_line_spec_removed_from_builder
+            )
 
     def _on_grid_spec_added_to_builder(self, event):
         ...
