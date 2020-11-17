@@ -108,14 +108,9 @@ class LastNLines(StreamingPlotBuilder):
         # want to forget about them, not *remove* them from the Viewer, so we
         # will block notification of the removal.
         if self._axes is not None:
-            try:
-                self.figures.events.removed.block()
-                self.lines.events.removed.block()
+            with self.figures.events.removed.blocker(), self.lines.events.removed.blocker():
                 self.figures.clear()
                 self.lines.clear()
-            finally:
-                self.figures.events.removed.unblock()
-                self.lines.events.removed.unblock()
         axes_spec = AxesSpec(self.x, self.y)
         figure_spec = FigureSpec((axes_spec,), f"{self.y} v {self.x}")
         self.figures.append(figure_spec)

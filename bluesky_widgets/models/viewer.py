@@ -271,17 +271,15 @@ class Viewer:
             # The Builder is gone. Do nothing.
             return
         # Avoid a loop.
-        list_.events.removed.block(callback=self._on_line_spec_removed_from_builder)
-        try:
-            list_.remove(line_spec)
-        except ValueError:
-            # The Builder has already "forgotten" this line (i.e. removed it
-            # but intentionally did not notify the Viewer).
-            pass
-        finally:
-            list_.events.removed.unblock(
-                callback=self._on_line_spec_removed_from_builder
-            )
+        with list_.events.removed.blocker(
+            callback=self._on_line_spec_removed_from_builder
+        ):
+            try:
+                list_.remove(line_spec)
+            except ValueError:
+                # The Builder has already "forgotten" this line (i.e. removed it
+                # but intentionally did not notify the Viewer).
+                pass
 
     def _on_grid_spec_added_to_builder(self, event):
         ...
