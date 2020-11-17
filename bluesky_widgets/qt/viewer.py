@@ -58,11 +58,14 @@ class QtViewer(QWidget):
         axes = self._axes[line_spec.axes_spec]
 
         # Initialize artist with currently-available data.
-        (artist,) = axes.plot(x, y)
+        (artist,) = axes.plot(x, y, *line_spec.args, **line_spec.kwargs)
         self._lines[line_spec] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # LineSpec from the line artist if we need to.
         artist.set_gid(line_spec.uuid)
+
+        # This legend can only be turned on after there is at least one artist.
+        axes.legend(loc="best")
 
         # IMPORTANT: Schedule matplotlib to redraw the canvas to include this
         # update at the next opportunity. Without this, the view may remain

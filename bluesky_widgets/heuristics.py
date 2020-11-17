@@ -65,9 +65,10 @@ def prompt_line_builder(run):
 
     axes_spec = AxesSpec("motor", "det")
     figure_spec = FigureSpec((axes_spec,), "det v motor")
-    line_spec = LineSpec(func, run, axes_spec, (), {})
+    label = f"Scan {run.metadata['start']['scan_id']}"
+    line_spec = LineSpec(func, run, axes_spec, (), {"label": label})
 
-    return [figure_spec, axes_spec, line_spec]
+    return [figure_spec, line_spec]
 
 
 class StreamingPlotBuilder:
@@ -77,7 +78,6 @@ class StreamingPlotBuilder:
 
     def __init__(self):
         self.figures = FigureSpecList()
-        self.axes = AxesSpecList()
         self.lines = LineSpecList()
         self.grids = GridSpecList()
         self.image_stacks = ImageStackSpecList()
@@ -131,7 +131,8 @@ class LastNLines(StreamingPlotBuilder):
             ds = run[stream_name].to_dask()
             return ds[x], ds[y]
 
-        line_spec = LineSpec(func, run, self._current_axes, (), {})
+        label = f"Scan {run.metadata['start']['scan_id']}"
+        line_spec = LineSpec(func, run, self._current_axes, (), {"label": label})
 
         self.lines.append(line_spec)
 

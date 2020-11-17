@@ -35,8 +35,8 @@ class Viewer:
         # streaming off of a message bus.
         self.runs = RunList()
 
-        # List of lightweight models (namedtuples) that represent axes and
-        # various plot entities.
+        # List of lightweight models (namedtuples) that represent various plot
+        # entities.
         self.figures = FigureSpecList()
         self.axes = AxesSpecList()
         self.lines = LineSpecList()
@@ -66,9 +66,6 @@ class Viewer:
         self._prompt_builder_processor = _PromptBuilderProcessor()
         self._prompt_builder_processor.figures.events.added.connect(
             self._on_figure_spec_added
-        )
-        self._prompt_builder_processor.axes.events.added.connect(
-            self._on_axes_spec_added
         )
         self._prompt_builder_processor.lines.events.added.connect(
             self._on_line_spec_added
@@ -137,7 +134,6 @@ class Viewer:
     def _on_streaming_builder_added(self, event):
         builder = event.item
         builder.figures.events.added.connect(self._on_figure_spec_added)
-        builder.axes.events.added.connect(self._on_axes_spec_added)
         builder.lines.events.added.connect(self._on_line_spec_added)
         builder.grids.events.added.connect(self._on_grid_spec_added)
         builder.image_stacks.events.added.connect(self._on_image_stack_spec_added)
@@ -148,7 +144,6 @@ class Viewer:
     def _on_streaming_builder_removed(self, event):
         builder = event.item
         builder.figures.events.added.disconnect(self._on_figure_spec_added)
-        builder.axes.events.added.disconnect(self._on_axes_spec_added)
         builder.lines.events.added.disconnect(self._on_line_spec_added)
         builder.grids.events.added.disconnect(self._on_grid_spec_added)
         builder.image_stacks.events.added.disconnect(self._on_image_stack_spec_added)
@@ -156,9 +151,7 @@ class Viewer:
 
     def _on_figure_spec_added(self, event):
         self.figures.append(event.item)
-
-    def _on_axes_spec_added(self, event):
-        self.axes.append(event.item)
+        self.axes.extend(event.item.axes_specs)
 
     def _on_line_spec_added(self, event):
         line_spec = event.item
@@ -183,7 +176,6 @@ class _PromptBuilderProcessor(StreamingPlotBuilder):
         super().__init__()
         self.type_map = {
             FigureSpec: self.figures,
-            AxesSpec: self.axes,
             LineSpec: self.lines,
             GridSpec: self.grids,
             ImageStackSpec: self.image_stacks,
