@@ -91,12 +91,23 @@ class StreamingPlotBuilder:
 class LastNLines(StreamingPlotBuilder):
     """
     Plot y vs x for the last N runs.
+
+    Parameters
+    ----------
+    x : string
+        field name
+    y : string
+        field name
+    N : int
+        number of lines to show at once
+    stream_name : string, optional
+        Stream where fields x and y are found. Default is "primary".
     """
 
     def __init__(self, x, y, N, stream_name="primary"):
         super().__init__()
         # Stash these and expose them as read-only properties.
-        self._N = N
+        self._N = int(N)
         self._x = x
         self._y = y
         self._stream_name = stream_name
@@ -116,7 +127,7 @@ class LastNLines(StreamingPlotBuilder):
         self.figures.append(figure_spec)
         self._axes = axes_spec
 
-    def add_line(self, run):
+    def _add_line(self, run):
         # Create a plot if we do not have one.
         if not self.figures:
             self.new_plot()
@@ -142,16 +153,16 @@ class LastNLines(StreamingPlotBuilder):
     def __call__(self, run):
         # If the stream of interest is defined already, plot now.
         if self.stream_name in run:
-            self.add_line(run)
+            self._add_line(run)
         else:
             # Otherwise, connect a callback to run when the stream of interest arrives.
-            run.events.new_stream.connect(self.on_new_stream)
-            run.events.completed.disconnect(self.on_new_stream)
+            run.events.new_stream.connect(self._on_new_stream)
+            run.events.completed.disconnect(self._on_new_stream)
 
-    def on_new_stream(self, event):
+    def _on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."
         if event.name == self.stream_name:
-            self.add_line(event.run)
+            self._add_line(event.run)
 
     # Read-only properties so that these settings are inspectable, but not
     # changeable.

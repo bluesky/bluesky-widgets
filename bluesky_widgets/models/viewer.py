@@ -18,18 +18,59 @@ from ..heuristics import (
 
 
 class RunList(EventedList):
+    """
+    A list of BlueskyRuns currently displayed in the Viewer.
+    """
+
     ...
 
 
-class PromptBuilderList(EventedList):
+class PromptPlotBuilderList(EventedList):
+    """
+    A list of functions that, given a complete Run, return specs for the Viewer.
+    """
+
     ...
 
 
-class StreamingBuilderList(EventedList):
+class StreamingPlotBuilderList(EventedList):
+    """
+    A list of classes providing specs for the Viewer in a streaming fashion.
+
+    See bluesky_widgets.heuristics.StreamingPlotBuilder.
+    """
+
     ...
 
 
 class Viewer:
+    """
+    A Viewer for BlueskyRuns
+
+    This is a model meant to be programmed in a script or interactive console
+    by the user. It may be used "headless" as is or passed to a view that will
+    implement a graphical user interface.
+
+    Attributes
+    ----------
+    runs : EventedList[BlueskyRun]
+        A list of BlueskyRuns currently displayed in the Viewer.
+    prompt_builders : EventedList[callable]
+        A list of functions that, given a complete Run, return specs for the Viewer.
+    streaming_builders : EventedList[StreamingPlotBuilder]
+        A list of classes providing specs for the Viewer in a streaming fashion.
+        See bluesky_widgets.heuristics.StreamingPlotBuilder.
+
+    figures : EventedList[FigureSpec]
+        Items represent figures with axes, e.g. tabs in a graphical viewer
+    lines : EventedList[LineSpec]
+        Items represent lines on axes
+    grids : EventedList[FigureSpec]
+        Items represent gridded heat maps on axes
+    image_stacks : EventedList[FigureSpec]
+        Items represent image stacks on axes
+    """
+
     def __init__(self):
         # List of BlueskyRuns. These may be backed by data at rest or data
         # streaming off of a message bus.
@@ -38,18 +79,20 @@ class Viewer:
         # List of lightweight models (namedtuples) that represent various plot
         # entities.
         self.figures = FigureSpecList()
-        self.axes = AxesSpecList()
         self.lines = LineSpecList()
         self.grids = GridSpecList()
         self.image_stacks = ImageStackSpecList()
+        # Users cannot add or remove Axes directly---only Figures---so this one
+        # is private.
+        self._axes = AxesSpecList()
 
         # List of builders that will be handled a BlueskyRun when it is
         # complete.
-        self.prompt_builders = PromptBuilderList()
+        self.prompt_builders = PromptPlotBuilderList()
 
         # List of builders that will respond to new data ina BlueskyRun in a
         # streaming fashion.
-        self.streaming_builders = StreamingBuilderList()
+        self.streaming_builders = StreamingPlotBuilderList()
 
         # Connect callbacks to react when the lists above change.
         self.runs.events.added.connect(self._on_run_added)
@@ -63,7 +106,7 @@ class Viewer:
 
         # This utility is used to feed the output of prompt_builders into the
         # same system that processes streaming_builders.
-        self._prompt_builder_processor = _PromptBuilderProcessor()
+        self._prompt_builder_processor = _PromptPlotBuilderProcessor()
         self._prompt_builder_processor.figures.events.added.connect(
             self._on_figure_spec_added_to_builder
         )
@@ -211,13 +254,13 @@ class Viewer:
         figure_spec = event.item
         for axes_spec in figure_spec.axes_specs:
             self._axes_to_figure[axes_spec.uuid] = figure_spec
-        self.axes.extend(event.item.axes_specs)
+        self._axes.extend(event.item.axes_specs)
 
     def _on_figure_spec_removed_from_viewer(self, event):
         # Remove all the Figure's Axes from the Viewer.
         figure_spec = event.item
         for axes_spec in figure_spec.axes_specs:
-            self.axes.remove(axes_spec)
+            self._axes.remove(axes_spec)
         # Remove the Figure from any Builders that reference it.
         for builder in self.streaming_builders:
             j = 0
@@ -237,7 +280,7 @@ class Viewer:
     def _on_line_spec_added_to_builder(self, event):
         # Add it to the Viewer as well, but check first that the Axes exist.
         line_spec = event.item
-        if line_spec.axes_spec not in self.axes:
+        if line_spec.axes_spec not in self._axes:
             raise RuntimeError(
                 f"No FigureSpec with Axes matching {line_spec.axes_spec}. Cannot draw line."
             )
@@ -294,7 +337,7 @@ class Viewer:
         ...
 
 
-class _PromptBuilderProcessor(StreamingPlotBuilder):
+class _PromptPlotBuilderProcessor(StreamingPlotBuilder):
     """
     This wraps a "prompt builder" (simple function) in StreamingPlotBuilder.
     """
