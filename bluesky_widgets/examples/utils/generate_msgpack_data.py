@@ -11,10 +11,9 @@ def get_catalog():
     RE = RunEngine()
 
     directory = tempfile.TemporaryDirectory().name
-    with Serializer(directory) as serializer:
-        RE(scan([det], motor, -1, 1, 10), serializer)
-    with Serializer(directory) as serializer:
-        RE(scan([det], motor, -1, 1, 15), serializer)
+    for i in range(1, 5):
+        with Serializer(directory) as serializer:
+            RE(scan([det], motor, -1, 1, 5 * i), serializer)
     with Serializer(directory) as serializer:
         RE(count([img], 3), serializer)
 

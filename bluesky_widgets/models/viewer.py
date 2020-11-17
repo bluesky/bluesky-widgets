@@ -3,27 +3,19 @@ import uuid as uuid_module
 
 # from ..utils.event import Event, EventEmitter
 from ..utils.list import EventedList
-from ..heuristics import LineSpec
-
-
-class AxesSpecList(EventedList):
-    ...
-
-
-class AxesList(EventedList):
-    ...
-
-
-class LineList(EventedList):
-    ...
-
-
-class GridList(EventedList):
-    ...
-
-
-class ImageStackList(EventedList):
-    ...
+from ..heuristics import (
+    LineSpec,
+    AxesSpec,
+    FigureSpec,
+    GridSpec,
+    ImageStackSpec,
+    LineSpecList,
+    AxesSpecList,
+    FigureSpecList,
+    GridSpecList,
+    ImageStackSpecList,
+    StreamingPlotBuilder,
+)
 
 
 class RunList(EventedList):
@@ -38,43 +30,19 @@ class StreamingBuilderList(EventedList):
     ...
 
 
-class HashByUUID:
-    "Mixin class for providing a hash based on `uuid` attribute."
-
-    def __hash__(self):
-        # Expects to be mixed in with a class that exposes self.uuid: uuid.UUID
-        return self.uuid.int
-
-
-_AxesTuple = namedtuple("Axes", ["uuid", "spec"])
-Axes = type("Axes", (HashByUUID, _AxesTuple), {})
-"Identifies a particular set of Axes"
-
-_LineTuple = namedtuple("Line", ["uuid", "spec", "axes"])
-Line = type("Line", (HashByUUID, _LineTuple), {})
-"Identfies a particular line"
-
-
-def new_axes(spec):
-    return Axes(uuid_module.uuid4(), spec)
-
-
-def new_line(spec, axes):
-    return Line(uuid_module.uuid4(), spec, axes)
-
-
 class Viewer:
     def __init__(self):
         # List of BlueskyRuns. These may be backed by data at rest or data
         # streaming off of a message bus.
         self.runs = RunList()
 
-        # List of lightweight models that represent axes and various "artist"
-        # types.
-        self.axes = AxesList()
-        self.lines = LineList()
-        self.grids = GridList()
-        self.image_stacks = ImageStackList()
+        # List of lightweight models (namedtuples) that represent axes and
+        # various plot entities.
+        self.figures = FigureSpecList()
+        self.axes = AxesSpecList()
+        self.lines = LineSpecList()
+        self.grids = GridSpecList()
+        self.image_stacks = ImageStackSpecList()
 
         # List of builders that will be handled a BlueskyRun when it is
         # complete.
@@ -94,21 +62,12 @@ class Viewer:
             self._on_streaming_builder_removed
         )
 
+        # This utility is used to feed the output of prompt_builders into the
+        # same system that processes streaming_builders.
+        self._prompt_buidler_processor = PromptBuilderProcessor()
+
         # Map Run uid to list of artifacts.
         self._ownership = defaultdict(list)
-
-        # TODO This probably belongs somewhere else...
-        self.overplot = True
-
-    @property
-    def _axes_spec_to_axes(self):
-        "Maps AxesSpec -> List[Axes]"
-        # In the future we could construct and update this at write time rather
-        # than reconstructing it at access time.
-        d = defaultdict(list)
-        for axes in self.axes:
-            d[axes.spec].append(axes)
-        return dict(d)
 
     def _on_run_added(self, event):
         "Callback run when a Run is added to self.runs"
@@ -167,36 +126,36 @@ class Viewer:
 
     def _on_streaming_builder_added(self, event):
         builder = event.item
-        builder.events.lines.connect(self._on_line_spec_added)
-        builder.events.grids.connect(self._on_grid_spec_added)
-        builder.events.image_stacks.connect(self._on_image_stack_spec_added)
+        builder.events.lines.connect(self._on_figure_spec_added)
+        builder.events.lines.connect(self._on_axes_spec_added)
+        builder.lines.events.added.connect(self._on_line_spec_added)
+        builder.grids.events.added.connect(self._on_grid_spec_added)
+        builder.image_stacks.events.added.connect(self._on_image_stack_spec_added)
 
         for run in self.runs:
             builder(run)
 
     def _on_streaming_builder_removed(self, event):
         builder = event.item
+        builder.events.lines.disconnect(self._on_figure_spec_added)
+        builder.events.lines.disconnect(self._on_axes_spec_added)
         builder.events.lines.disconnect(self._on_line_spec_added)
         builder.events.grids.disconnect(self._on_grid_spec_added)
         builder.events.image_stacks.disconnect(self._on_image_stack_spec_added)
         # TODO Remove its artifacts? That may not be the user intention.
 
-    def _on_line_spec_added(self, event):
-        # TODO Too much indirection here....
-        line_spec = event.item
-        self._on_line_spec_added(line_spec)
+    def _on_figure_spec_added(self, event):
+        self.figures.append(event)
 
-    def _on_new_line_spec(self, line_spec):
-        # Do we need new Axes for this line?
-        if self.overplot and (line_spec.axes_spec in self._axes_spec_to_axes):
-            # Overplotting is turned on, and we have a matching
-            # AxesSpec, so we will reuse the first matching Axes.
-            axes = self._axes_spec_to_axes[line_spec.axes_spec][0]
-        else:
-            axes = new_axes(line_spec.axes_spec)
-            self.axes.append(axes)
-        line = new_line(line_spec, axes)
+    def _on_axes_spec_added(self, event):
+        self.axes.append(event)
+
+    def _on_line_spec_added(self, event):
+        line_spec = event.item
+        if line_spec.axes_spec not in self.axes:
+            raise RuntimeError("No Axes matching {axes_spec} exit. Cannot draw line.")
         self.lines.append(line)
+        # TODO Track axes' lines so that removing axes removes lines.
         uid = line_spec.run.metadata["start"]["uid"]
         self._ownership[uid].append(line)
 
@@ -205,3 +164,23 @@ class Viewer:
 
     def _on_image_stack_spec_added(self, event):
         ...
+
+
+class PromptBuilderProcessor(StreamingPlotBuilder):
+    def __init__(self):
+        super().__init__(self)
+        type_map = {
+            FigureSpec: self.figures,
+            AxesSpec: self.axes,
+            LineSpec: self.lines,
+            GridSpec: self.grids,
+            ImageStackSpec: self.image_stacks,
+        }
+
+    def process_specs(self, specs):
+        for spec in specs:
+            try:
+                list_ = self.type_map[type(spec)]
+            except KeyError:
+                raise TypeError(f"Unknown spec type {type(spec)}")
+            list_.append(spec)
