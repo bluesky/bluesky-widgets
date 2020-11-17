@@ -1,20 +1,26 @@
-from collections import namedtuple
-
 from .utils.list import EventedList
 from .utils.spec import define_spec
 
 
-FigureSpec = define_spec("FigureSpec", ["axes_specs"])
+FigureSpec = define_spec("FigureSpec", ["axes_specs", "title"])
 "Describes a Figure"
 # It is an intentional limitation that Figure must be given all its Axes at
 # definition time. Axes cannot be added dynamically. This constraint could be
 # relaxed in the future, at the cost of some added complexity.
 
-AxesSpec = define_spec("AxesSpec", ["figure_spec", "x_label", "y_label"])
+AxesSpec = define_spec("AxesSpec", ["x_label", "y_label"])
 "Describes a set of Axes"
 
 LineSpec = define_spec("LineSpec", ["func", "run", "axes_spec", "args", "kwargs"])
 "Describes a line (both data and style)"
+
+GridSpec = define_spec("GridSpec", ["func", "run", "axes_spec", "args", "kwargs"])
+"Describes a gridded heat map (both data and style)"
+
+ImageStackSpec = define_spec(
+    "ImageStackSpec", ["func", "run", "axes_spec", "args", "kwargs"]
+)
+"Describes an image stack (both data and style)"
 
 
 class FigureSpecList(EventedList):
@@ -33,7 +39,7 @@ class GridSpecList(EventedList):
     ...
 
 
-class ImageStackList(EventedList):
+class ImageStackSpecList(EventedList):
     ...
 
 
@@ -58,7 +64,7 @@ def prompt_line_builder(run):
         return ds["motor"], ds["det"]
 
     axes_spec = AxesSpec("motor", "det")
-    figure_spec = FigureSpec((axes_spec,))
+    figure_spec = FigureSpec((axes_spec,), "det v motor")
     line_spec = LineSpec(func, run, axes_spec, (), {})
 
     return [figure_spec, axes_spec, line_spec]
@@ -74,7 +80,7 @@ class StreamingPlotBuilder:
         self.axes = AxesSpecList()
         self.lines = LineSpecList()
         self.grids = GridSpecList()
-        self.image_stacks = ImageStackList()
+        self.image_stacks = ImageStackSpecList()
         ...
 
     def __call__(self, run):
@@ -99,7 +105,7 @@ class LastNLines(StreamingPlotBuilder):
     def new_plot(self):
         "Create a fresh plot, leaving the previous one (if any) as is."
         axes_spec = AxesSpec(self.x, self.y)
-        figure_spec = FigureSpec((axes_spec,))
+        figure_spec = FigureSpec((axes_spec,), f"{self.y} v {self.x}")
         self.figures.append(figure_spec)
         self._current_axes = axes_spec
 
@@ -133,9 +139,10 @@ class LastNLines(StreamingPlotBuilder):
         # If the stream of interest is defined already, plot now.
         if self.stream_name in run:
             self.add_line(run)
-        # Otherwise, connect a callback to run when the stream of interest arrives.
-        run.events.new_stream.connect(self.on_new_stream)
-        run.events.completed.disconnect(self.on_new_stream)
+        else:
+            # Otherwise, connect a callback to run when the stream of interest arrives.
+            run.events.new_stream.connect(self.on_new_stream)
+            run.events.completed.disconnect(self.on_new_stream)
 
     def on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."

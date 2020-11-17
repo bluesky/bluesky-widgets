@@ -1,3 +1,5 @@
+import collections.abc
+
 from qtpy.QtWidgets import (
     QTabWidget,
     QWidget,
@@ -25,40 +27,42 @@ class QtViewer(QWidget):
         layout.addWidget(self._tabs)
         self.setLayout(layout)
 
-        self.model.axes.events.added.connect(self._on_axes_added)
+        self.model.figures.events.added.connect(self._on_figure_added)
         self.model.lines.events.added.connect(self._on_line_added)
         self.model.lines.events.removed.connect(self._on_line_removed)
 
-    def _on_axes_added(self, event):
-        axes_model = event.item
-        fig, axes, tab = _make_figure_tab()
+    def _on_figure_added(self, event):
+        figure_spec = event.item
+        fig, axes_list, tab = _make_figure_tab(len(figure_spec.axes_specs))
         self._figures[tab] = fig
-        self._axes[axes_model] = axes
-        # Use matplotlib's user-configurable ID so that we can look up the
-        # AxesSpec from the axes if we need to.
-        axes.set_gid(axes_model.uuid)
-        self._tabs.addTab(tab, "Title")  # TODO Add title to AxesSpec?
+        for axes_spec, axes in zip(figure_spec.axes_specs, axes_list):
+            axes.set_xlabel(axes_spec.x_label)
+            axes.set_ylabel(axes_spec.y_label)
 
-        axes.set_xlabel(axes_model.spec.x_label)
-        axes.set_ylabel(axes_model.spec.y_label)
+            self._axes[axes_spec] = axes
+            # Use matplotlib's user-configurable ID so that we can look up the
+            # AxesSpec from the axes if we need to.
+            axes.set_gid(axes_spec.uuid)
+
         fig.tight_layout()
+        self._tabs.addTab(tab, figure_spec.title)
 
-    def _on_axes_removed(self, event):
+    def _on_figure_removed(self, event):
         ...
 
     def _on_line_added(self, event):
-        line = event.item
-        run = line.spec.run
-        x, y = line.spec.func(run)
+        line_spec = event.item
+        run = line_spec.run
+        x, y = line_spec.func(run)
         # Look up matplotlib.axes.Axes from AxesSpec.
-        axes = self._axes[line.axes]
+        axes = self._axes[line_spec.axes_spec]
 
         # Initialize artist with currently-available data.
         (artist,) = axes.plot(x, y)
-        self._lines[line] = artist
+        self._lines[line_spec] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # LineSpec from the line artist if we need to.
-        artist.set_gid(line.uuid)
+        artist.set_gid(line_spec.uuid)
 
         # IMPORTANT: Schedule matplotlib to redraw the canvas to include this
         # update at the next opportunity. Without this, the view may remain
@@ -70,7 +74,7 @@ class QtViewer(QWidget):
         if hasattr(run, "events") and run.metadata.stop is not None:
 
             def update():
-                x, y = line.spec.func(run)
+                x, y = line_spec.func(run)
                 artist.set_data(x, y)
                 axes.figure.canvas.draw_idle()
 
@@ -78,10 +82,10 @@ class QtViewer(QWidget):
             run.events.completed.connect(lambda: run.events.new_data.disconnect(update))
 
     def _on_line_removed(self, event):
-        line = event.item
-        artist = self._lines.pop(line)
-        artist.remove()
-        axes = self._axes[line.axes]
+        line_spec = event.item
+        line_artist = self._lines.pop(line_spec)
+        line_artist.remove()
+        axes = self._axes[line_spec.axes]
         axes.figure.canvas.draw_idle()
 
 
@@ -89,12 +93,16 @@ class _QtViewerTabs(QTabWidget):
     ...
 
 
-def _make_figure_tab():
+def _make_figure_tab(*args, **kwargs):
+    "Create a Figure in a QWidget. Pass args, kwargs to pyplot.subplots()."
     matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
     import matplotlib.pyplot as plt  # noqa
 
     tab = QWidget()
-    fig, axes = plt.subplots()
+    fig, axes = plt.subplots(*args, **kwargs)
+    # Handl return type instability in plt.subplots.
+    if not isinstance(axes, collections.abc.Iterable):
+        axes = [axes]
     canvas = FigureCanvas(fig)
     canvas.setMinimumWidth(640)
     canvas.setParent(tab)

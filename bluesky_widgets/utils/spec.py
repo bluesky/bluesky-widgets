@@ -15,11 +15,14 @@ def define_spec(typename, field_names, *, rename=False, defaults=None, module=No
     if "uuid" in field_names:
         raise ValueError(
             "The field name 'uuid' has special significance in specs "
-            "and is reserved.")
+            "and is reserved."
+        )
     field_names.append("uuid")
 
     # Construct a standard namedtuple.
-    base_class = namedtuple(typename, field_names, rename=rename, defaults=defaults, module=module)
+    base_class = namedtuple(
+        typename, field_names, rename=rename, defaults=defaults, module=module
+    )
 
     # And override it to add an auto-generated uuid.
     class result(base_class):
@@ -34,8 +37,9 @@ def define_spec(typename, field_names, *, rename=False, defaults=None, module=No
             return self.uuid.int
 
         def __eq__(self, other):
+
             # Compare the contents as usual but omit the uuid.
-            return self[:-1] == other[:-1]
+            return isinstance(other, type(self)) and self[:-1] == other[:-1]
 
     result.__name__ = typename
     result.__qualname__ = typename
@@ -50,7 +54,8 @@ def define_spec(typename, field_names, *, rename=False, defaults=None, module=No
     if module is None:
         try:
             import sys
-            module = sys._getframe(1).f_globals.get('__name__', '__main__')
+
+            module = sys._getframe(1).f_globals.get("__name__", "__main__")
         except (AttributeError, ValueError):
             pass
     if module is not None:

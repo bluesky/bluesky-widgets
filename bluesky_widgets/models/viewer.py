@@ -1,5 +1,4 @@
-from collections import defaultdict, namedtuple
-import uuid as uuid_module
+from collections import defaultdict
 
 # from ..utils.event import Event, EventEmitter
 from ..utils.list import EventedList
@@ -64,7 +63,22 @@ class Viewer:
 
         # This utility is used to feed the output of prompt_builders into the
         # same system that processes streaming_builders.
-        self._prompt_buidler_processor = PromptBuilderProcessor()
+        self._prompt_builder_processor = _PromptBuilderProcessor()
+        self._prompt_builder_processor.figures.events.added.connect(
+            self._on_figure_spec_added
+        )
+        self._prompt_builder_processor.axes.events.added.connect(
+            self._on_axes_spec_added
+        )
+        self._prompt_builder_processor.lines.events.added.connect(
+            self._on_line_spec_added
+        )
+        self._prompt_builder_processor.grids.events.added.connect(
+            self._on_grid_spec_added
+        )
+        self._prompt_builder_processor.image_stacks.events.added.connect(
+            self._on_image_stack_spec_added
+        )
 
         # Map Run uid to list of artifacts.
         self._ownership = defaultdict(list)
@@ -97,11 +111,7 @@ class Viewer:
     def _feed_prompt_builder(self, run, builder):
         "Pass a complete BlueskyRun to the prompt_builders and capture returns."
         specs = builder(run)
-        for spec in specs:
-            if isinstance(spec, LineSpec):
-                self._on_new_line_spec(spec)
-            else:
-                raise TypeError("Unrecognized builder type")
+        self._prompt_builder_processor.process_specs(specs)
 
     def _on_run_removed(self, event):
         "Callback run when a Run is removed from self.runs"
@@ -126,8 +136,8 @@ class Viewer:
 
     def _on_streaming_builder_added(self, event):
         builder = event.item
-        builder.events.lines.connect(self._on_figure_spec_added)
-        builder.events.lines.connect(self._on_axes_spec_added)
+        builder.figures.events.added.connect(self._on_figure_spec_added)
+        builder.axes.events.added.connect(self._on_axes_spec_added)
         builder.lines.events.added.connect(self._on_line_spec_added)
         builder.grids.events.added.connect(self._on_grid_spec_added)
         builder.image_stacks.events.added.connect(self._on_image_stack_spec_added)
@@ -137,27 +147,29 @@ class Viewer:
 
     def _on_streaming_builder_removed(self, event):
         builder = event.item
-        builder.events.lines.disconnect(self._on_figure_spec_added)
-        builder.events.lines.disconnect(self._on_axes_spec_added)
-        builder.events.lines.disconnect(self._on_line_spec_added)
-        builder.events.grids.disconnect(self._on_grid_spec_added)
-        builder.events.image_stacks.disconnect(self._on_image_stack_spec_added)
+        builder.figures.events.added.disconnect(self._on_figure_spec_added)
+        builder.axes.events.added.disconnect(self._on_axes_spec_added)
+        builder.lines.events.added.disconnect(self._on_line_spec_added)
+        builder.grids.events.added.disconnect(self._on_grid_spec_added)
+        builder.image_stacks.events.added.disconnect(self._on_image_stack_spec_added)
         # TODO Remove its artifacts? That may not be the user intention.
 
     def _on_figure_spec_added(self, event):
-        self.figures.append(event)
+        self.figures.append(event.item)
 
     def _on_axes_spec_added(self, event):
-        self.axes.append(event)
+        self.axes.append(event.item)
 
     def _on_line_spec_added(self, event):
         line_spec = event.item
         if line_spec.axes_spec not in self.axes:
-            raise RuntimeError("No Axes matching {axes_spec} exit. Cannot draw line.")
-        self.lines.append(line)
+            raise RuntimeError(
+                f"No Axes matching {line_spec.axes_spec} exit. Cannot draw line."
+            )
+        self.lines.append(line_spec)
         # TODO Track axes' lines so that removing axes removes lines.
         uid = line_spec.run.metadata["start"]["uid"]
-        self._ownership[uid].append(line)
+        self._ownership[uid].append(line_spec)
 
     def _on_grid_spec_added(self, event):
         ...
@@ -166,10 +178,10 @@ class Viewer:
         ...
 
 
-class PromptBuilderProcessor(StreamingPlotBuilder):
+class _PromptBuilderProcessor(StreamingPlotBuilder):
     def __init__(self):
-        super().__init__(self)
-        type_map = {
+        super().__init__()
+        self.type_map = {
             FigureSpec: self.figures,
             AxesSpec: self.axes,
             LineSpec: self.lines,
