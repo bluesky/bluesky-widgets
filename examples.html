@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Examples &mdash; bluesky-widgets 0.0.4.post60+g458abb3 documentation</title>
+  <title>Examples &mdash; bluesky-widgets 0.0.4.post77+g838554b documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.0.4.post60+g458abb3
+                0.0.4.post77+g838554b
               </div>
             
           
@@ -203,7 +203,17 @@ ipython --gui<span class="o">=</span>qt
 </pre></div>
 </div>
 <p>This component expects a run to be passed into it, and will then display a tree
-view summarizing the contents of that run.</p>
+view summarizing the contents of that run. To run this in an IPython console:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install ipython
+ipython --gui<span class="o">=</span>qt
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky_widgets.examples.utils.generate_msgpack_data</span> <span class="kn">import</span> <span class="n">get_catalog</span>
+<span class="kn">from</span> <span class="nn">bluesky_widgets.examples.qt_run_tree_view</span> <span class="kn">import</span> <span class="n">RunTree</span>
+<span class="n">tree</span> <span class="o">=</span> <span class="n">RunTree</span><span class="p">()</span>
+<span class="n">tree</span><span class="o">.</span><span class="n">run</span> <span class="o">=</span> <span class="n">get_catalog</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="embedding-components-in-existing-applications">
 <h2>Embedding Components in Existing Applications<a class="headerlink" href="#embedding-components-in-existing-applications" title="Permalink to this headline">¶</a></h2>
