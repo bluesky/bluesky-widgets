@@ -4,7 +4,6 @@ from collections import defaultdict
 from ..utils.list import EventedList
 from ..heuristics import (
     LineSpec,
-    AxesSpec,
     FigureSpec,
     GridSpec,
     ImageStackSpec,
@@ -67,14 +66,26 @@ class Viewer:
         self._prompt_builder_processor.figures.events.added.connect(
             self._on_figure_spec_added
         )
+        self._prompt_builder_processor.figures.events.removed.connect(
+            self._on_figure_spec_removed
+        )
         self._prompt_builder_processor.lines.events.added.connect(
             self._on_line_spec_added
+        )
+        self._prompt_builder_processor.lines.events.removed.connect(
+            self._on_line_spec_removed
         )
         self._prompt_builder_processor.grids.events.added.connect(
             self._on_grid_spec_added
         )
+        self._prompt_builder_processor.grids.events.removed.connect(
+            self._on_grid_spec_removed
+        )
         self._prompt_builder_processor.image_stacks.events.added.connect(
             self._on_image_stack_spec_added
+        )
+        self._prompt_builder_processor.image_stacks.events.removed.connect(
+            self._on_image_stack_spec_removed
         )
 
         # Map Run uid to list of artifacts.
@@ -137,6 +148,10 @@ class Viewer:
         builder.lines.events.added.connect(self._on_line_spec_added)
         builder.grids.events.added.connect(self._on_grid_spec_added)
         builder.image_stacks.events.added.connect(self._on_image_stack_spec_added)
+        builder.figures.events.removed.connect(self._on_figure_spec_removed)
+        builder.lines.events.removed.connect(self._on_line_spec_removed)
+        builder.grids.events.removed.connect(self._on_grid_spec_removed)
+        builder.image_stacks.events.removed.connect(self._on_image_stack_spec_removed)
 
         for run in self.runs:
             builder(run)
@@ -147,11 +162,22 @@ class Viewer:
         builder.lines.events.added.disconnect(self._on_line_spec_added)
         builder.grids.events.added.disconnect(self._on_grid_spec_added)
         builder.image_stacks.events.added.disconnect(self._on_image_stack_spec_added)
+        builder.figures.events.removed.disconnect(self._on_figure_spec_removed)
+        builder.lines.events.removed.disconnect(self._on_line_spec_removed)
+        builder.grids.events.removed.disconnect(self._on_grid_spec_removed)
+        builder.image_stacks.events.removed.disconnect(
+            self._on_image_stack_spec_removed
+        )
         # TODO Remove its artifacts? That may not be the user intention.
 
     def _on_figure_spec_added(self, event):
         self.figures.append(event.item)
         self.axes.extend(event.item.axes_specs)
+
+    def _on_figure_spec_removed(self, event):
+        self.figures.remove(event.item)
+        for axes_spec in event.item.axes_specs:
+            self.axes.remove(axes_spec)
 
     def _on_line_spec_added(self, event):
         line_spec = event.item
@@ -164,10 +190,23 @@ class Viewer:
         uid = line_spec.run.metadata["start"]["uid"]
         self._ownership[uid].append(line_spec)
 
+    def _on_line_spec_removed(self, event):
+        line_spec = event.item
+        # TODO Tolerate manual removal from the Viewer.
+        self.lines.remove(line_spec)
+        uid = line_spec.run.metadata["start"]["uid"]
+        self._ownership[uid].remove(line_spec)
+
     def _on_grid_spec_added(self, event):
         ...
 
+    def _on_grid_spec_removed(self, event):
+        ...
+
     def _on_image_stack_spec_added(self, event):
+        ...
+
+    def _on_image_stack_spec_removed(self, event):
         ...
 
 

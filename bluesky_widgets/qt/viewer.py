@@ -88,7 +88,7 @@ class QtViewer(QWidget):
         line_spec = event.item
         line_artist = self._lines.pop(line_spec)
         line_artist.remove()
-        axes = self._axes[line_spec.axes]
+        axes = self._axes[line_spec.axes_spec]
         axes.figure.canvas.draw_idle()
 
 
