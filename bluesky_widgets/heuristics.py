@@ -94,29 +94,19 @@ class LastNLines(StreamingPlotBuilder):
     """
 
     def __init__(self, x, y, N, stream_name="primary"):
+        super().__init__()
         # Stash these and expose them as read-only properties.
         self._N = N
         self._x = x
         self._y = y
         self._stream_name = stream_name
-        self._current_axes = None
-        super().__init__()
-
-    def new_plot(self):
-        "Create a fresh plot, leaving the previous one (if any) as is."
+        # Make one AxesSpec which we will use throughout the whole lifecycle.
         axes_spec = AxesSpec(self.x, self.y)
         figure_spec = FigureSpec((axes_spec,), f"{self.y} v {self.x}")
         self.figures.append(figure_spec)
-        self._current_axes = axes_spec
-
-    def use_plot(self, axes_spec):
-        "Use an existing plot."
-        self._current_axes = axes_spec
+        self._axes = axes_spec
 
     def add_line(self, run):
-        # Create a new Figure and Axes if we do not already have one.
-        if self._current_axes is None:
-            self.new_plot()
         # If necessary, removes lines to make room for the new line.
         while len(self.lines) >= self.N:
             self.lines.pop()
@@ -132,7 +122,7 @@ class LastNLines(StreamingPlotBuilder):
             return ds[x], ds[y]
 
         label = f"Scan {run.metadata['start']['scan_id']}"
-        line_spec = LineSpec(func, run, self._current_axes, (), {"label": label})
+        line_spec = LineSpec(func, run, self._axes, (), {"label": label})
 
         self.lines.append(line_spec)
 
