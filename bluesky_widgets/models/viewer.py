@@ -64,28 +64,28 @@ class Viewer:
         # same system that processes streaming_builders.
         self._prompt_builder_processor = _PromptBuilderProcessor()
         self._prompt_builder_processor.figures.events.added.connect(
-            self._on_figure_spec_added
+            self._on_figure_spec_added_to_builder
         )
         self._prompt_builder_processor.figures.events.removed.connect(
-            self._on_figure_spec_removed
+            self._on_figure_spec_removed_from_builder
         )
         self._prompt_builder_processor.lines.events.added.connect(
-            self._on_line_spec_added
+            self._on_line_spec_added_to_builder
         )
         self._prompt_builder_processor.lines.events.removed.connect(
-            self._on_line_spec_removed
+            self._on_line_spec_removed_from_builder
         )
         self._prompt_builder_processor.grids.events.added.connect(
-            self._on_grid_spec_added
+            self._on_grid_spec_added_to_builder
         )
         self._prompt_builder_processor.grids.events.removed.connect(
-            self._on_grid_spec_removed
+            self._on_grid_spec_removed_from_builder
         )
         self._prompt_builder_processor.image_stacks.events.added.connect(
-            self._on_image_stack_spec_added
+            self._on_image_stack_spec_added_to_builder
         )
         self._prompt_builder_processor.image_stacks.events.removed.connect(
-            self._on_image_stack_spec_removed
+            self._on_image_stack_spec_removed_from_builder
         )
 
         # Map Run uid to list of artifacts.
@@ -139,42 +139,42 @@ class Viewer:
 
     def _on_streaming_builder_added(self, event):
         builder = event.item
-        builder.figures.events.added.connect(self._on_figure_spec_added)
-        builder.lines.events.added.connect(self._on_line_spec_added)
-        builder.grids.events.added.connect(self._on_grid_spec_added)
-        builder.image_stacks.events.added.connect(self._on_image_stack_spec_added)
-        builder.figures.events.removed.connect(self._on_figure_spec_removed)
-        builder.lines.events.removed.connect(self._on_line_spec_removed)
-        builder.grids.events.removed.connect(self._on_grid_spec_removed)
-        builder.image_stacks.events.removed.connect(self._on_image_stack_spec_removed)
+        builder.figures.events.added.connect(self._on_figure_spec_added_to_builder)
+        builder.lines.events.added.connect(self._on_line_spec_added_to_builder)
+        builder.grids.events.added.connect(self._on_grid_spec_added_to_builder)
+        builder.image_stacks.events.added.connect(self._on_image_stack_spec_added_to_builder)
+        builder.figures.events.removed.connect(self._on_figure_spec_removed_from_builder)
+        builder.lines.events.removed.connect(self._on_line_spec_removed_from_builder)
+        builder.grids.events.removed.connect(self._on_grid_spec_removed_from_builder)
+        builder.image_stacks.events.removed.connect(self._on_image_stack_spec_removed_from_builder)
 
         for run in self.runs:
             builder(run)
 
     def _on_streaming_builder_removed(self, event):
         builder = event.item
-        builder.figures.events.added.disconnect(self._on_figure_spec_added)
-        builder.lines.events.added.disconnect(self._on_line_spec_added)
-        builder.grids.events.added.disconnect(self._on_grid_spec_added)
-        builder.image_stacks.events.added.disconnect(self._on_image_stack_spec_added)
-        builder.figures.events.removed.disconnect(self._on_figure_spec_removed)
-        builder.lines.events.removed.disconnect(self._on_line_spec_removed)
-        builder.grids.events.removed.disconnect(self._on_grid_spec_removed)
+        builder.figures.events.added.disconnect(self._on_figure_spec_added_to_builder)
+        builder.lines.events.added.disconnect(self._on_line_spec_added_to_builder)
+        builder.grids.events.added.disconnect(self._on_grid_spec_added_to_builder)
+        builder.image_stacks.events.added.disconnect(self._on_image_stack_spec_added_to_builder)
+        builder.figures.events.removed.disconnect(self._on_figure_spec_removed_from_builder)
+        builder.lines.events.removed.disconnect(self._on_line_spec_removed_from_builder)
+        builder.grids.events.removed.disconnect(self._on_grid_spec_removed_from_builder)
         builder.image_stacks.events.removed.disconnect(
-            self._on_image_stack_spec_removed
+            self._on_image_stack_spec_removed_from_builder
         )
         # TODO Remove its artifacts? That may not be the user intention.
 
-    def _on_figure_spec_added(self, event):
+    def _on_figure_spec_added_to_builder(self, event):
         self.figures.append(event.item)
         self.axes.extend(event.item.axes_specs)
 
-    def _on_figure_spec_removed(self, event):
+    def _on_figure_spec_removed_from_builder(self, event):
         self.figures.remove(event.item)
         for axes_spec in event.item.axes_specs:
             self.axes.remove(axes_spec)
 
-    def _on_line_spec_added(self, event):
+    def _on_line_spec_added_to_builder(self, event):
         line_spec = event.item
         if line_spec.axes_spec not in self.axes:
             raise RuntimeError(
@@ -185,23 +185,23 @@ class Viewer:
         uid = line_spec.run.metadata["start"]["uid"]
         self._ownership[uid].append(line_spec)
 
-    def _on_line_spec_removed(self, event):
+    def _on_line_spec_removed_from_builder(self, event):
         line_spec = event.item
         # TODO Tolerate manual removal from the Viewer.
         self.lines.remove(line_spec)
         uid = line_spec.run.metadata["start"]["uid"]
         self._ownership[uid].remove(line_spec)
 
-    def _on_grid_spec_added(self, event):
+    def _on_grid_spec_added_to_builder(self, event):
         ...
 
-    def _on_grid_spec_removed(self, event):
+    def _on_grid_spec_removed_from_builder(self, event):
         ...
 
-    def _on_image_stack_spec_added(self, event):
+    def _on_image_stack_spec_added_to_builder(self, event):
         ...
 
-    def _on_image_stack_spec_removed(self, event):
+    def _on_image_stack_spec_removed_from_builder(self, event):
         ...
 
 
