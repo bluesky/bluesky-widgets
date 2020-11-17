@@ -134,7 +134,10 @@ class QtSearches(QTabWidget):
 
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setTabsClosable(True)
+        # There is no way to *add* tabs in the UI, so for now we will not
+        # permit removing them in the UI either. This could be added in the
+        # future. In the meantime, it is supported from the model / console.
+        self.setTabsClosable(False)
         self.tabCloseRequested.connect(self.close_tab)
         self.currentChanged.connect(self.on_current_changed)
 
