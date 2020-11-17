@@ -256,12 +256,15 @@ class Viewer:
         # Remove it from the Viewer as well.
         line_spec = event.item
         self.lines.remove(line_spec)
-        uid = line_spec.run.metadata["start"]["uid"]
-        self._run_ownership[uid].remove(line_spec)
 
     def _on_line_spec_removed_from_viewer(self, event):
-        # Remove it from the Builder as well.
         line_spec = event.item
+        # Clean up caches.
+        uid = line_spec.run.metadata["start"]["uid"]
+        self._run_ownership[uid].remove(line_spec)
+        figure_spec = self._axes_to_figure[line_spec.axes_spec.uuid]
+        self._figure_ownership[figure_spec.uuid].remove(line_spec)
+        # Remove it from the Builder as well.
         try:
             list_ = self._builder_ownership[line_spec.uuid]
         except KeyError:

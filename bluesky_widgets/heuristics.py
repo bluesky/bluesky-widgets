@@ -103,6 +103,7 @@ class LastNLines(StreamingPlotBuilder):
         self._axes = None
 
     def new_plot(self):
+        "Start a new plot, leaving the current one (if any) as is."
         # If we already have a plot, forget about it and its lines. We just
         # want to forget about them, not *remove* them from the Viewer, so we
         # will block notification of the removal.
@@ -122,7 +123,7 @@ class LastNLines(StreamingPlotBuilder):
 
     def add_line(self, run):
         # Create a plot if we do not have one.
-        if self._axes is None:
+        if not self.figures:
             self.new_plot()
         # If necessary, removes lines to make room for the new line.
         while len(self.lines) >= self.N:
