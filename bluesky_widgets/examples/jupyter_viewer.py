@@ -12,67 +12,9 @@ Connect a consumer to localhost:XXXXX
 
 python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
 """
-from bluesky_widgets.qt import Window
-from bluesky_widgets.qt import gui_qt
-from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.models.viewer import Viewer
 from bluesky_widgets.models.plot_builders import LastNLines
-from bluesky_widgets.qt.search import QtSearches
-from bluesky_widgets.qt.viewer import QtViewer
-from bluesky_widgets.utils.event import Event
-from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
-from bluesky_widgets.examples.utils.add_search_mixin import columns
-from qtpy.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout
-
-
-class SearchListWithButton(SearchList):
-    """
-    A SearchList model with a method to handle a click event.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.events.add(view=Event)
-
-
-class QtSearchListWithButton(QWidget):
-    """
-    A view for SearchListWithButton.
-
-    Combines the QtSearches widget with a button that processes the selected Runs.
-    """
-
-    def __init__(self, model, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.model = model
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        layout.addWidget(QtSearches(model))
-
-        go_button = QPushButton("View Selected Runs")
-        layout.addWidget(go_button)
-        go_button.clicked.connect(self.model.events.view)
-
-
-class SearchAndView:
-    def __init__(self, searches, viewer):
-        self.searches = searches
-        self.viewer = viewer
-        self.searches.events.view.connect(self._on_view)
-
-    def _on_view(self, event):
-        for uid, run in self.searches.active.selection_as_catalog.items():
-            self.viewer.runs.append(run)
-
-
-class QtSearchAndView(QWidget):
-    def __init__(self, model, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.model = model
-        layout = QHBoxLayout()
-        self.setLayout(layout)
-        layout.addWidget(QtSearchListWithButton(model.searches))
-        layout.addWidget(QtViewer(model.viewer))
+from bluesky_widgets.jupyter.viewer import JupyterViewer
 
 
 class ExampleApp:
@@ -90,59 +32,10 @@ class ExampleApp:
     def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        self.searches = SearchListWithButton()
         self.viewer = Viewer()
-        self.model = SearchAndView(self.searches, self.viewer)
-        self.model.viewer.streaming_builders.append(LastNLines("motor", "det", 3))
-        widget = QtSearchAndView(self.model)
-        self._window = Window(widget, show=show)
+        self.viewer.streaming_builders.append(LastNLines("motor", "det", 3))
+        self._widget = JupyterViewer(self.viewer)
 
-        # Initialize with a two search tabs: one with some generated example data...
-        self.searches.append(Search(get_catalog(), columns=columns))
-        # ...and one listing any and all catalogs discovered on the system.
-        from databroker import catalog
-
-        self.model.searches.append(Search(catalog, columns=columns))
-
-    def show(self):
-        """Resize, show, and raise the window."""
-        self._window.show()
-
-    def close(self):
-        """Close the window."""
-        self._window.close()
-
-
-def main(argv):
-    print(__doc__)
-
-    with gui_qt("Example App"):
-        app = ExampleApp()
-
-        # Optional: Receive live streaming data.
-        if len(argv) > 1:
-            from bluesky_widgets.qt.stream_listener import RemoteDispatcher
-            from bluesky_widgets.utils.streaming import (
-                connect_dispatcher_to_list_of_runs,
-            )
-
-            address = argv[1]
-            dispatcher = RemoteDispatcher(address)
-            connect_dispatcher_to_list_of_runs(dispatcher, app.viewer.runs)
-            dispatcher.start()
-
-        # We can access and modify the model as in...
-        len(app.searches)
-        app.searches[0]
-        app.searches.active  # i.e. current tab
-        app.searches.active.input.since  # time range
-        app.searches.active.input.until
-        app.searches.active.results
-        app.searches.active.selection_as_catalog
-        app.searches.active.selected_uids
-
-
-if __name__ == "__main__":
-    import sys
-
-    main(sys.argv)
+    def _ipython_display_(self, *args, **kwargs):
+        "When this object is displayed by Jupyter, display its widget."
+        return self._widget._ipython_display_(*args, **kwargs)
