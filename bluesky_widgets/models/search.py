@@ -290,6 +290,7 @@ class SearchInput:
         if query == self.query:
             return
         self._query = query
+        self.events.query(query=query)
 
     @property
     def since(self):
