@@ -1,3 +1,5 @@
+import itertools
+
 from .plot_specs import (
     FigureSpec,
     AxesSpec,
@@ -50,6 +52,22 @@ class StreamingPlotBuilder:
         ...
 
 
+# This is matplotlib's default color cycle, obtained via
+# plt.rcParams['axes.prop_cycle'].by_key()['color']
+DEFAULT_COLOR_CYCLE = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+]
+
+
 class LastNLines(StreamingPlotBuilder):
     """
     Plot y vs x for the last N runs.
@@ -74,6 +92,7 @@ class LastNLines(StreamingPlotBuilder):
         self._y = y
         self._stream_name = stream_name
         self._axes = None
+        self._color_cycle = itertools.cycle(DEFAULT_COLOR_CYCLE)
 
     def new_plot(self):
         "Start a new plot, leaving the current one (if any) as is."
@@ -108,7 +127,12 @@ class LastNLines(StreamingPlotBuilder):
             return ds[x], ds[y]
 
         label = f"Scan {run.metadata['start']['scan_id']}"
-        line_spec = LineSpec(func, run, self._axes, {"label": label})
+        if run.metadata["stop"] is None:
+            # Run is in progress. Give it a special color so it stands out.
+            color = "black"
+        else:
+            color = next(self._color_cycle)
+        line_spec = LineSpec(func, run, self._axes, {"label": label, "color": color})
 
         self.lines.append(line_spec)
 
@@ -119,12 +143,20 @@ class LastNLines(StreamingPlotBuilder):
         else:
             # Otherwise, connect a callback to run when the stream of interest arrives.
             run.events.new_stream.connect(self._on_new_stream)
-            run.events.completed.disconnect(self._on_new_stream)
+            run.events.completed.connect(self._update_color)
 
     def _on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."
         if event.name == self.stream_name:
             self._add_line(event.run)
+            event.run.events.new_stream.disconnect(self._on_new_stream)
+
+    def _update_color(self, event):
+        "When a run completes, update the color from back to a color."
+        # Find the line for this run by brute force search for now....
+        for line in self.lines:
+            if line.run.metadata["start"]["uid"] == event.run.metadata["start"]["uid"]:
+                line.artist_kwargs = {"color": next(self._color_cycle)}
 
     # Read-only properties so that these settings are inspectable, but not
     # changeable.
