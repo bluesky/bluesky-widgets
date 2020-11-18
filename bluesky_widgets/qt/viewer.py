@@ -21,8 +21,8 @@ class QtViewer(QWidget):
         self._figures = {}
         # Map Axes UUID to matplotlib.axes.Axes
         self._axes = {}
-        # Map Line UUID to matplotlib Line artist
-        self._lines = {}
+        # Map ArtistSpec UUID to matplotlib artist
+        self._artists = {}
         layout = QVBoxLayout()
         self._tabs = _QtViewerTabs(model.figures)
         layout.addWidget(self._tabs)
@@ -67,10 +67,13 @@ class QtViewer(QWidget):
 
         # Initialize artist with currently-available data.
         (artist,) = axes.plot(x, y, **line_spec.artist_kwargs)
-        self._lines[line_spec.uuid] = artist
+        self._artists[line_spec.uuid] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # LineSpec from the line artist if we need to.
         artist.set_gid(line_spec.uuid)
+
+        # Listen for changes to artist_kwargs.
+        line_spec.events.artist_kwargs.connect(self._on_artist_kwargs_changed)
 
         # This legend can only be turned on after there is at least one artist.
         axes.legend(loc="best")
@@ -92,9 +95,17 @@ class QtViewer(QWidget):
             run.events.new_data.connect(update)
             run.events.completed.connect(lambda: run.events.new_data.disconnect(update))
 
+    def _on_artist_kwargs_changed(self, event):
+        artist_spec = event.source
+        artist = self._artists[artist_spec.uuid]
+        artist.set(**event.value)
+        axes = self._axes[artist_spec.axes_spec.uuid]
+        axes.legend(loc="best")  # Update the legend.
+        axes.figure.canvas.draw_idle()
+
     def _on_line_removed(self, event):
         line_spec = event.item
-        line_artist = self._lines.pop(line_spec.uuid)
+        line_artist = self._artists.pop(line_spec.uuid)
         line_artist.remove()
         axes = self._axes[line_spec.axes_spec.uuid]
         axes.legend(loc="best")  # Update the legend.

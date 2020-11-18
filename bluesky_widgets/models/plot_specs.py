@@ -6,6 +6,7 @@ import uuid as uuid_module
 
 from ..utils.event import EmitterGroup, Event
 from ..utils.list import EventedList
+from ..utils.dict_view import DictView
 
 
 class BaseSpec:
@@ -116,8 +117,20 @@ class ArtistSpec(BaseSpec):
 
     @property
     def artist_kwargs(self):
-        "Options passed to the artist."
-        return self._artist_kwargs
+        """
+        Options passed to the artist.
+
+        This *is* settable but it has to be done like:
+
+        >>> spec.artist_kwargs = {"color": "blue"}
+
+        Attempts to modify the contents will be disallowed:
+
+        >>> spec.artist_kwargs["color"] = blue  # TypeError!
+
+        because such changes would be unobservable.
+        """
+        return DictView(self._artist_kwargs)  # a read-only dict
 
     @artist_kwargs.setter
     def artist_kwargs(self, value):
