@@ -1,88 +1,21 @@
+import asyncio
 import logging
 from multiprocessing import Process, Queue
 from pathlib import Path
 import tempfile
 
+from bluesky.callbacks.zmq import Publisher
+from bluesky.callbacks import LiveTable
+from bluesky.preprocessors import SupplementalData
 from suitcase.jsonl import Serializer
 from bluesky import RunEngine
-from ophyd.sim import det, det4, noisy_det, motor, motor1, motor2, img
-from bluesky.plans import scan, count, grid_scan
-from bluesky.preprocessors import SupplementalData
+from ophyd.sim import det, motor, motor1, motor2
+from bluesky.plans import scan
 from event_model import RunRouter
-from ophyd.sim import SynSignal
-import numpy as np
-
-det.kind = "hinted"
-noisy_det.kind = "hinted"
-det4.kind = "hinted"
+from bluesky.plan_stubs import sleep
 
 
 log = logging.getLogger(__name__)
-
-random_img = SynSignal(func=lambda: np.random.random((5, 10, 10)), name="random_img")
-
-
-def generate_example_catalog(data_path):
-    data_path = Path(data_path)
-
-    def factory(name, doc):
-        serializer = Serializer(data_path / "abc")
-        serializer("start", doc)
-        return [serializer], []
-
-    RE = RunEngine()
-    sd = SupplementalData()
-    RE.preprocessors.append(sd)
-    sd.baseline.extend([motor1, motor2])
-    rr = RunRouter([factory])
-    RE.subscribe(rr)
-    RE(count([det]))
-    RE(count([noisy_det], 5))
-    RE(scan([det], motor, -1, 1, 7))
-    RE(grid_scan([det4], motor1, -1, 1, 4, motor2, -1, 1, 7, False))
-    RE(scan([det], motor, -1, 1, motor2, -1, 1, 5))
-    RE(count([noisy_det, det], 5))
-    RE(count([random_img], 5))
-    RE(count([img], 5))
-
-    def factory(name, doc):
-        serializer = Serializer(data_path / "xyz")
-        serializer("start", doc)
-        return [serializer], []
-
-    RE = RunEngine()
-    rr = RunRouter([factory])
-    RE.subscribe(rr)
-    RE(count([det], 3))
-
-    catalog_filepath = data_path / "catalog.yml"
-    with open(catalog_filepath, "w") as file:
-        file.write(
-            f"""
-sources:
-  abc:
-    description: Some imaginary beamline
-    driver: bluesky-jsonl-catalog
-    container: catalog
-    args:
-      paths: {Path(data_path) / 'abc' / '*.jsonl'}
-      handler_registry:
-        NPY_SEQ: ophyd.sim.NumpySeqHandler
-    metadata:
-      beamline: "00-ID"
-  xyz:
-    description: Some imaginary beamline
-    driver: bluesky-jsonl-catalog
-    container: catalog
-    args:
-      paths: {Path(data_path) / 'xyz' / '*.jsonl'}
-      handler_registry:
-        NPY_SEQ: ophyd.sim.NumpySeqHandler
-    metadata:
-      beamline: "99-ID"
-"""
-        )
-    return str(catalog_filepath)
 
 
 def run_proxy(queue):
@@ -100,15 +33,6 @@ def run_publisher(in_port, data_path):
     """
     Acquire data in an infinite loop and publish it.
     """
-    import asyncio
-    from bluesky.callbacks.zmq import Publisher
-    from bluesky.callbacks import LiveTable
-    from suitcase.jsonl import Serializer
-    from ophyd.sim import noisy_det, motor1, motor2
-    from bluesky.plans import count
-    from bluesky.preprocessors import SupplementalData
-    from bluesky.plan_stubs import sleep
-
     publisher = Publisher(f"localhost:{in_port}")
     RE = RunEngine(loop=asyncio.new_event_loop())
     sd = SupplementalData()
@@ -124,8 +48,10 @@ def run_publisher(in_port, data_path):
     RE.subscribe(rr)
     RE.subscribe(LiveTable(["motor", "det"]))
 
+    motor.delay = 0.2
+    det.kind = "hinted"
+
     def infinite_plan():
-        motor.delay = 0.2
         while True:
             for i in range(1, 5):
                 yield from sleep(2)

@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 import pytest
 from ...examples.qt_viewer_with_search import ExampleApp
 
