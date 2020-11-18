@@ -21,14 +21,14 @@ class QtViewer(QWidget):
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
-        # Map Figure UUID to widget.
+        # Map Figure UUID to (matplotlib.figure.Figure, widget).
         self._figures = {}
         # Map Axes UUID to matplotlib.axes.Axes
         self._axes = {}
         # Map ArtistSpec UUID to matplotlib artist
         self._artists = {}
         layout = QVBoxLayout()
-        self._tabs = _QtViewerTabs(model.figures)
+        self._tabs = _QtViewerTabs(model.figures, parent=self)
         layout.addWidget(self._tabs)
         self.setLayout(layout)
 
@@ -40,7 +40,8 @@ class QtViewer(QWidget):
     def _on_figure_added(self, event):
         figure_spec = event.item
         fig, axes_list, tab = _make_figure_tab(figure_spec)
-        self._figures[figure_spec.uuid] = tab
+        tab.setParent(self._tabs)
+        self._figures[figure_spec.uuid] = (fig, tab)
         for axes_spec, axes in zip(figure_spec.axes_specs, axes_list):
             axes.set_xlabel(axes_spec.x_label)
             axes.set_ylabel(axes_spec.y_label)
@@ -57,9 +58,10 @@ class QtViewer(QWidget):
         # A Search has been removed from the SearchList model.
         # Close the associated tab and clean up the associated state.
         figure_spec = event.item
-        widget = self._figures[figure_spec.uuid]
+        fig, widget = self._figures[figure_spec.uuid]
         index = self._tabs.indexOf(widget)
         self._tabs.removeTab(index)
+        fig.close()
         del self._figures[figure_spec.uuid]
 
     def _on_line_added(self, event):
