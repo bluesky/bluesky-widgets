@@ -155,15 +155,12 @@ class QtSearches(QTabWidget):
         self.insertTab(event.index, tab, f"Search {event.item.name}")
 
     def on_removed(self, event):
-        if event.item in self._tabs:
-            # A Search has been removed from the SearchList model.
-            # Close the associated tab and clean up the associated state.
-            widget = self._tabs[event.item]
-            index = self.indexOf(widget)
-            self.removeTab(index)
-            del self._tabs[event.item]
-        # Else we are being notified the removal of a tab/model that we
-        # initiated in close_tab().
+        # A Search has been removed from the SearchList model.
+        # Close the associated tab and clean up the associated state.
+        widget = self._tabs[event.item]
+        index = self.indexOf(widget)
+        self.removeTab(index)
+        del self._tabs[event.item]
 
     def on_active_changed(self, event):
         self.setCurrentWidget(self._tabs[event.item])
@@ -178,9 +175,7 @@ class QtSearches(QTabWidget):
                 break
 
     def close_tab(self, index):
-        # When closing is initiated from the view, remove the associated Search
-        # model from the SearchList model.
+        # Remove the associated Search model from the SearchList model.
+        # Its removal will trigger on_removed above and thereby update the view.
         widget = self.widget(index)
-        self.removeTab(index)
-        del self._tabs[widget.model]
         self.model.remove(widget.model)
