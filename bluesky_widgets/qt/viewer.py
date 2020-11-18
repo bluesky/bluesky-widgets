@@ -1,4 +1,5 @@
 import collections.abc
+import gc
 import logging
 
 from qtpy.QtWidgets import (
@@ -61,8 +62,9 @@ class QtViewer(QWidget):
         fig, widget = self._figures[figure_spec.uuid]
         index = self._tabs.indexOf(widget)
         self._tabs.removeTab(index)
-        fig.close()
+        fig.canvas.close()
         del self._figures[figure_spec.uuid]
+        gc.collect()
 
     def _on_line_added(self, event):
         line_spec = event.item

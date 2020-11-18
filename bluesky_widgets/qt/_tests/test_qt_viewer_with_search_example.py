@@ -35,3 +35,4 @@ def test_app(make_test_app):
     app.viewer.runs.extend([run for _, run in catalog.items()])
     assert app.viewer.lines
     assert app.viewer.figures
+    app.viewer.figures.clear()
