@@ -1,7 +1,16 @@
 """
-Select some runs and click the button. Their IDs will be printed to the
-terminal. In a real application, this could kick off data processing, export,
-or visualization.
+Search for runs and visualize their data.
+
+This example can be run alone as
+
+$ python -m bluesky_widgets.examples.qt_viewer_with_search
+
+or with the data streaming utility which will print an address to connect to
+
+$ python -m bluesky_widgets.examples.utils.stream_data
+Connect a consumer to localhost:XXXXX
+
+python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
 """
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
@@ -104,10 +113,23 @@ class ExampleApp:
         self._window.close()
 
 
-def main():
+def main(argv):
     print(__doc__)
+
     with gui_qt("Example App"):
         app = ExampleApp()
+
+        # Optional: Receive live streaming data.
+        if len(argv) > 1:
+            from bluesky_widgets.qt.stream_listener import RemoteDispatcher
+            from bluesky_widgets.utils.streaming import (
+                connect_dispatcher_to_list_of_runs,
+            )
+
+            address = argv[1]
+            dispatcher = RemoteDispatcher(address)
+            connect_dispatcher_to_list_of_runs(dispatcher, app.viewer.runs)
+            dispatcher.start()
 
         # We can access and modify the model as in...
         len(app.searches)
@@ -121,4 +143,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv)
