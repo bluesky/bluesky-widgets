@@ -14,6 +14,10 @@ import matplotlib
 
 
 class QtViewer(QWidget):
+    """
+    A Qt view for a Viewer model.
+    """
+
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
@@ -113,6 +117,10 @@ class QtViewer(QWidget):
 
 
 class _QtViewerTabs(QTabWidget):
+    """
+    A container of tabs, wrapping a Viewer model
+    """
+
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
@@ -126,18 +134,22 @@ class _QtViewerTabs(QTabWidget):
         self.model.remove(widget.model)
 
 
-class FigureTab(QWidget):
+class _QtFigureTab(QWidget):
+    """
+    A Qt view for a FigureSpec model. This always contains one Figure.
+    """
+
     def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
 
 
 def _make_figure_tab(figure_spec):
-    "Create a Figure in a QWidget. Pass args, kwargs to pyplot.subplots()."
+    "Create a Figure in a QWidget."
     matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
     import matplotlib.pyplot as plt  # noqa
 
-    tab = FigureTab(figure_spec)
+    tab = _QtFigureTab(figure_spec)
     # TODO Let FigureSpec give different options to subplots here,
     # but verify that number of axes created matches the number of axes_specs.
     fig, axes = plt.subplots(len(figure_spec.axes_specs))
