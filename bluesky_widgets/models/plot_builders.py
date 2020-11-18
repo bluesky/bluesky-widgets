@@ -95,7 +95,7 @@ class LastNLines(StreamingPlotBuilder):
             self.new_plot()
         # If necessary, removes lines to make room for the new line.
         while len(self.lines) >= self.N:
-            self.lines.pop()
+            self.lines.pop(0)
 
         stream_name = self.stream_name
         x = self.x
