@@ -1,4 +1,5 @@
 import itertools
+import weakref
 
 from .plot_specs import (
     FigureSpec,
@@ -93,6 +94,8 @@ class LastNLines(StreamingPlotBuilder):
         self._stream_name = stream_name
         self._axes = None
         self._color_cycle = itertools.cycle(DEFAULT_COLOR_CYCLE)
+        # Maps Run (uid) to LineSpec
+        self._runs_to_lines = weakref.WeakValueDictionary()
 
     def new_plot(self):
         "Start a new plot, leaving the current one (if any) as is."
@@ -133,7 +136,8 @@ class LastNLines(StreamingPlotBuilder):
         else:
             color = next(self._color_cycle)
         line_spec = LineSpec(func, run, self._axes, {"label": label, "color": color})
-
+        run_uid = run.metadata["start"]["uid"]
+        self._runs_to_lines[run_uid] = line_spec
         self.lines.append(line_spec)
 
     def __call__(self, run):
@@ -153,10 +157,13 @@ class LastNLines(StreamingPlotBuilder):
 
     def _update_color(self, event):
         "When a run completes, update the color from back to a color."
-        # Find the line for this run by brute force search for now....
-        for line in self.lines:
-            if line.run.metadata["start"]["uid"] == event.run.metadata["start"]["uid"]:
-                line.artist_kwargs = {"color": next(self._color_cycle)}
+        run_uid = event.run.metadata["start"]["uid"]
+        try:
+            line_spec = self._runs_to_lines[run_uid]
+        except KeyError:
+            # The line has been removed before the Run completed.
+            pass
+        line_spec.artist_kwargs = {"color": next(self._color_cycle)}
 
     # Read-only properties so that these settings are inspectable, but not
     # changeable.
