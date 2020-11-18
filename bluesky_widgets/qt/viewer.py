@@ -93,15 +93,19 @@ class QtViewer(QWidget):
 
         # If this is connected to a streaming data source and is not yet
         # complete, listen for updates.
-        if hasattr(run, "events") and run.metadata.stop is not None:
+        if hasattr(run, "events") and (run.metadata["stop"] is None):
 
-            def update():
+            def update(event):
                 x, y = line_spec.func(run)
                 artist.set_data(x, y)
+                axes.relim()  # Recompute data limits.
+                axes.autoscale_view()  # Rescale the view using those new limits.
                 axes.figure.canvas.draw_idle()
 
             run.events.new_data.connect(update)
-            run.events.completed.connect(lambda: run.events.new_data.disconnect(update))
+            run.events.completed.connect(
+                lambda event: run.events.new_data.disconnect(update)
+            )
 
     def _on_artist_kwargs_changed(self, event):
         artist_spec = event.source

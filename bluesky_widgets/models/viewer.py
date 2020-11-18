@@ -164,13 +164,14 @@ class Viewer:
         # Otherwise, if it supports streaming, set up a callback to run the
         # "prompt" builders whenever it completes.
         elif hasattr(run, "events"):
-            self.events.completed.connect(self._on_run_complete)
+            run.events.completed.connect(self._on_run_complete)
 
     def _on_run_complete(self, event):
         "Callback run with a streaming BlueskyRun is complete."
+        run = event.run
         for builder in self.prompt_builders:
-            self._prompt_builder_processor.process_specs(builder(event.run))
-        self.events.completed.disconnect(self._on_run_complete)
+            self._prompt_builder_processor.process_specs(builder(run))
+        run.events.completed.disconnect(self._on_run_complete)
 
     def _on_run_removed(self, event):
         "Callback run when a Run is removed from self.runs"
