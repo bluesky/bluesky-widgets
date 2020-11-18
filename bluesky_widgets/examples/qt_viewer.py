@@ -7,7 +7,7 @@ from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.models.viewer import Viewer
-from bluesky_widgets.heuristics import prompt_line_builder, LastNLines
+from bluesky_widgets.models.plot_builders import LastNLines
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.qt.viewer import QtViewer
 from bluesky_widgets.utils.event import Event
@@ -84,7 +84,6 @@ class ExampleApp:
         self.searches = SearchListWithButton()
         self.viewer = Viewer()
         self.model = SearchAndView(self.searches, self.viewer)
-        self.model.viewer.prompt_builders.append(prompt_line_builder)
         self.model.viewer.streaming_builders.append(LastNLines("motor", "det", 3))
         widget = QtSearchAndView(self.model)
         self._window = Window(widget, show=show)

@@ -3,7 +3,7 @@ import weakref
 
 # from ..utils.event import Event, EventEmitter
 from ..utils.list import EventedList
-from ..heuristics import (
+from .plot_specs import (
     LineSpec,
     FigureSpec,
     GridSpec,
@@ -13,8 +13,8 @@ from ..heuristics import (
     FigureSpecList,
     GridSpecList,
     ImageStackSpecList,
-    StreamingPlotBuilder,
 )
+from .plot_builders import StreamingPlotBuilder
 
 
 class RunList(EventedList):

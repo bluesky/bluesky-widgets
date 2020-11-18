@@ -66,7 +66,7 @@ class QtViewer(QWidget):
         axes = self._axes[line_spec.axes_spec.uuid]
 
         # Initialize artist with currently-available data.
-        (artist,) = axes.plot(x, y, *line_spec.args, **line_spec.kwargs)
+        (artist,) = axes.plot(x, y, **line_spec.artist_kwargs)
         self._lines[line_spec.uuid] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # LineSpec from the line artist if we need to.

@@ -1,50 +1,12 @@
-from .utils.list import EventedList
-from .utils.spec import define_spec
-
-
-FigureSpec = define_spec("FigureSpec", ["axes_specs", "title"])
-"Describes a Figure"
-# It is an intentional limitation that Figure must be given all its Axes at
-# definition time. Axes cannot be added dynamically. This constraint could be
-# relaxed in the future, at the cost of some added complexity.
-
-AxesSpec = define_spec("AxesSpec", ["x_label", "y_label"])
-"Describes a set of Axes"
-
-LineSpec = define_spec("LineSpec", ["func", "run", "axes_spec", "args", "kwargs"])
-"Describes a line (both data and style)"
-
-GridSpec = define_spec("GridSpec", ["func", "run", "axes_spec", "args", "kwargs"])
-"Describes a gridded heat map (both data and style)"
-
-ImageStackSpec = define_spec(
-    "ImageStackSpec", ["func", "run", "axes_spec", "args", "kwargs"]
+from .plot_specs import (
+    FigureSpec,
+    AxesSpec,
+    LineSpec,
+    FigureSpecList,
+    LineSpecList,
+    GridSpecList,
+    ImageStackSpecList,
 )
-"Describes an image stack (both data and style)"
-
-
-class FigureSpecList(EventedList):
-    ...
-
-
-class AxesSpecList(EventedList):
-    ...
-
-
-class LineSpecList(EventedList):
-    ...
-
-
-class GridSpecList(EventedList):
-    ...
-
-
-class ImageStackSpecList(EventedList):
-    ...
-
-
-def is_complete(run):
-    return run.metadata["stop"] is not None
 
 
 def prompt_line_builder(run):
@@ -66,7 +28,7 @@ def prompt_line_builder(run):
     axes_spec = AxesSpec("motor", "det")
     figure_spec = FigureSpec((axes_spec,), "det v motor")
     label = f"Scan {run.metadata['start']['scan_id']}"
-    line_spec = LineSpec(func, run, axes_spec, (), {"label": label})
+    line_spec = LineSpec(func, run, axes_spec, {"label": label})
 
     return [figure_spec, line_spec]
 
@@ -146,7 +108,7 @@ class LastNLines(StreamingPlotBuilder):
             return ds[x], ds[y]
 
         label = f"Scan {run.metadata['start']['scan_id']}"
-        line_spec = LineSpec(func, run, self._axes, (), {"label": label})
+        line_spec = LineSpec(func, run, self._axes, {"label": label})
 
         self.lines.append(line_spec)
 
