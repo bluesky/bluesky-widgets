@@ -13,6 +13,8 @@ from matplotlib.backends.backend_qt5agg import (
 )
 import matplotlib
 
+from .._qt.teleporter import threadsafe_connect, initialize_qt_teleporter
+
 
 class QtViewer(QWidget):
     """
@@ -20,6 +22,7 @@ class QtViewer(QWidget):
     """
 
     def __init__(self, model, *args, **kwargs):
+        initialize_qt_teleporter()
         super().__init__(*args, **kwargs)
         self.model = model
         # Map Figure UUID to (matplotlib.figure.Figure, widget).
@@ -33,10 +36,10 @@ class QtViewer(QWidget):
         layout.addWidget(self._tabs)
         self.setLayout(layout)
 
-        self.model.figures.events.added.connect(self._on_figure_added)
-        self.model.figures.events.removed.connect(self._on_figure_removed)
-        self.model.lines.events.added.connect(self._on_line_added)
-        self.model.lines.events.removed.connect(self._on_line_removed)
+        threadsafe_connect(self.model.figures.events.added, self._on_figure_added)
+        threadsafe_connect(self.model.figures.events.removed, self._on_figure_removed)
+        threadsafe_connect(self.model.lines.events.added, self._on_line_added)
+        threadsafe_connect(self.model.lines.events.removed, self._on_line_removed)
 
     def _on_figure_added(self, event):
         figure_spec = event.item
