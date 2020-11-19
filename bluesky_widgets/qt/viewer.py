@@ -13,7 +13,7 @@ from matplotlib.backends.backend_qt5agg import (
 )
 import matplotlib
 
-from .._qt.teleporter import threadsafe_connect, initialize_qt_teleporter
+from .teleporter import threadsafe_connect, initialize_qt_teleporter
 
 
 class QtViewer(QWidget):

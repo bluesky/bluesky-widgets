@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication
 
-from ..qt.threading import wait_for_workers_to_quit
+from .threading import wait_for_workers_to_quit
 
 
 _our_app_name = None
