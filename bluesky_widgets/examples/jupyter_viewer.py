@@ -39,3 +39,16 @@ class ExampleApp:
     def _ipython_display_(self, *args, **kwargs):
         "When this object is displayed by Jupyter, display its widget."
         return self._widget._ipython_display_(*args, **kwargs)
+
+
+def listen_for_data(app, address):
+    # Optional: Receive live streaming data.
+    from bluesky_widgets.jupyter.stream_listener import RemoteDispatcher
+    from bluesky_widgets.utils.streaming import (
+        connect_dispatcher_to_list_of_runs,
+    )
+
+    dispatcher = RemoteDispatcher(address)
+    connect_dispatcher_to_list_of_runs(dispatcher, app.viewer.runs)
+    dispatcher.start()  # launches thread
+    return dispatcher.stop

@@ -1,16 +1,13 @@
 import pickle
+import multiprocessing
+from queue import Empty
+import threading
 
 from bluesky.run_engine import Dispatcher, DocumentNames
 import zmq
 
-from ..qt.threading import create_worker
-from qtpy.QtCore import QTimer, QObject
 
-
-LOADING_LATENCY = 0.01
-
-
-class RemoteDispatcher(QObject):
+class RemoteDispatcher:
     """
     Dispatch documents received over the network from a 0MQ proxy.
 
@@ -37,7 +34,6 @@ class RemoteDispatcher(QObject):
     """
 
     def __init__(self, address, *, prefix=b"", deserializer=pickle.loads, parent=None):
-        super().__init__(parent)
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
         if b" " in prefix:
@@ -48,14 +44,11 @@ class RemoteDispatcher(QObject):
         self._deserializer = deserializer
         self.address = (address[0], int(address[1]))
 
-        self._context = zmq.Context()
-        self._socket = self._context.socket(zmq.SUB)
-        url = "tcp://%s:%d" % self.address
-        self._socket.connect(url)
-        self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
-        self._task = None
         self.closed = False
-        self._timer = QTimer(self)
+        self._thread = None
+        self._process = None
+        self._result_queue = multiprocessing.Queue()
+        self._kill_worker = multiprocessing.Queue()
         self._dispatcher = Dispatcher()
         self.subscribe = self._dispatcher.subscribe
         self._waiting_for_start = True
@@ -86,24 +79,40 @@ class RemoteDispatcher(QObject):
                 "started and interrupted. Create a fresh "
                 "instance with {}".format(repr(self))
             )
-        self._work_loop()
-
-    def _work_loop(self):
-        worker = create_worker(
-            self._receive_data,
+        self._process = multiprocessing.Process(
+            target=self._zmq_worker, args=(self._kill_worker, self._result_queue)
         )
-        # Schedule this method to be run again after a brief wait.
-        worker.finished.connect(
-            lambda: self._timer.singleShot(LOADING_LATENCY, self._work_loop)
-        )
-        worker.returned.connect(self._process_result)
-        worker.start()
+        self._process.start()
+        self._thread = threading.Thread(target=self._dispatcher_worker)
+        self._thread.start()
 
-    def _process_result(self, result):
-        if result is None:
-            return
-        name, doc = result
-        self._dispatcher.process(DocumentNames[name], doc)
+    def _zmq_worker(self, kill_worker, result_queue):
+        "This runs in a subprocess to avoid stepping on Jupyter's use of zmq."
+        self._context = zmq.Context()
+        self._socket = self._context.socket(zmq.SUB)
+        url = "tcp://%s:%d" % self.address
+        self._socket.connect(url)
+        self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        # http://stackoverflow.com/questions/7538988/zeromq-how-to-prevent-infinite-wait#comment68021160_7540299
+        # self._socket.setsockopt(zmq.RCVTIMEO, 100)  # miliseconds
+        # self._socket.setsockopt(zmq.LINGER, 0)
+        while kill_worker.empty():
+            result = self._receive_data()
+            if result is not None:
+                result_queue.put(result)
+
+    def _dispatcher_worker(self):
+        "This runs in a thread."
+        while not self.closed:
+            try:
+                result = self._result_queue.get(timeout=0.1)
+            except Empty:
+                continue
+            name, doc = result
+            self._dispatcher.process(DocumentNames[name], doc)
 
     def stop(self):
         self.closed = True
+        self._kill_worker.put(object())
+        self._thread.join()
+        self._process.join()
