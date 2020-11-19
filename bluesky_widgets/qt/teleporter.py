@@ -43,7 +43,6 @@ def initialize_qt_teleporter():
 
 @functools.lru_cache(maxsize=1)
 def _get_teleporter():
-
     def handle_teleport(obj, event):
         obj(event)
 
