@@ -214,3 +214,93 @@ class LastNLines:
     @property
     def stream_name(self):
         return self._stream_name
+
+
+def infer_lines(stream):
+    "A temporary stand-in for the hints-parsing logic in BestEffortCallback."
+    return [(("motor", "det"), "primary")]
+
+
+def is_completed(run):
+    "True is Run is completed and no further updates are coming."
+    return run.metadata["stop"] is not None
+
+
+class AutoLastNLines:
+    """
+    Automatically guess useful lines to plot. Show the last N runs (per figure).
+
+    Parameters
+    ----------
+    N : int
+        number of lines to show at once
+
+    Attributes
+    ----------
+    runs : RunList[BlueskyRun]
+        As runs are appended entries will be popped off the beginning of the last
+        (first in, first out) so that there are at most N.
+    pinned_runs : RunList[BlueskyRun]
+        These runs will not be popped.
+    figures : FigureSpecList[FigureSpec]
+    """
+    def __init__(self, N):
+        self.figures = FigureSpecList()
+        self.runs = RunList()
+        self.pinned_runs = RunList()
+        self._N = N
+
+        # Map ((x, y), stream_name) to LastNLines instances so configured.
+        self._instances = {}
+        self.runs.events.added.connect(self._on_run_added)
+        self.pinned_runs.events.added.connect(self._on_run_added)
+
+    def _on_run_added(self, event):
+        run = event.item
+        for stream_name in run:
+            self._handle_stream(run, stream_name)
+        if is_completed(run):
+            # We are done with this Run.
+            # We have either passed it down to LastNLines instance(s) or found
+            # nothing we know to do with it.
+            # HACK!
+            if run in self.pinned_runs:
+                self.pinned_runs.remove(run)
+            else:
+                self.runs.remove(run)
+        else:
+            # Listen for additional streams.
+            run.events.new_stream.connect(self._on_new_stream)
+            run.events.completed.connect(lambda event: self.runs.remove(event.run))
+
+    def _on_new_stream(self, event):
+        "This callback runs whenever BlueskyRun has a new stream."
+        self._handle_stream(event.run, event.name)
+
+    def _handle_stream(self, run, stream_name):
+        "This examines a stream and adds this run to LastNLines instances."
+        for key in infer_lines(run[stream_name]):
+            try:
+                instance = self._instances[key]
+            except KeyError:
+                (x, y), stream_name = key
+                instance = LastNLines(x, y, self._N, stream_name)
+                instance.figures.events.added.connect(self._on_figure_added_by_instance)
+                instance.figures.events.removed.connect(self._on_figure_removed_by_instance)
+                self._instances[key] = instance
+            if run in self.pinned_runs:
+                instance.pinned_runs.append(run)
+            else:
+                instance.runs.append(run)
+
+    def _on_figure_added_by_instance(self, event):
+        figure_spec = event.item
+        self.figures.append(figure_spec)
+
+    def _on_figure_removed_by_instance(self, event):
+        figure_spec = event.item
+        self.figures.remove(figure_spec)
+
+    @property
+    def N(self):
+        return self._N
