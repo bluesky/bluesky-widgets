@@ -64,6 +64,22 @@ class LastNLines:
         number of lines to show at once
     stream_name : string, optional
         Stream where fields x and y are found. Default is "primary".
+
+    Attributes
+    ----------
+    runs : RunList[BlueskyRun]
+        As runs are appended entries will be popped off the beginning of the last
+        (first in, first out) so that there are at most N.
+    pinned_runs : RunList[BlueskyRun]
+        These runs will not be popped.
+    figures : FigureSpecList[FigureSpec]
+
+    Examples
+    --------
+    >>> model = LastNLines("motor", "det", 3)
+    >>> view = JupyterFigures(model.figures)
+    >>> model.pinned_runs.append(run)
+
     """
 
     def __init__(self, x, y, N, stream_name="primary"):
@@ -76,6 +92,7 @@ class LastNLines:
 
         self.figures = FigureSpecList()
         self.runs = RunList()
+        self.pinned_runs = RunList()
 
         self._current_figure_axes = None
         self._color_cycle = itertools.cycle(DEFAULT_COLOR_CYCLE)
@@ -85,6 +102,8 @@ class LastNLines:
         self.figures.events.removed.connect(self._on_figure_removed)
         self.runs.events.added.connect(self._on_run_added)
         self.runs.events.removed.connect(self._on_run_removed)
+        self.pinned_runs.events.added.connect(self._on_run_added)
+        self.pinned_runs.events.removed.connect(self._on_run_removed)
 
     def new_plot(self):
         "Start a new plot, leaving the current one (if any) as is."
@@ -99,13 +118,9 @@ class LastNLines:
         if self._current_figure_axes is None:
             self.new_plot()
         figure_spec, axes_spec = self._current_figure_axes
-        # If necessary, removes lines to make room for the new line.
-        # Note: Here we are assuming that nothing else is putting lines on
-        # these axes, that we "own" them. If we want to potentially share these
-        # axes with other components, we'll need to track *our* lines
-        # in a separate list rather than relying on axes.lines here.
-        while len(axes_spec.lines) >= self.N:
-            axes_spec.lines.pop(0)
+        # If necessary, removes runs to make room for the new one.
+        while len(self.runs) > self.N:
+            self.runs.pop(0)
 
         stream_name = self.stream_name
         x = self.x
@@ -118,12 +133,18 @@ class LastNLines:
             return ds[x], ds[y]
 
         label = f"Scan {run.metadata['start']['scan_id']}"
+        # If run is in progress, give it a special color so it stands out.
         if run.metadata["stop"] is None:
-            # Run is in progress. Give it a special color so it stands out.
             color = "black"
         else:
             color = next(self._color_cycle)
-        line_spec = LineSpec(func, run, {"label": label, "color": color})
+        artist_kwargs = {"label": label, "color": color}
+
+        # Style pinned runs differently.
+        if run in self.pinned_runs:
+            artist_kwargs.update(linestyle="dashed", label=label + " (pinned)")
+
+        line_spec = LineSpec(func, run, artist_kwargs)
         run_uid = run.metadata["start"]["uid"]
         self._runs_to_lines[run_uid] = line_spec
         axes_spec.lines.append(line_spec)
