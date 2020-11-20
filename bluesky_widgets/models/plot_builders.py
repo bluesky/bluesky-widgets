@@ -167,10 +167,14 @@ class LastNLines:
         try:
             line_spec = self._runs_to_lines[run_uid]
         except KeyError:
-            # The line has been removed before the Run completed.
+            # The line has been removed before the Run was.
             return
         axes_spec = line_spec.axes
-        axes_spec.lines.remove(line_spec)
+        try:
+            axes_spec.lines.remove(line_spec)
+        except ValueError:
+            # The line has been removed before the Run was.
+            pass
 
     def _on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."
