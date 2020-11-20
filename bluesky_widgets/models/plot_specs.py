@@ -92,11 +92,14 @@ class AxesSpec(BaseSpec):
 
     def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
         self._lines = LineSpecList(lines or [])
+        # A colleciton of all artists, mappping UUID to object
+        self._artists = {}
         self._x_label = x_label
         self._y_label = y_label
         self.events = EmitterGroup(source=self, x_label=Event, y_label=Event)
         super().__init__(uuid)
         self._lines.events.added.connect(self._on_artist_added)
+        self._lines.events.removed.connect(self._on_artist_removed)
 
     @property
     def lines(self):
@@ -120,11 +123,19 @@ class AxesSpec(BaseSpec):
         >>> spec.artist_kwargs = {"color": "red"}
         """
         mapping = collections.defaultdict(list)
-        for line in self.lines:
-            label = line.artist_kwargs.get("label")
+        for artist in self._artists.values():
+            label = artist.artist_kwargs.get("label")
             if label is not None:
-                mapping[label].append(line)
+                mapping[label].append(artist)
         return dict(mapping)
+
+    @property
+    def by_uuid(self):
+        """
+        Access artists as a dict keyed by uuid.
+        """
+        # Return a copy to prohibit mutation of internal bookkeeping.
+        return dict(self._artists)
 
     @property
     def x_label(self):
@@ -149,6 +160,11 @@ class AxesSpec(BaseSpec):
     def _on_artist_added(self, event):
         artist = event.item
         artist.set_axes(self)
+        self._artists[artist.uuid] = artist
+
+    def _on_artist_removed(self, event):
+        artist = event.item
+        del self._artists[artist.uuid]
 
     def __repr__(self):
         return (
