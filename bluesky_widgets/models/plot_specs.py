@@ -218,6 +218,15 @@ class ArtistSpec(BaseSpec):
         """
         return self._artist_kwargs
 
+    @artist_kwargs.setter
+    def artist_kwargs(self, update):
+        # Provide a more helpful error than the default,
+        # AttributeError: can't set attribute.
+        raise AttributeError(
+            f"can't set attribute. Use artist_kwargs.update({update!r}) "
+            f"instead of artist_kwargs = {update!r}."
+        )
+
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(func={self.func!r}, run={self.run!r}, "
