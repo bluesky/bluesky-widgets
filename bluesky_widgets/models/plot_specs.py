@@ -186,7 +186,7 @@ class ArtistSpec(BaseSpec):
         # Re-emit updates. It's important to re-emit (not just pass through)
         # because the consumer will need access to self.
         self._artist_kwargs.events.updated.connect(
-            lambda event: self.events.artist_kwargs_updated(update=event.update)
+            lambda event: self.events.artist_kwargs_updated(update=event.update, artist_spec=self)
         )
         super().__init__(uuid)
 
