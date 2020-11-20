@@ -47,7 +47,7 @@ class JupyterFigures(widgets.Tab):
         children = list(self.children)
         children.remove(widget)
         self.children = tuple(children)
-        widget.figure.canvas.close()
+        widget.jupyter_figure.figure.canvas.close()
         del widget
         del self._figures[figure_spec.uuid]
         gc.collect()
@@ -85,6 +85,7 @@ class _JupyterFigureTab(widgets.HBox):
 
     def __init__(self, model: FigureSpec, parent):
         super().__init__()
+        self.model = model
         self.parent = parent
         self.button = widgets.Button(description="Close")
         self.button.on_click(lambda _: self.parent.on_close_tab_requested(self.model))
