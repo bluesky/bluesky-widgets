@@ -15,10 +15,9 @@ python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.models.search import SearchList, Search
-from bluesky_widgets.models.viewer import Viewer
-from bluesky_widgets.models.plot_builders import LastNLines
+from bluesky_widgets.models.plot_builders import AutoLastNLines
 from bluesky_widgets.qt.search import QtSearches
-from bluesky_widgets.qt.viewer import QtViewer
+from bluesky_widgets.qt.figures import QtFigures
 from bluesky_widgets.utils.event import Event
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
@@ -72,7 +71,7 @@ class QtSearchAndView(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
         layout.addWidget(QtSearchListWithButton(model.searches))
-        layout.addWidget(QtViewer(model.viewer))
+        layout.addWidget(QtFigures(model.viewer.figures))
 
 
 class ExampleApp:
@@ -91,9 +90,8 @@ class ExampleApp:
         super().__init__()
         self.title = title
         self.searches = SearchListWithButton()
-        self.viewer = Viewer()
+        self.viewer = AutoLastNLines(3)
         self.model = SearchAndView(self.searches, self.viewer)
-        self.model.viewer.streaming_builders.append(LastNLines("motor", "det", 3))
         widget = QtSearchAndView(self.model)
         self._window = Window(widget, show=show)
 
