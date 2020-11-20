@@ -102,7 +102,7 @@ class QtFigure(QWidget):
         self.model = model
         self.figure, self.axes_list = _make_figure(model)
         self._axes = {}
-        for axes_spec, axes in zip(model.axes_specs, self.axes_list):
+        for axes_spec, axes in zip(model.axes, self.axes_list):
             self._axes[axes_spec.uuid] = Axes(axes_spec, axes)
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
@@ -115,7 +115,7 @@ class QtFigure(QWidget):
         self.setLayout(layout)
 
         # The FigureSpec model does not currently allow axes to be added or
-        # removed, so we do not need to handle changes in model.axes_specs.
+        # removed, so we do not need to handle changes in model.axes.
 
 
 def _make_figure(figure_spec):
@@ -124,8 +124,9 @@ def _make_figure(figure_spec):
     import matplotlib.pyplot as plt  # noqa
 
     # TODO Let FigureSpec give different options to subplots here,
-    # but verify that number of axes created matches the number of axes_specs.
-    fig, axes = plt.subplots(len(figure_spec.axes_specs))
+    # but verify that number of axes created matches the number of axes
+    # specified.
+    fig, axes = plt.subplots(len(figure_spec.axes))
     # Handl return type instability in plt.subplots.
     if not isinstance(axes, collections.abc.Iterable):
         axes = [axes]

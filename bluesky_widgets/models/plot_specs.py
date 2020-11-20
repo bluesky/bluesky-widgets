@@ -30,14 +30,14 @@ class BaseSpec:
 class FigureSpec(BaseSpec):
     "Describes a Figure"
 
-    def __init__(self, axes_specs, *, title, uuid=None):
-        self._axes_specs = tuple(axes_specs)
+    def __init__(self, axes, *, title, uuid=None):
+        self._axes = tuple(axes)
         self._title = title
         self.events = EmitterGroup(source=self, title=Event)
         super().__init__(uuid)
 
     @property
-    def axes_specs(self):
+    def axes(self):
         """
         Tuple of AxesSpecs. Set at FigureSpec creation time and immutable.
 
@@ -46,7 +46,7 @@ class FigureSpec(BaseSpec):
         relaxed in the future if the situation improves in matplotlib or if
         support for other plotting frameworks is added to bluesky-widgets.
         """
-        return self._axes_specs
+        return self._axes
 
     @property
     def title(self):
@@ -60,7 +60,7 @@ class FigureSpec(BaseSpec):
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(axes_specs={self.axes_specs!r}, "
+            f"{self.__class__.__name__}(axes={self.axes!r}, "
             f"title={self.title!r}, uuid={self.uuid!r})"
         )
 
