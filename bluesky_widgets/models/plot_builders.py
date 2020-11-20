@@ -6,10 +6,8 @@ from .plot_specs import (
     AxesSpec,
     LineSpec,
     FigureSpecList,
-    LineSpecList,
-    GridSpecList,
-    ImageStackSpecList,
 )
+from .utils import RunList
 
 
 def prompt_line_builder(run):
@@ -28,29 +26,12 @@ def prompt_line_builder(run):
         # Do any computation you want in here....
         return ds["motor"], ds["det"]
 
-    axes_spec = AxesSpec("motor", "det")
-    figure_spec = FigureSpec((axes_spec,), "det v motor")
     label = f"Scan {run.metadata['start']['scan_id']}"
-    line_spec = LineSpec(func, run, axes_spec, {"label": label})
+    line_spec = LineSpec(func, run, {"label": label})
+    axes_spec = AxesSpec([line_spec], x_label="motor", y_label="det")
+    figure_spec = FigureSpec((axes_spec,), title="det v motor")
 
-    return [figure_spec, line_spec]
-
-
-class StreamingPlotBuilder:
-    """
-    Base class for streaming builders
-    """
-
-    def __init__(self):
-        self.figures = FigureSpecList()
-        self.lines = LineSpecList()
-        self.grids = GridSpecList()
-        self.image_stacks = ImageStackSpecList()
-        ...
-
-    def __call__(self, run):
-        # Implement this in the subclass.
-        ...
+    return [figure_spec, axes_spec, line_spec]
 
 
 # This is matplotlib's default color cycle, obtained via
@@ -69,7 +50,7 @@ DEFAULT_COLOR_CYCLE = [
 ]
 
 
-class LastNLines(StreamingPlotBuilder):
+class LastNLines:
     """
     Plot y vs x for the last N runs.
 
@@ -92,32 +73,39 @@ class LastNLines(StreamingPlotBuilder):
         self._x = x
         self._y = y
         self._stream_name = stream_name
-        self._axes = None
+
+        self.figures = FigureSpecList()
+        self.runs = RunList()
+
+        self._current_figure_axes = None
         self._color_cycle = itertools.cycle(DEFAULT_COLOR_CYCLE)
         # Maps Run (uid) to LineSpec
         self._runs_to_lines = weakref.WeakValueDictionary()
 
+        self.figures.events.removed.connect(self._on_figure_removed)
+        self.runs.events.added.connect(self._on_run_added)
+        self.runs.events.removed.connect(self._on_run_removed)
+
     def new_plot(self):
         "Start a new plot, leaving the current one (if any) as is."
-        # If we already have a plot, forget about it and its lines. We just
-        # want to forget about them, not *remove* them from the Viewer, so we
-        # will block notification of the removal.
-        if self._axes is not None:
-            with self.figures.events.removed.blocker(), self.lines.events.removed.blocker():
-                self.figures.clear()
-                self.lines.clear()
-        axes_spec = AxesSpec(self.x, self.y)
-        figure_spec = FigureSpec((axes_spec,), f"{self.y} v {self.x}")
+        axes_spec = AxesSpec([], x_label=self.x, y_label=self.y)
+        figure_spec = FigureSpec((axes_spec,), title=f"{self.y} v {self.x}")
+        self._current_figure_axes = (figure_spec, axes_spec)
         self.figures.append(figure_spec)
-        self._axes = axes_spec
 
     def _add_line(self, run):
+        "Add a line."
         # Create a plot if we do not have one.
-        if not self.figures:
+        if self._current_figure_axes is None:
             self.new_plot()
+        figure_spec, axes_spec = self._current_figure_axes
         # If necessary, removes lines to make room for the new line.
-        while len(self.lines) >= self.N:
-            self.lines.pop(0)
+        # Note: Here we are assuming that nothing else is putting lines on
+        # these axes, that we "own" them. If we want to potentially share these
+        # axes with other components, we'll need to track *our* lines
+        # in a separate list rather than relying on axes.lines here.
+        while len(axes_spec.lines) >= self.N:
+            axes_spec.lines.pop(0)
 
         stream_name = self.stream_name
         x = self.x
@@ -135,19 +123,32 @@ class LastNLines(StreamingPlotBuilder):
             color = "black"
         else:
             color = next(self._color_cycle)
-        line_spec = LineSpec(func, run, self._axes, {"label": label, "color": color})
+        line_spec = LineSpec(func, run, {"label": label, "color": color})
         run_uid = run.metadata["start"]["uid"]
         self._runs_to_lines[run_uid] = line_spec
-        self.lines.append(line_spec)
+        axes_spec.lines.append(line_spec)
 
-    def __call__(self, run):
+    def _on_run_added(self, event):
+        "When a new Run is added, draw a line or schedule it to be drawn."
+        run = event.item
         # If the stream of interest is defined already, plot now.
         if self.stream_name in run:
             self._add_line(run)
         else:
             # Otherwise, connect a callback to run when the stream of interest arrives.
             run.events.new_stream.connect(self._on_new_stream)
-            run.events.completed.connect(self._update_color)
+            run.events.completed.connect(self._on_run_complete)
+
+    def _on_run_removed(self, event):
+        "Remove the line if its corresponding Run is removed."
+        run_uid = event.item.metadata["start"]["uid"]
+        try:
+            line_spec = self._runs_to_lines[run_uid]
+        except KeyError:
+            # The line has been removed before the Run completed.
+            return
+        axes_spec = line_spec.axes
+        axes_spec.lines.remove(line_spec)
 
     def _on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."
@@ -155,15 +156,23 @@ class LastNLines(StreamingPlotBuilder):
             self._add_line(event.run)
             event.run.events.new_stream.disconnect(self._on_new_stream)
 
-    def _update_color(self, event):
+    def _on_run_complete(self, event):
         "When a run completes, update the color from back to a color."
         run_uid = event.run.metadata["start"]["uid"]
         try:
             line_spec = self._runs_to_lines[run_uid]
         except KeyError:
             # The line has been removed before the Run completed.
-            pass
+            return
         line_spec.artist_kwargs = {"color": next(self._color_cycle)}
+
+    def _on_figure_removed(self, event):
+        "Reset self._current_figure_axes to None if the figure is removed."
+        figure = event.item
+        if self._current_figure_axes is not None:
+            current_figure, _ = self._current_figure_axes
+            if figure == current_figure:
+                self._current_figure_axes = None
 
     # Read-only properties so that these settings are inspectable, but not
     # changeable.

@@ -15,14 +15,7 @@ from .plot_specs import (
     ImageStackSpecList,
 )
 from .plot_builders import StreamingPlotBuilder
-
-
-class RunList(EventedList):
-    """
-    A list of BlueskyRuns currently displayed in the Viewer.
-    """
-
-    ...
+from .utils import RunList
 
 
 class PromptPlotBuilderList(EventedList):
