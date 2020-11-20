@@ -69,7 +69,7 @@ class JupyterFigure(widgets.HBox):
         self.figure, self.axes_list = _make_figure(model)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = Axes(axes_spec, axes)
+            self._axes[axes_spec.uuid] = Axes(model=axes_spec, axes=axes)
         self.children = (self.figure.canvas,)
 
         # The FigureSpec model does not currently allow axes to be added or

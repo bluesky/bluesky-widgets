@@ -10,7 +10,8 @@ from .models.plot_specs import AxesSpec, LineSpec
 class Axes:
     "Respond to changes in AxesSpec by maniupatling matplotlib.axes.Axes."
 
-    def __init__(self, model: AxesSpec, axes):
+    def __init__(self, model: AxesSpec, axes, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.model = model
         self.axes = axes
 
@@ -32,8 +33,12 @@ class Axes:
 
         for line_spec in model.lines:
             self._add_line(line_spec)
-        model.lines.events.added.connect(self._on_line_added)
-        model.lines.events.removed.connect(self._on_artist_removed)
+        self.connect(model.lines.events.added, self._on_line_added)
+        self.connect(model.lines.events.removed, self._on_artist_removed)
+
+    def connect(self, emitter, callback):
+        "The Qt view overwrites this with a threadsafe connect."
+        emitter.connect(callback)
 
     def _on_line_added(self, event):
         line_spec = event.item
@@ -57,8 +62,8 @@ class Axes:
                 self.axes.autoscale_view()  # Rescale the view using those new limits.
                 self.axes.figure.canvas.draw_idle()
 
-            run.events.new_data.connect(update)
-            run.events.completed.connect(
+            self.connect(run.events.new_data, update)
+            self.connect(run.events.completed,
                 lambda event: run.events.new_data.disconnect(update)
             )
 
@@ -76,11 +81,11 @@ class Axes:
         artist.set_gid(artist_spec.uuid)
 
         # Listen for changes to artist_kwargs.
-        artist_spec.events.artist_kwargs_updated.connect(self._on_artist_kwargs_updated)
+        self.connect(artist_spec.events.artist_kwargs_updated, self._on_artist_kwargs_updated)
         self._redraw()
 
     def _on_artist_kwargs_updated(self, event):
-        artist_spec = event.source
+        artist_spec = event.artist_spec
         artist = self._artists[artist_spec.uuid]
         artist.set(**event.update)
         self._redraw()

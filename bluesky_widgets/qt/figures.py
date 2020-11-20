@@ -6,7 +6,7 @@ from qtpy.QtWidgets import (
     QWidget,
     QVBoxLayout,
 )
-from qtpy.QtCore import Signal
+from qtpy.QtCore import Signal, QObject
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar,
@@ -18,13 +18,31 @@ from .._plot_axes import Axes
 from ..utils.event import Event
 
 
+class ThreadsafeAxes(QObject, Axes):
+    """
+    This overrides the a connect method in Axes to bounce callbacks through Qt
+    Signals and Slots so that callbacks run form background threads do not run
+    amok.
+    """
+    __callback_event = Signal(object, Event)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        def handle_callback(callback, event):
+            callback(event)
+
+        self.__callback_event.connect(handle_callback)
+
+    def connect(self, emitter, callback):
+        emitter.connect(lambda event: self.__callback_event.emit(callback, event))
+
+
 class QtFigures(QTabWidget):
     """
     A Jupyter (ipywidgets) view for a FigureSpecList model.
     """
 
-    # This Signal is used internally to bounce callbacks through Qt Signals and
-    # Slots so that callbacks from background threads do not run amok.
     __callback_event = Signal(object, Event)
 
     def __init__(self, model: FigureSpecList, parent=None):
@@ -103,7 +121,7 @@ class QtFigure(QWidget):
         self.figure, self.axes_list = _make_figure(model)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = Axes(axes_spec, axes)
+            self._axes[axes_spec.uuid] = ThreadsafeAxes(model=axes_spec, axes=axes)
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
         canvas.setParent(self)
