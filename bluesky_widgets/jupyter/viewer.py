@@ -12,6 +12,7 @@ class JupyterFigures(widgets.Tab):
     """
     A Jupyter (ipywidgets) view for a FigureSpecList model.
     """
+
     def __init__(self, model: FigureSpecList, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
@@ -25,6 +26,7 @@ class JupyterFigures(widgets.Tab):
 
     def _on_figure_added(self, event):
         figure_spec = event.item
+        self._add_figure(figure_spec)
 
     def _add_figure(self, figure_spec):
         tab = _JupyterFigureTab(figure_spec, parent=self)
@@ -79,6 +81,7 @@ class _JupyterFigureTab(widgets.HBox):
 
     This is aware of its parent in order to support tab-closing.
     """
+
     def __init__(self, model: FigureSpec, parent):
         super().__init__()
         self.parent = parent
@@ -90,6 +93,7 @@ class _JupyterFigureTab(widgets.HBox):
 
 class Axes:
     "Respond to changes in AxesSpec by maniupatling matplotlib.axes.Axes."
+
     def __init__(self, model: AxesSpec, axes):
         self.model = model
         self.axes = axes
@@ -117,7 +121,7 @@ class Axes:
 
     def _on_line_added(self, event):
         line_spec = event.item
-        self._add_line(self, line_spec)
+        self._add_line(line_spec)
 
     def _add_line(self, line_spec):
         run = line_spec.run
@@ -125,7 +129,6 @@ class Axes:
 
         # Initialize artist with currently-available data.
         (artist,) = self.axes.plot(x, y, **line_spec.artist_kwargs)
-        self._lines[line_spec.uuid] = artist
 
         # If this is connected to a streaming data source and is not yet
         # complete, listen for updates.
@@ -143,13 +146,15 @@ class Axes:
                 lambda event: run.events.new_data.disconnect(update)
             )
 
-        self._on_artist_added(line_spec, artist)
+        self._add_artist(line_spec, artist)
 
     def _add_artist(self, artist_spec, artist):
         """
         This is called by methods line _add_line to perform generic setup.
         """
+        # Track it as a generic artist cache and in a type-specific cache.
         self._artists[artist_spec.uuid] = artist
+        self.type_map[type(artist_spec)][artist_spec.uuid] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # ArtistSpec from the artist artist if we need to.
         artist.set_gid(artist_spec.uuid)
@@ -168,7 +173,7 @@ class Axes:
         artist_spec = event.item
         # Remove the artist from our caches.
         artist = self._artists.pop(artist_spec.uuid)
-        self.type_map[artist_spec].pop(artist_spec.uuid)
+        self.type_map[type(artist_spec)].pop(artist_spec.uuid)
         # Remove it from the canvas.
         artist.remove()
         self._redraw()

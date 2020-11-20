@@ -132,7 +132,8 @@ class ArtistSpec(BaseSpec):
         if self._axes is not None:
             raise RuntimeError(
                 f"Axes may only be set once. The artist {self} already belongs "
-                f"to {self.axes} and thus cannot be added to {axes}.")
+                f"to {self.axes} and thus cannot be added to {axes}."
+            )
         self._axes = axes
 
     @property
