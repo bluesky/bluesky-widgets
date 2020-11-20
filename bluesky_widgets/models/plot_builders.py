@@ -164,7 +164,7 @@ class LastNLines:
         except KeyError:
             # The line has been removed before the Run completed.
             return
-        line_spec.artist_kwargs = {"color": next(self._color_cycle)}
+        line_spec.artist_kwargs.update({"color": next(self._color_cycle)})
 
     def _on_figure_removed(self, event):
         "Reset self._current_figure_axes to None if the figure is removed."

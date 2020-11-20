@@ -76,13 +76,13 @@ class Axes:
         artist.set_gid(artist_spec.uuid)
 
         # Listen for changes to artist_kwargs.
-        artist_spec.events.artist_kwargs.connect(self._on_artist_kwargs_changed)
+        artist_spec.events.artist_kwargs_updated.connect(self._on_artist_kwargs_updated)
         self._redraw()
 
-    def _on_artist_kwargs_changed(self, event):
+    def _on_artist_kwargs_updated(self, event):
         artist_spec = event.source
         artist = self._artists[artist_spec.uuid]
-        artist.set(**event.value)
+        artist.set(**event.update)
         self._redraw()
 
     def _on_artist_removed(self, event):

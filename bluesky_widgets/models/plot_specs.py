@@ -11,7 +11,7 @@ import uuid as uuid_module
 
 from ..utils.event import EmitterGroup, Event
 from ..utils.list import EventedList
-from ..utils.dict_view import DictView
+from ..utils.dict_view import UpdateOnlyDict
 
 
 class BaseSpec:
@@ -164,9 +164,14 @@ class ArtistSpec(BaseSpec):
     def __init__(self, func, run, artist_kwargs, axes=None, uuid=None):
         self._func = func
         self._run = run
-        self._artist_kwargs = artist_kwargs
+        self._artist_kwargs = UpdateOnlyDict(artist_kwargs)
         self._axes = axes
-        self.events = EmitterGroup(source=self, artist_kwargs=Event)
+        self.events = EmitterGroup(source=self, artist_kwargs_updated=Event)
+        # Re-emit updates. It's important to re-emit (not just pass through)
+        # because the consumer will need access to self.
+        self._artist_kwargs.events.updated.connect(
+            lambda event: self.events.artist_kwargs_updated(update=event.update)
+        )
         super().__init__(uuid)
 
     def set_axes(self, axes):
@@ -204,20 +209,14 @@ class ArtistSpec(BaseSpec):
 
         This *is* settable but it has to be done like:
 
-        >>> spec.artist_kwargs = {"color": "blue"}
+        >>> spec.artist_kwargs.update({"color": "blue"})
 
         Attempts to modify the contents will be disallowed:
 
         >>> spec.artist_kwargs["color"] = blue  # TypeError!
-
-        because such changes would be unobservable.
+        >>> del spec.artist_kwargs["color"]  # TypeError!
         """
-        return DictView(self._artist_kwargs)  # a read-only dict
-
-    @artist_kwargs.setter
-    def artist_kwargs(self, value):
-        self._artist_kwargs = value
-        self.events.artist_kwargs(value=value)
+        return self._artist_kwargs
 
     def __repr__(self):
         return (
