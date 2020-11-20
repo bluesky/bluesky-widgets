@@ -1,6 +1,6 @@
 """
 This joins our AxesSpec model to matplotlib.axes.Axes. It is used by
-bluesky_widgets.qt.viewer and bluesky_widgets.jupyter_viewer.
+bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
 import logging
 
