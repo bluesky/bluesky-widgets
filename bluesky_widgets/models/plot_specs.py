@@ -6,6 +6,7 @@ We follow the pattern that parents know about their children but children do
 not know about their parents: thus, Figures know about their Axes and Axes know
 about their Artists.
 """
+import collections
 import uuid as uuid_module
 
 from ..utils.event import EmitterGroup, Event
@@ -30,7 +31,7 @@ class FigureSpec(BaseSpec):
     "Describes a Figure"
 
     def __init__(self, axes_specs, *, title, uuid=None):
-        self._axes_specs = axes_specs
+        self._axes_specs = tuple(axes_specs)
         self._title = title
         self.events = EmitterGroup(source=self, title=Event)
         super().__init__(uuid)
@@ -38,7 +39,7 @@ class FigureSpec(BaseSpec):
     @property
     def axes_specs(self):
         """
-        List of AxesSpecs. Set at FigureSpec creation time and immutable.
+        Tuple of AxesSpecs. Set at FigureSpec creation time and immutable.
 
         Why is it immutable? Because rearranging Axes to make room for a new
         one is currently painful to do in matplotlib. This constraint might be
@@ -88,6 +89,7 @@ class AxesSpec(BaseSpec):
     >>> del lines[-1]  # Remove the last one.
     >>> a.lines.clear()  # Remove them all.
     """
+
     def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
         self._lines = LineSpecList(lines or [])
         self._x_label = x_label
@@ -100,6 +102,29 @@ class AxesSpec(BaseSpec):
     def lines(self):
         "List of LineSpecs on these Axes. Mutable."
         return self._lines
+
+    @property
+    def by_label(self):
+        """
+        Access artists as a dict keyed by label.
+
+        Since two artists are allowed to have the same label, the values are
+        *lists*. In the common case, the list will have just one element.
+
+        Examples
+        --------
+
+        Look up an object (e.g. a line) by its label and change its color.
+
+        >>> spec = axes_spec.by_label["Scan 3"]
+        >>> spec.artist_kwargs = {"color": "red"}
+        """
+        mapping = collections.defaultdict(list)
+        for line in self.lines:
+            label = line.artist_kwargs.get("label")
+            if label is not None:
+                mapping[label].append(line)
+        return dict(mapping)
 
     @property
     def x_label(self):
