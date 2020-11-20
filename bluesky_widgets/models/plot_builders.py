@@ -136,6 +136,8 @@ class LastNLines:
         # If run is in progress, give it a special color so it stands out.
         if run.metadata["stop"] is None:
             color = "black"
+            # Later, when it completes, flip the color to one from the cycle.
+            run.events.completed.connect(self._on_run_complete)
         else:
             color = next(self._color_cycle)
         artist_kwargs = {"label": label, "color": color}
@@ -158,7 +160,6 @@ class LastNLines:
         else:
             # Otherwise, connect a callback to run when the stream of interest arrives.
             run.events.new_stream.connect(self._on_new_stream)
-            run.events.completed.connect(self._on_run_complete)
 
     def _on_run_removed(self, event):
         "Remove the line if its corresponding Run is removed."
