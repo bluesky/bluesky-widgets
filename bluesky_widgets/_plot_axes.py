@@ -63,8 +63,9 @@ class Axes:
                 self.axes.figure.canvas.draw_idle()
 
             self.connect(run.events.new_data, update)
-            self.connect(run.events.completed,
-                lambda event: run.events.new_data.disconnect(update)
+            self.connect(
+                run.events.completed,
+                lambda event: run.events.new_data.disconnect(update),
             )
 
         self._add_artist(line_spec, artist)
@@ -81,7 +82,9 @@ class Axes:
         artist.set_gid(artist_spec.uuid)
 
         # Listen for changes to artist_kwargs.
-        self.connect(artist_spec.events.artist_kwargs_updated, self._on_artist_kwargs_updated)
+        self.connect(
+            artist_spec.events.artist_kwargs_updated, self._on_artist_kwargs_updated
+        )
         self._redraw()
 
     def _on_artist_kwargs_updated(self, event):

@@ -24,6 +24,7 @@ class ThreadsafeAxes(QObject, Axes):
     Signals and Slots so that callbacks run form background threads do not run
     amok.
     """
+
     __callback_event = Signal(object, Event)
 
     def __init__(self, *args, **kwargs):
