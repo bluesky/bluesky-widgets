@@ -1,3 +1,4 @@
+import collections.abc
 import itertools
 import weakref
 
@@ -8,6 +9,54 @@ from .plot_specs import (
     FigureSpecList,
 )
 from .utils import RunList
+from ..utils.list import EventedList
+
+
+class BuilderList(EventedList):
+    "A list of functions that accept a BlueskyRun and return FigureSpec(s)."
+    ...
+
+
+class PromptPlotter:
+    """
+    Produce Figures from BlueskyRuns promptly (as Run completion time).
+
+    Parameters
+    ----------
+    builders : BuilderList[callable]
+        A list of functions that accept a BlueskyRun and return FigureSpec(s).
+
+    Attributes
+    ----------
+    runs : RunList[BlueskyRun]
+        As runs are appended entries will be popped off the beginning of the last
+        (first in, first out) so that there are at most N.
+    figures : FigureSpecList[FigureSpec]
+    builders : BuilderList[callable]
+        A list of functions that accept a BlueskyRun and return FigureSpec(s).
+    """
+
+    def __init__(self, builders):
+        self.figures = FigureSpecList()
+        self.builders = BuilderList()
+        self.runs = RunList()
+        self.builders.extend(builders)
+        self.runs.events.added.connect(self._on_run_added)
+
+    def _on_run_added(self, event):
+        run = event.item
+        if is_completed(run):
+            self._process_run(run)
+        else:
+            run.events.completed.connect(lambda event: self._process_run(event.run))
+
+    def _process_run(self, run):
+        for builder in self.builders:
+            figure_specs = builder(run)
+        # Tolerate a FigureSpec or a list of them.
+        if not isinstance(figure_specs, collections.abc.Iterable):
+            figure_specs = [figure_specs]
+        self.figures.extend(figure_specs)
 
 
 def prompt_line_builder(run):
@@ -248,6 +297,7 @@ class AutoLastNLines:
         These runs will not be popped.
     figures : FigureSpecList[FigureSpec]
     """
+
     def __init__(self, N):
         self.figures = FigureSpecList()
         self.runs = RunList()
@@ -290,7 +340,9 @@ class AutoLastNLines:
                 (x, y), stream_name = key
                 instance = LastNLines(x, y, self._N, stream_name)
                 instance.figures.events.added.connect(self._on_figure_added_by_instance)
-                instance.figures.events.removed.connect(self._on_figure_removed_by_instance)
+                instance.figures.events.removed.connect(
+                    self._on_figure_removed_by_instance
+                )
                 self._instances[key] = instance
             if run in self.pinned_runs:
                 instance.pinned_runs.append(run)
