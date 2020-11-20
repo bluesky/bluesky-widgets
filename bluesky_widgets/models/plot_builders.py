@@ -308,6 +308,7 @@ class AutoLastNLines:
         self._instances = {}
         self.runs.events.added.connect(self._on_run_added)
         self.pinned_runs.events.added.connect(self._on_run_added)
+        self.figures.events.removed.connect(self._on_figure_removed_from_us)
 
     def _on_run_added(self, event):
         run = event.item
@@ -356,6 +357,23 @@ class AutoLastNLines:
     def _on_figure_removed_by_instance(self, event):
         figure_spec = event.item
         self.figures.remove(figure_spec)
+
+    def _on_figure_removed_from_us(self, event):
+        """
+        A figure was removed from self.figures.
+
+        Remove it from the relevant LastNLines instance.
+        """
+        figure_spec = event.item
+        # Find the relevant instance by brute force search. This should not
+        # take too long because the serach is not a large one.
+        for instance in self._instances.values():
+            if figure_spec in instance.figures:
+                with instance.figures.events.removed.blocker(
+                    callback=self._on_figure_removed_by_instance
+                ):
+                    instance.figures.remove(figure_spec)
+                break
 
     @property
     def N(self):

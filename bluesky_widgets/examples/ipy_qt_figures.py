@@ -8,6 +8,7 @@ In [1]: %run -m bluesky_widgets.examples.qt_figures
 from bluesky import RunEngine
 from bluesky.plans import scan
 from ophyd.sim import motor, det
+
 from bluesky_widgets.utils.streaming import connect_dispatcher_to_list_of_runs
 from bluesky_widgets.models.plot_builders import LastNLines
 from bluesky_widgets.qt.figures import QtFigures
