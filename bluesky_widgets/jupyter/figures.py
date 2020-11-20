@@ -29,6 +29,7 @@ class JupyterFigures(widgets.Tab):
         self._add_figure(figure_spec)
 
     def _add_figure(self, figure_spec):
+        "Add a new tab with a matplotlib Figure."
         tab = _JupyterFigureTab(figure_spec, parent=self)
         self._figures[figure_spec.uuid] = tab
         self.children = (*self.children, tab)
@@ -40,18 +41,18 @@ class JupyterFigures(widgets.Tab):
             self.selected_index = 0
 
     def _on_figure_removed(self, event):
-        # A Search has been removed from the SearchList model.
-        # Close the associated tab and clean up the associated state.
+        "Remove the associated tab and close its canvas."
         figure_spec = event.item
         widget = self._figures[figure_spec.uuid]
         children = list(self.children)
         children.remove(widget)
         self.children = tuple(children)
         widget.figure.canvas.close()
+        del widget
         del self._figures[figure_spec.uuid]
         gc.collect()
 
-    def close_tab(self, model):
+    def on_close_tab_requested(self, model):
         # When closing is initiated from the view, remove the associated
         # model.
         self.model.remove(model)
@@ -86,7 +87,7 @@ class _JupyterFigureTab(widgets.HBox):
         super().__init__()
         self.parent = parent
         self.button = widgets.Button(description="Close")
-        self.button.on_click(lambda _: self.parent.close_tab(self.model))
+        self.button.on_click(lambda _: self.parent.on_close_tab_requested(self.model))
         self.jupyter_figure = JupyterFigure(model)
         self.children = (self.jupyter_figure, self.button)
 

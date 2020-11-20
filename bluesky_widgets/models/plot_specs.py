@@ -65,10 +65,31 @@ class FigureSpec(BaseSpec):
 
 
 class AxesSpec(BaseSpec):
-    "Describes a set of Axes"
+    """
+    Describes a set of Axes
 
-    def __init__(self, lines, *, x_label, y_label, uuid=None):
-        self._lines = LineSpecList()
+    Note that lines may be declare at init time:
+
+    >>> a = AxesSpec(lines=[LineSpec(...)])
+
+    Or added later:
+
+    >>> a = AxesSpec()
+    >>> a.lines.append(LineSpec(...))
+
+    Or a mix:
+
+    >>> a = AxesSpec(lines=[LineSpec(...)])
+    >>> a.lines.append(LineSpec(...))
+
+    And they can be removed at any point:
+
+    >>> del lines[0]  # Remove the first one.
+    >>> del lines[-1]  # Remove the last one.
+    >>> a.lines.clear()  # Remove them all.
+    """
+    def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
+        self._lines = LineSpecList(lines or [])
         self._x_label = x_label
         self._y_label = y_label
         self.events = EmitterGroup(source=self, x_label=Event, y_label=Event)
@@ -106,7 +127,7 @@ class AxesSpec(BaseSpec):
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(artists={self._artists!r}, "
+            f"{self.__class__.__name__}(artists={self.lines!r}, "
             f"x_label={self.x_label!r}, y_label={self.y_label!r}, "
             f"uuid={self.uuid!r})"
         )

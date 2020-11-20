@@ -28,10 +28,10 @@ def prompt_line_builder(run):
 
     label = f"Scan {run.metadata['start']['scan_id']}"
     line_spec = LineSpec(func, run, {"label": label})
-    axes_spec = AxesSpec([line_spec], x_label="motor", y_label="det")
+    axes_spec = AxesSpec(lines=[line_spec], x_label="motor", y_label="det")
     figure_spec = FigureSpec((axes_spec,), title="det v motor")
 
-    return [figure_spec, axes_spec, line_spec]
+    return [figure_spec]
 
 
 # This is matplotlib's default color cycle, obtained via
@@ -88,7 +88,7 @@ class LastNLines:
 
     def new_plot(self):
         "Start a new plot, leaving the current one (if any) as is."
-        axes_spec = AxesSpec([], x_label=self.x, y_label=self.y)
+        axes_spec = AxesSpec(x_label=self.x, y_label=self.y)
         figure_spec = FigureSpec((axes_spec,), title=f"{self.y} v {self.x}")
         self._current_figure_axes = (figure_spec, axes_spec)
         self.figures.append(figure_spec)
