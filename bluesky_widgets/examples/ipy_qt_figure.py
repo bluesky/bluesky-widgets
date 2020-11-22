@@ -10,12 +10,12 @@ from bluesky.plans import scan
 from ophyd.sim import motor, det
 
 from bluesky_widgets.utils.streaming import connect_dispatcher_to_list_of_runs
-from bluesky_widgets.models.plot_builders import AutoLastNLines
-from bluesky_widgets.qt.figures import QtFigures
+from bluesky_widgets.models.plot_builders import LastNLines
+from bluesky_widgets.qt.figures import QtFigure
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 
-model = AutoLastNLines(3)
-view = QtFigures(model.figures)
+model = LastNLines("motor", "det", 3)
+view = QtFigure(model.figure)
 view.show()
 
 RE = RunEngine()

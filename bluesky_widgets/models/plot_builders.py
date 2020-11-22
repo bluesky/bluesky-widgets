@@ -1,3 +1,4 @@
+from collections import defaultdict
 import collections.abc
 import itertools
 import weakref
@@ -10,6 +11,7 @@ from .plot_specs import (
 )
 from .utils import RunList, run_is_live_and_not_completed
 from ..utils.list import EventedList
+from ..utils.dict_view import DictView
 
 
 class BuilderList(EventedList):
@@ -313,11 +315,24 @@ class AutoLastNLines:
     Attributes
     ----------
     runs : RunList[BlueskyRun]
-        As runs are appended entries will be popped off the beginning of the last
-        (first in, first out) so that there are at most N.
+        As runs are appended entries will be removed from the beginning of the
+        last (first in, first out) so that there are at most N.
     pinned_runs : RunList[BlueskyRun]
-        These runs will not be popped.
+        These runs will not be automatically removed.
     figures : FigureSpecList[FigureSpec]
+    N : int
+        Number of lines to show at once. This may be changed at any point.
+        (Note: Increasing it will not restore any Runs that have already been
+        removed, but it will allow more new Runs to be added.)
+    keys_to_figures : dict
+        Read-only mapping of each key to the active LastNLines instance.
+
+    Examples
+    --------
+    >>> model = AutoLastNLines(3)
+    >>> from bluesky_widgets.jupyter.figures import JupyterFigures
+    >>> view = JupyterFigures(model.figures)
+    >>> model.pinned_runs.append(run)
     """
 
     def __init__(self, N):
@@ -326,11 +341,40 @@ class AutoLastNLines:
         self.pinned_runs = RunList()
         self._N = N
 
-        # Map ((x, y), stream_name) to LastNLines instances so configured.
-        self._instances = {}
+        # Map key like ((x, y), stream_name) to LastNLines instance so configured.
+        self._key_to_instance = {}
+        # Map FigureSpec UUID to key like ((x, y), stream_name)
+        self._figure_to_key = {}
+        # Track inactive instances/figures which are no longer being updated
+        # with new Runs. Structure is a dict-of-dicts like:
+        # {key: {figure_uuid: instance, ...}, ...}
+        self._inactive_instances = defaultdict(dict)
         self.runs.events.added.connect(self._on_run_added)
         self.pinned_runs.events.added.connect(self._on_run_added)
         self.figures.events.removed.connect(self._on_figure_removed_from_us)
+
+    @property
+    def keys_to_figures(self):
+        "Read-only mapping of each key to the active LastNLines instance."
+        return DictView({v: k for k, v in self._figure_to_key.items()})
+
+    def new_instance_for_key(self, key):
+        """
+        Make a new LastNLine instance for a key.
+
+        If there is an existing one the instance and figure will remain but
+        will no longer be updated with new Runs. Those will go to a new
+        instance and figure, created here.
+        """
+        (x, y), stream_name = key
+        old_instance = self._key_to_instance.pop(key, None)
+        if old_instance is not None:
+            self._inactive_instances[key][old_instance.figure.uuid] = old_instance
+        instance = LastNLines(x, y, self._N, stream_name)
+        self._key_to_instance[key] = instance
+        self._figure_to_key[instance.figure.uuid] = key
+        self.figures.append(instance.figure)
+        return instance
 
     def _on_run_added(self, event):
         run = event.item
@@ -358,45 +402,36 @@ class AutoLastNLines:
         "This examines a stream and adds this run to LastNLines instances."
         for key in infer_lines(run[stream_name]):
             try:
-                instance = self._instances[key]
+                instance = self._key_to_instance[key]
             except KeyError:
-                (x, y), stream_name = key
-                instance = LastNLines(x, y, self._N, stream_name)
-                instance.figures.events.added.connect(self._on_figure_added_by_instance)
-                instance.figures.events.removed.connect(
-                    self._on_figure_removed_by_instance
-                )
-                self._instances[key] = instance
+                instance = self.new_instance_for_key(key)
             if run in self.pinned_runs:
                 instance.pinned_runs.append(run)
             else:
                 instance.runs.append(run)
 
-    def _on_figure_added_by_instance(self, event):
-        figure = event.item
-        self.figures.append(figure)
-
-    def _on_figure_removed_by_instance(self, event):
-        figure = event.item
-        self.figures.remove(figure)
-
     def _on_figure_removed_from_us(self, event):
         """
         A figure was removed from self.figures.
 
-        Remove it from the relevant LastNLines instance.
+        Remove the relevant LastNLines instance.
         """
         figure = event.item
-        # Find the relevant instance by brute force search. This should not
-        # take too long because the serach is not a large one.
-        for instance in self._instances.values():
-            if figure in instance.figures:
-                with instance.figures.events.removed.blocker(
-                    callback=self._on_figure_removed_by_instance
-                ):
-                    instance.figures.remove(figure)
-                break
+        try:
+            key = self._figure_to_key.pop(figure.uuid)
+        except KeyError:
+            # This figure belongs to an inactive instance.
+            del self._inactive_instances[key][figure.uuid]
+
+        else:
+            self._key_to_instance.pop(key)
 
     @property
     def N(self):
         return self._N
+
+    @N.setter
+    def N(self, value):
+        self._N = value
+        for instance in self._key_to_instance.values():
+            instance.N = value

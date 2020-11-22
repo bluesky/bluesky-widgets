@@ -11,7 +11,7 @@ import uuid as uuid_module
 
 from ..utils.event import EmitterGroup, Event
 from ..utils.list import EventedList
-from ..utils.dict_view import UpdateOnlyDict
+from ..utils.dict_view import UpdateOnlyDict, DictView
 
 
 class BaseSpec:
@@ -66,7 +66,7 @@ class FigureSpec(BaseSpec):
 
     @property
     def title(self):
-        "String for figure title"
+        "String for figure title. Settable."
         return self._title
 
     @title.setter
@@ -146,7 +146,13 @@ class AxesSpec(BaseSpec):
 
     @property
     def figure(self):
-        "The Figure in which this Axes is located."
+        """
+        The Figure in which this Axes is located.
+
+        See Also
+        --------
+        :meth:`set_figure`
+        """
         return self._figure
 
     def set_figure(self, figure):
@@ -170,7 +176,7 @@ class AxesSpec(BaseSpec):
     @property
     def by_label(self):
         """
-        Access artists as a dict keyed by label.
+        Access artists as a read-only dict keyed by label.
 
         Since two artists are allowed to have the same label, the values are
         *lists*. In the common case, the list will have just one element.
@@ -188,19 +194,19 @@ class AxesSpec(BaseSpec):
             label = artist.artist_kwargs.get("label")
             if label is not None:
                 mapping[label].append(artist)
-        return dict(mapping)
+        return DictView(mapping)
 
     @property
     def by_uuid(self):
         """
-        Access artists as a dict keyed by uuid.
+        Access artists as a read-only dict keyed by uuid.
         """
         # Return a copy to prohibit mutation of internal bookkeeping.
-        return dict(self._artists)
+        return DictView(self._artists)
 
     @property
     def x_label(self):
-        "String for x axes label."
+        "String for x axes label. Settable."
         return self._x_label
 
     @x_label.setter
@@ -210,7 +216,7 @@ class AxesSpec(BaseSpec):
 
     @property
     def y_label(self):
-        "String for y axes label."
+        "String for y axes label. Settable."
         return self._y_label
 
     @y_label.setter
@@ -290,7 +296,13 @@ class ArtistSpec(BaseSpec):
 
     @property
     def axes(self):
-        "The Axes on which this Artist is drawn."
+        """
+        The Axes on which this Artist is drawn.
+
+        See Also
+        --------
+        :meth:`set_axes`
+        """
         return self._axes
 
     @property
