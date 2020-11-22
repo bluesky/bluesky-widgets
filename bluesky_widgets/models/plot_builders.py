@@ -52,11 +52,11 @@ class PromptPlotter:
 
     def _process_run(self, run):
         for builder in self.builders:
-            figure_specs = builder(run)
+            figures = builder(run)
         # Tolerate a FigureSpec or a list of them.
-        if not isinstance(figure_specs, collections.abc.Iterable):
-            figure_specs = [figure_specs]
-        self.figures.extend(figure_specs)
+        if not isinstance(figures, collections.abc.Iterable):
+            figures = [figures]
+        self.figures.extend(figures)
 
 
 def prompt_line_builder(run):
@@ -76,11 +76,11 @@ def prompt_line_builder(run):
         return ds["motor"], ds["det"]
 
     label = f"Scan {run.metadata['start']['scan_id']}"
-    line_spec = LineSpec(func, run, {"label": label})
-    axes_spec = AxesSpec(lines=[line_spec], x_label="motor", y_label="det")
-    figure_spec = FigureSpec((axes_spec,), title="det v motor")
+    line = LineSpec(func, run, {"label": label})
+    axes = AxesSpec(lines=[line], x_label="motor", y_label="det")
+    figure = FigureSpec((axes,), title="det v motor")
 
-    return [figure_spec]
+    return [figure]
 
 
 # This is matplotlib's default color cycle, obtained via
@@ -113,6 +113,8 @@ class LastNLines:
         number of lines to show at once
     stream_name : string, optional
         Stream where fields x and y are found. Default is "primary".
+    axes : AxesSpec, optional
+        If None, an axes and figure are created with default labels and titles.
 
     Attributes
     ----------
@@ -121,17 +123,17 @@ class LastNLines:
         (first in, first out) so that there are at most N.
     pinned_runs : RunList[BlueskyRun]
         These runs will not be popped.
-    figures : FigureSpecList[FigureSpec]
+    figure : FigureSpec
 
     Examples
     --------
     >>> model = LastNLines("motor", "det", 3)
-    >>> view = JupyterFigures(model.figures)
+    >>> view = JupyterFigure(model.figure)
     >>> model.pinned_runs.append(run)
 
     """
 
-    def __init__(self, x, y, N, stream_name="primary"):
+    def __init__(self, x, y, N, stream_name="primary", axes=None):
         super().__init__()
         # Stash these and expose them as read-only properties.
         self._N = int(N)
@@ -139,34 +141,29 @@ class LastNLines:
         self._y = y
         self._stream_name = stream_name
 
-        self.figures = FigureSpecList()
         self.runs = RunList()
         self.pinned_runs = RunList()
 
-        self._current_figure_axes = None
         self._color_cycle = itertools.cycle(DEFAULT_COLOR_CYCLE)
         # Maps Run (uid) to LineSpec
         self._runs_to_lines = weakref.WeakValueDictionary()
 
-        self.figures.events.removed.connect(self._on_figure_removed)
         self.runs.events.added.connect(self._on_run_added)
         self.runs.events.removed.connect(self._on_run_removed)
         self.pinned_runs.events.added.connect(self._on_run_added)
         self.pinned_runs.events.removed.connect(self._on_run_removed)
 
-    def new_plot(self):
-        "Start a new plot, leaving the current one (if any) as is."
-        axes_spec = AxesSpec(x_label=self.x, y_label=self.y)
-        figure_spec = FigureSpec((axes_spec,), title=f"{self.y} v {self.x}")
-        self._current_figure_axes = (figure_spec, axes_spec)
-        self.figures.append(figure_spec)
+        if axes is None:
+            axes = AxesSpec(x_label=self.x, y_label=self.y)
+            figure = FigureSpec((axes,), title=f"{self.y} v {self.x}")
+        else:
+            figure = axes.figure
+        self.axes = axes
+        self.figure = figure
 
     def _add_line(self, run):
         "Add a line."
         # Create a plot if we do not have one.
-        if self._current_figure_axes is None:
-            self.new_plot()
-        figure_spec, axes_spec = self._current_figure_axes
         # If necessary, removes runs to make room for the new one.
         while len(self.runs) > self.N:
             self.runs.pop(0)
@@ -195,10 +192,10 @@ class LastNLines:
         if run in self.pinned_runs:
             artist_kwargs.update(linestyle="dashed", label=label + " (pinned)")
 
-        line_spec = LineSpec(func, run, artist_kwargs)
+        line = LineSpec(func, run, artist_kwargs)
         run_uid = run.metadata["start"]["uid"]
-        self._runs_to_lines[run_uid] = line_spec
-        axes_spec.lines.append(line_spec)
+        self._runs_to_lines[run_uid] = line
+        self.axes.lines.append(line)
 
     def _on_run_added(self, event):
         "When a new Run is added, draw a line or schedule it to be drawn."
@@ -214,13 +211,12 @@ class LastNLines:
         "Remove the line if its corresponding Run is removed."
         run_uid = event.item.metadata["start"]["uid"]
         try:
-            line_spec = self._runs_to_lines[run_uid]
+            line = self._runs_to_lines[run_uid]
         except KeyError:
             # The line has been removed before the Run was.
             return
-        axes_spec = line_spec.axes
         try:
-            axes_spec.lines.remove(line_spec)
+            self.axes.lines.remove(line)
         except ValueError:
             # The line has been removed before the Run was.
             pass
@@ -235,19 +231,11 @@ class LastNLines:
         "When a run completes, update the color from back to a color."
         run_uid = event.run.metadata["start"]["uid"]
         try:
-            line_spec = self._runs_to_lines[run_uid]
+            line = self._runs_to_lines[run_uid]
         except KeyError:
             # The line has been removed before the Run completed.
             return
-        line_spec.artist_kwargs.update({"color": next(self._color_cycle)})
-
-    def _on_figure_removed(self, event):
-        "Reset self._current_figure_axes to None if the figure is removed."
-        figure = event.item
-        if self._current_figure_axes is not None:
-            current_figure, _ = self._current_figure_axes
-            if figure == current_figure:
-                self._current_figure_axes = None
+        line.artist_kwargs.update({"color": next(self._color_cycle)})
 
     # Read-only properties so that these settings are inspectable, but not
     # changeable.
@@ -351,12 +339,12 @@ class AutoLastNLines:
                 instance.runs.append(run)
 
     def _on_figure_added_by_instance(self, event):
-        figure_spec = event.item
-        self.figures.append(figure_spec)
+        figure = event.item
+        self.figures.append(figure)
 
     def _on_figure_removed_by_instance(self, event):
-        figure_spec = event.item
-        self.figures.remove(figure_spec)
+        figure = event.item
+        self.figures.remove(figure)
 
     def _on_figure_removed_from_us(self, event):
         """
@@ -364,15 +352,15 @@ class AutoLastNLines:
 
         Remove it from the relevant LastNLines instance.
         """
-        figure_spec = event.item
+        figure = event.item
         # Find the relevant instance by brute force search. This should not
         # take too long because the serach is not a large one.
         for instance in self._instances.values():
-            if figure_spec in instance.figures:
+            if figure in instance.figures:
                 with instance.figures.events.removed.blocker(
                     callback=self._on_figure_removed_by_instance
                 ):
-                    instance.figures.remove(figure_spec)
+                    instance.figures.remove(figure)
                 break
 
     @property

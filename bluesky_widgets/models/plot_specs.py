@@ -31,6 +31,8 @@ class FigureSpec(BaseSpec):
     "Describes a Figure"
 
     def __init__(self, axes, *, title, uuid=None):
+        for ax in axes:
+            ax.set_figure(self)
         self._axes = tuple(axes)
         self._title = title
         self.events = EmitterGroup(source=self, title=Event)
@@ -91,6 +93,7 @@ class AxesSpec(BaseSpec):
     """
 
     def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
+        self._figure = None
         self._lines = LineSpecList(lines or [])
         # A colleciton of all artists, mappping UUID to object
         self._artists = {}
@@ -100,6 +103,24 @@ class AxesSpec(BaseSpec):
         super().__init__(uuid)
         self._lines.events.added.connect(self._on_artist_added)
         self._lines.events.removed.connect(self._on_artist_removed)
+
+    @property
+    def figure(self):
+        "The Figure in which this Axes is located."
+        return self._figure
+
+    def set_figure(self, figure):
+        """
+        This is called by FigureSpec when the Axes is added to it.
+
+        It may only be called once.
+        """
+        if self._figure is not None:
+            raise RuntimeError(
+                f"Figure may only be set once. The Axes  {self} already belongs "
+                f"to {self.figure} and thus cannot be added to {figure}."
+            )
+        self._figure = figure
 
     @property
     def lines(self):
