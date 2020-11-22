@@ -57,6 +57,16 @@ class PromptPlotter:
         else:
             run.events.completed.connect(lambda event: self._process_run(event.run))
 
+    def _on_builder_added(self, event):
+        builder = event.item
+        self.builders.append(builder)
+        # Process all runs we already have with the new builder.
+        for run in self.runs:
+            if not run_is_live_and_not_completed(run):
+                self._process_run(run)
+            else:
+                run.events.completed.connect(lambda event: self._process_run(event.run))
+
     def _process_run(self, run):
         for builder in self.builders:
             figures = builder(run)
