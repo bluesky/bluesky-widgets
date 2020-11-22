@@ -48,10 +48,20 @@ class MatplotlibAxes:
             self._add_line(line_spec)
         self.connect(model.lines.events.added, self._on_line_added)
         self.connect(model.lines.events.removed, self._on_artist_removed)
+        self.connect(model.events.x_label, self._on_x_label_changed)
+        self.connect(model.events.y_label, self._on_y_label_changed)
 
     def connect(self, emitter, callback):
         "The Qt view overwrites this with a threadsafe connect."
         emitter.connect(callback)
+
+    def _on_x_label_changed(self, event):
+        self.axes.set_xlabel(event.value)
+        self._redraw()
+
+    def _on_y_label_changed(self, event):
+        self.axes.set_ylabel(event.value)
+        self._redraw()
 
     def _on_line_added(self, event):
         line_spec = event.item
