@@ -277,7 +277,7 @@ class LastNLines:
 
     @N.setter
     def N(self, value):
-        self._N = N
+        self._N = value
         self._cull_runs()
 
     # Read-only properties so that these settings are inspectable, but not
