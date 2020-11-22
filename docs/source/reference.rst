@@ -1,0 +1,111 @@
+=============
+API Reference
+=============
+
+.. contents::
+
+Run Tree
+========
+
+Models
+------
+
+.. autoclass:: bluesky_widgets.models.run_tree.RunTree
+   :members:
+
+Views
+-----
+
+.. autoclass:: bluesky_widgets.qt.run_tree.QtTreeView
+   :members:
+
+Plots
+=====
+
+Models
+------
+
+Figures, Axes, and Plot Entities
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: bluesky_widgets.models.plot_specs.FigureSpec
+   :members:
+
+.. autoclass:: bluesky_widgets.models.plot_specs.AxesSpec
+   :members:
+
+.. autoclass:: bluesky_widgets.models.plot_specs.LineSpec
+   :members:
+
+Base Classes
+^^^^^^^^^^^^
+
+.. autoclass:: bluesky_widgets.models.plot_specs.ArtistSpec
+   :members:
+
+.. autoclass:: bluesky_widgets.models.plot_specs.BaseSpec
+   :members:
+
+Views
+-----
+
+Qt
+^^
+
+.. autoclass:: bluesky_widgets.qt.figures.QtFigure
+   :members:
+
+.. autoclass:: bluesky_widgets.qt.figures.QtFigures
+   :members:
+
+Jupyter
+^^^^^^^
+
+.. autoclass:: bluesky_widgets.jupyter.figures.JupyterFigure
+   :members:
+
+.. autoclass:: bluesky_widgets.jupyter.figures.JupyterFigures
+   :members:
+
+Plot Builders
+=============
+
+These are models which build a :class:`models.plot_specs.FigureSpec` or a list
+of them. This is an example of a builder that creates one Figure:
+
+.. code:: python
+
+    from bluesky_widgets.models.plot_builders import LastNLines
+    model = LastNLines("motor", "det", N=3)
+    model.runs  # append Runs to this list
+
+    # Build a view by passing model.figure to any Figure view, e.g.
+    from bluesky_widgets.jupyter.figures import JupyterFigure
+    view = JupyterFigure(model.figure)
+
+And this is an example of a builder that creates a list of Figures:
+
+.. code:: python
+
+    from bluesky_widgets.models.plot_builders import AutoLastNLines
+    model = AutoLastNLines(N=3)
+    model.runs  # append Runs to this list
+
+    # Build a view by passing model.figures to any Figures view, e.g.
+    from bluesky_widgets.jupyter.figures import JupyterFigures
+    view = JupyterFigures(model.figures)
+
+Builders with a Single Figure
+-----------------------------
+
+.. autoclass:: bluesky_widgets.models.plot_builders.LastNLines
+   :members:
+
+Builders with a List of Figures
+-------------------------------
+
+.. autoclass:: bluesky_widgets.models.plot_builders.AutoLastNLines
+   :members:
+
+.. autoclass:: bluesky_widgets.models.plot_builders.PromptPlotter
+   :members:

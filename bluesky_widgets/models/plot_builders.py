@@ -29,7 +29,9 @@ class PromptPlotter:
     Attributes
     ----------
     runs : RunList[BlueskyRun]
+        Add or remove runs from this list.
     figures : FigureSpecList[FigureSpec]
+        Figures will be added to this list.
     builders : BuilderList[callable]
         A list of functions with the expected signature::
 
@@ -38,7 +40,6 @@ class PromptPlotter:
         or::
 
             f(run: BlueskyRun) -> List{FigureSpec]
-
     """
 
     def __init__(self, builders):
@@ -123,11 +124,11 @@ class LastNLines:
     Parameters
     ----------
     x : string
-        field name
+        Field name
     y : string
-        field name
+        Field name
     N : int
-        number of lines to show at once
+        Number of lines to show at once
     stream_name : string, optional
         Stream where fields x and y are found. Default is "primary".
     axes : AxesSpec, optional
@@ -142,9 +143,16 @@ class LastNLines:
         These runs will not be automatically removed.
     figure : FigureSpec
     axes : AxesSpec
-
-    There are read-only attributes for each Parameter as well. Only N may be
-    changed after instantiation; the others may be inspected.
+    N : int
+        Number of lines to show at once. This may be changed at any point.
+        (Note: Increasing it will not restore any Runs that have already been
+        removed, but it will allow more new Runs to be added.)
+    x : string
+        Read-only access to x field name
+    y : string
+        Read-only access to y field name
+    stream_name : string
+        Read-only access to stream name
 
     Examples
     --------
