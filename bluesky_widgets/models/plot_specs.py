@@ -16,6 +16,7 @@ from ..utils.dict_view import UpdateOnlyDict
 
 class BaseSpec:
     "Just a class with a uuid attribute."
+    __slots__ = ()
 
     def __init__(self, uuid):
         if uuid is None:
@@ -29,6 +30,7 @@ class BaseSpec:
 
 class FigureSpec(BaseSpec):
     "Describes a Figure"
+    __slots__ = ()
 
     def __init__(self, axes, *, title, uuid=None):
         for ax in axes:
@@ -91,6 +93,7 @@ class AxesSpec(BaseSpec):
     >>> del lines[-1]  # Remove the last one.
     >>> a.lines.clear()  # Remove them all.
     """
+    __slots__ = ()
 
     def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
         self._figure = None
@@ -197,6 +200,7 @@ class AxesSpec(BaseSpec):
 
 class ArtistSpec(BaseSpec):
     "Describes the data, computation, and style for an artist (plot element)"
+    __slots__ = ()
 
     def __init__(self, func, run, artist_kwargs, axes=None, uuid=None):
         self._func = func
@@ -276,6 +280,7 @@ class ArtistSpec(BaseSpec):
 
 class LineSpec(ArtistSpec):
     "Describes a line (both data and style)"
+    __slots__ = ()
 
 
 # EventedLists for each type of spec. We plan to add type-checking to these,
@@ -283,12 +288,12 @@ class LineSpec(ArtistSpec):
 
 
 class FigureSpecList(EventedList):
-    ...
+    __slots__ = ()
 
 
 class AxesSpecList(EventedList):
-    ...
+    __slots__ = ()
 
 
 class LineSpecList(EventedList):
-    ...
+    __slots__ = ()

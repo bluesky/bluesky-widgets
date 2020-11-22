@@ -3,8 +3,9 @@ from ..utils.list import EventedList
 
 class RunList(EventedList):
     """
-    A list of BlueskyRuns currently displayed in the Viewer.
+    A list of BlueskyRuns.
     """
+    __slots__ = ()
 
     def __contains__(self, run):
         uid = run.metadata["start"]["uid"]
