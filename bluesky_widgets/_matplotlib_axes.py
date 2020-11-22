@@ -7,8 +7,21 @@ import logging
 from .models.plot_specs import AxesSpec, LineSpec
 
 
-class Axes:
-    "Respond to changes in AxesSpec by maniupatling matplotlib.axes.Axes."
+class MatplotlibAxes:
+    """
+    Respond to changes in AxesSpec by manipulating matplotlib.axes.Axes.
+
+    Note that while most view classes accept model as their only __init__
+    parameter, this view class expects matplotlib.axes.Axes as well. If we
+    follow the pattern used elsewhere in bluesky-widgets, we would want to
+    receive only the model and to create matplotlib.axes.Axes internally in
+    this class.
+
+    The reason we break the pattern is pragmatic: matplotlib's
+    plt.subplots(...) function is the easiest way to create a Figure and Axes
+    with a nice layout, and it creates both Figure and Axes. So, this class
+    receives pre-made Axes from the outside, ultimately via plt.subplots(...).
+    """
 
     def __init__(self, model: AxesSpec, axes, *args, **kwargs):
         super().__init__(*args, **kwargs)

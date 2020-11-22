@@ -5,7 +5,8 @@ from ipywidgets import widgets
 import matplotlib
 
 from ..models.plot_specs import FigureSpec, FigureSpecList
-from .._plot_axes import Axes
+from .._matplotlib_axes import MatplotlibAxes
+from ..utils.dict_view import DictView
 
 
 class JupyterFigures(widgets.Tab):
@@ -69,8 +70,13 @@ class JupyterFigure(widgets.HBox):
         self.figure, self.axes_list = _make_figure(model)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = Axes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
         self.children = (self.figure.canvas,)
+
+    @property
+    def axes(self):
+        "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
+        return DictView(self._axes)
 
         # The FigureSpec model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
@@ -89,8 +95,17 @@ class _JupyterFigureTab(widgets.HBox):
         self.parent = parent
         self.button = widgets.Button(description="Close")
         self.button.on_click(lambda _: self.parent.on_close_tab_requested(self.model))
-        self.jupyter_figure = JupyterFigure(model)
+        self._jupyter_figure = JupyterFigure(model)
         self.children = (self.jupyter_figure, self.button)
+
+        # Pass-through accessors to match the API of QtFigure, which has/needs
+        # one less layer.
+        self.figure = self._jupyter_figure.figure
+
+    @property
+    def axes(self):
+        "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
+        return DictView(self._jupyter_figure.axes)
 
 
 def _make_figure(figure_spec):

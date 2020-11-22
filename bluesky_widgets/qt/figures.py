@@ -14,15 +14,16 @@ from matplotlib.backends.backend_qt5agg import (
 import matplotlib
 
 from ..models.plot_specs import FigureSpec, FigureSpecList
-from .._plot_axes import Axes
+from .._matplotlib_axes import MatplotlibAxes
 from ..utils.event import Event
+from ..utils.dict_view import DictView
 
 
-class ThreadsafeAxes(QObject, Axes):
+class ThreadsafeMatplotlibAxes(QObject, MatplotlibAxes):
     """
-    This overrides the a connect method in Axes to bounce callbacks through Qt
-    Signals and Slots so that callbacks run form background threads do not run
-    amok.
+    This overrides the a connect method in MatplotlibAxes to bounce callbacks
+    through Qt Signals and Slots so that callbacks run form background threads
+    do not run amok.
     """
 
     __callback_event = Signal(object, Event)
@@ -59,7 +60,6 @@ class QtFigures(QTabWidget):
             self._add_figure(figure_spec)
         self._threadsafe_connect(model.events.added, self._on_figure_added)
         self._threadsafe_connect(model.events.removed, self._on_figure_removed)
-        self.model = model
 
         # This setup for self._threadsafe_connect.
 
@@ -67,6 +67,11 @@ class QtFigures(QTabWidget):
             callback(event)
 
         self.__callback_event.connect(handle_callback)
+
+    @property
+    def figures(self):
+        "Read-only access to the mapping FigureSpec UUID -> QtFigure"
+        return DictView(self._figures)
 
     def _threadsafe_connect(self, emitter, callback):
         """
@@ -122,7 +127,7 @@ class QtFigure(QWidget):
         self.figure, self.axes_list = _make_figure(model)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = ThreadsafeAxes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = ThreadsafeMatplotlibAxes(model=axes_spec, axes=axes)
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
         canvas.setParent(self)
@@ -135,6 +140,11 @@ class QtFigure(QWidget):
 
         # The FigureSpec model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
+
+    @property
+    def axes(self):
+        "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
+        return DictView(self._axes)
 
 
 def _make_figure(figure_spec):
