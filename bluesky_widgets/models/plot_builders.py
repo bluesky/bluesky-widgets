@@ -8,7 +8,7 @@ from .plot_specs import (
     LineSpec,
     FigureSpecList,
 )
-from .utils import RunList
+from .utils import RunList, run_is_live_and_not_completed
 from ..utils.list import EventedList
 
 
@@ -45,7 +45,9 @@ class PromptPlotter:
 
     def _on_run_added(self, event):
         run = event.item
-        if is_completed(run):
+        # If Run is complete, process is now. Otherwise, schedule it to
+        # process when it completes.
+        if not run_is_live_and_not_completed(run):
             self._process_run(run)
         else:
             run.events.completed.connect(lambda event: self._process_run(event.run))
@@ -180,7 +182,7 @@ class LastNLines:
 
         label = f"Scan {run.metadata['start']['scan_id']}"
         # If run is in progress, give it a special color so it stands out.
-        if run.metadata["stop"] is None:
+        if run_is_live_and_not_completed(run):
             color = "black"
             # Later, when it completes, flip the color to one from the cycle.
             run.events.completed.connect(self._on_run_complete)
@@ -262,11 +264,6 @@ def infer_lines(stream):
     return [(("motor", "det"), "primary")]
 
 
-def is_completed(run):
-    "True is Run is completed and no further updates are coming."
-    return run.metadata["stop"] is not None
-
-
 class AutoLastNLines:
     """
     Automatically guess useful lines to plot. Show the last N runs (per figure).
@@ -302,7 +299,7 @@ class AutoLastNLines:
         run = event.item
         for stream_name in run:
             self._handle_stream(run, stream_name)
-        if is_completed(run):
+        if not run_is_live_and_not_completed(run):
             # We are done with this Run.
             # We have either passed it down to LastNLines instance(s) or found
             # nothing we know to do with it.

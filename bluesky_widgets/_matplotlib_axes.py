@@ -5,6 +5,7 @@ bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 import logging
 
 from .models.plot_specs import AxesSpec, LineSpec
+from .models.utils import run_is_live_and_not_completed
 
 
 class MatplotlibAxes:
@@ -76,7 +77,7 @@ class MatplotlibAxes:
 
         # If this is connected to a streaming data source and is not yet
         # complete, listen for updates.
-        if hasattr(run, "events") and (run.metadata["stop"] is None):
+        if run_is_live_and_not_completed(run):
 
             def update(event):
                 x, y = line_spec.func(run)
