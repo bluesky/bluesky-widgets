@@ -136,15 +136,20 @@ class LastNLines:
     Attributes
     ----------
     runs : RunList[BlueskyRun]
-        As runs are appended entries will be popped off the beginning of the last
-        (first in, first out) so that there are at most N.
+        As runs are appended entries will be removed from the beginning of the
+        last (first in, first out) so that there are at most N.
     pinned_runs : RunList[BlueskyRun]
-        These runs will not be popped.
+        These runs will not be automatically removed.
     figure : FigureSpec
+    axes : AxesSpec
+
+    There are read-only attributes for each Parameter as well. Only N may be
+    changed after instantiation; the others may be inspected.
 
     Examples
     --------
     >>> model = LastNLines("motor", "det", 3)
+    >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.pinned_runs.append(run)
 
@@ -182,8 +187,7 @@ class LastNLines:
         "Add a line."
         # Create a plot if we do not have one.
         # If necessary, removes runs to make room for the new one.
-        while len(self.runs) > self.N:
-            self.runs.pop(0)
+        self._cull_runs()
 
         stream_name = self.stream_name
         x = self.x
@@ -213,6 +217,11 @@ class LastNLines:
         run_uid = run.metadata["start"]["uid"]
         self._runs_to_lines[run_uid] = line
         self.axes.lines.append(line)
+
+    def _cull_runs(self):
+        "Remove Runs from the beginning of self.runs to keep the length <= N."
+        while len(self.runs) > self.N:
+            self.runs.pop(0)
 
     def _on_run_added(self, event):
         "When a new Run is added, draw a line or schedule it to be drawn."
@@ -254,12 +263,17 @@ class LastNLines:
             return
         line.artist_kwargs.update({"color": next(self._color_cycle)})
 
-    # Read-only properties so that these settings are inspectable, but not
-    # changeable.
-
     @property
     def N(self):
         return self._N
+
+    @N.setter
+    def N(self, value):
+        self._N = N
+        self._cull_runs()
+
+    # Read-only properties so that these settings are inspectable, but not
+    # changeable.
 
     @property
     def x(self):
