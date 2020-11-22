@@ -16,6 +16,9 @@ Models
 Views
 -----
 
+Qt
+^^
+
 .. autoclass:: bluesky_widgets.qt.run_tree.QtTreeView
    :members:
 
