@@ -181,7 +181,7 @@ class AxesSpec(BaseSpec):
         Look up an object (e.g. a line) by its label and change its color.
 
         >>> spec = axes_spec.by_label["Scan 3"]
-        >>> spec.artist_kwargs = {"color": "red"}
+        >>> spec.artist_kwargs.update(color="red")
         """
         mapping = collections.defaultdict(list)
         for artist in self._artists.values():
