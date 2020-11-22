@@ -29,11 +29,16 @@ class PromptPlotter:
     Attributes
     ----------
     runs : RunList[BlueskyRun]
-        As runs are appended entries will be popped off the beginning of the last
-        (first in, first out) so that there are at most N.
     figures : FigureSpecList[FigureSpec]
     builders : BuilderList[callable]
-        A list of functions that accept a BlueskyRun and return FigureSpec(s).
+        A list of functions with the expected signature::
+
+            f(run: BlueskyRun) -> FigureSpec
+
+        or::
+
+            f(run: BlueskyRun) -> List{FigureSpec]
+
     """
 
     def __init__(self, builders):
