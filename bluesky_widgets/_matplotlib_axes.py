@@ -23,6 +23,7 @@ class MatplotlibAxes:
     with a nice layout, and it creates both Figure and Axes. So, this class
     receives pre-made Axes from the outside, ultimately via plt.subplots(...).
     """
+
     __slots__ = ()
 
     def __init__(self, model: AxesSpec, axes, *args, **kwargs):

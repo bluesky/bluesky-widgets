@@ -5,6 +5,7 @@ class RunList(EventedList):
     """
     A list of BlueskyRuns.
     """
+
     __slots__ = ()
 
     def __contains__(self, run):

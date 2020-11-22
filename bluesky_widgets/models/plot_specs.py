@@ -29,7 +29,19 @@ class BaseSpec:
 
 
 class FigureSpec(BaseSpec):
-    "Describes a Figure"
+    """
+    Describes a Figure
+
+    Parameters
+    ----------
+    axes : Tuple[AxesSpec]
+    title : String
+        Figure title text
+    uuid : UUID, optional
+        Automatically assigned to provide a unique identifier for this Figure,
+        used internally to track it.
+    """
+
     __slots__ = ()
 
     def __init__(self, axes, *, title, uuid=None):
@@ -73,26 +85,51 @@ class AxesSpec(BaseSpec):
     """
     Describes a set of Axes
 
-    Note that lines may be declare at init time:
+    Paraemeters
+    -----------
+    lines : List[LineSpec], optional
+    x_label: String, optional
+        Text label for x axis
+    y_label: String, optional
+        Text label for y axis
+    uuid : UUID, optional
+        Automatically assigned to provide a unique identifier for this Figure,
+        used internally to track it.
 
-    >>> a = AxesSpec(lines=[LineSpec(...)])
+    Examples
+    --------
+
+    Note that plot entities like lines may be declared at init time:
+
+    >>> axes = AxesSpec(lines=[LineSpec(...)])
 
     Or added later:
 
-    >>> a = AxesSpec()
-    >>> a.lines.append(LineSpec(...))
+    >>> axes = AxesSpec()
+    >>> axes.lines.append(LineSpec(...))
 
     Or a mix:
 
-    >>> a = AxesSpec(lines=[LineSpec(...)])
-    >>> a.lines.append(LineSpec(...))
+    >>> axes = AxesSpec(lines=[LineSpec(...)])
+    >>> axes.lines.append(LineSpec(...))
 
     And they can be removed at any point:
 
-    >>> del lines[0]  # Remove the first one.
-    >>> del lines[-1]  # Remove the last one.
-    >>> a.lines.clear()  # Remove them all.
+    >>> del axes.lines[0]  # Remove the first one.
+    >>> del axes.lines[-1]  # Remove the last one.
+    >>> axes.lines.clear()  # Remove them all.
+
+    They may be accessed by type
+
+    >>> axes.lines  # all lines
+    [LineSpec(...), LineSpec(...), ...]
+
+    Or by label
+
+    >>> axes.by_label["Scan 8"]  # list of all plot entities with this label
+    [LineSpec(...)]  # typically contains just one element
     """
+
     __slots__ = ()
 
     def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
@@ -199,7 +236,28 @@ class AxesSpec(BaseSpec):
 
 
 class ArtistSpec(BaseSpec):
-    "Describes the data, computation, and style for an artist (plot element)"
+    """
+    Describes the data, computation, and style for an artist (plot element)
+
+    func : callable
+        Expected signature::
+
+            func(run: BlueskyRun)
+
+        The expected return type varies by artist.
+    run : BlueskyRun
+        Contains data to be visualized
+    artist_kwargs : Dict, optional
+        Options passed through to plotting framework, such as ``color`` or
+        ``label``.
+    axes : AxesSpec, optional
+        This may be specified here or set later using :meth:`set_axes`. Once
+        specified, it cannot be changed.
+    uuid : UUID, optional
+        Automatically assigned to provide a unique identifier for this Figure,
+        used internally to track it.
+    """
+
     __slots__ = ()
 
     def __init__(self, func, run, artist_kwargs, axes=None, uuid=None):
@@ -279,7 +337,27 @@ class ArtistSpec(BaseSpec):
 
 
 class LineSpec(ArtistSpec):
-    "Describes a line (both data and style)"
+    """
+    Describes the data, computation, and style for a line
+
+    func : callable
+        Expected signature::
+
+            func(run: BlueskyRun) -> x: Array, y: Array
+
+    run : BlueskyRun
+        Contains data to be visualized
+    artist_kwargs : Dict, optional
+        Options passed through to plotting framework, such as ``color`` or
+        ``label``.
+    axes : AxesSpec, optional
+        This may be specified here or set later using :meth:`set_axes`. Once
+        specified, it cannot be changed.
+    uuid : UUID, optional
+        Automatically assigned to provide a unique identifier for this Figure,
+        used internally to track it.
+    """
+
     __slots__ = ()
 
 
