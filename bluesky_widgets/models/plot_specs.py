@@ -15,8 +15,8 @@ from ..utils.dict_view import UpdateOnlyDict
 
 
 class BaseSpec:
-    "Just a class with a uuid attribute."
-    __slots__ = ()
+    "Just a class with a uuid attribute and some slots."
+    __slots__ = ("_uuid", "events", "__weakref__")
 
     def __init__(self, uuid):
         if uuid is None:
@@ -42,7 +42,7 @@ class FigureSpec(BaseSpec):
         used internally to track it.
     """
 
-    __slots__ = ()
+    __slots__ = ("_axes", "_title")
 
     def __init__(self, axes, *, title, uuid=None):
         for ax in axes:
@@ -130,7 +130,7 @@ class AxesSpec(BaseSpec):
     [LineSpec(...)]  # typically contains just one element
     """
 
-    __slots__ = ()
+    __slots__ = ("_figure", "_artists", "_lines", "_x_label", "_y_label")
 
     def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
         self._figure = None
@@ -258,7 +258,7 @@ class ArtistSpec(BaseSpec):
         used internally to track it.
     """
 
-    __slots__ = ()
+    __slots__ = ("_func", "_run", "_artist_kwargs", "_axes")
 
     def __init__(self, func, run, artist_kwargs, axes=None, uuid=None):
         self._func = func
