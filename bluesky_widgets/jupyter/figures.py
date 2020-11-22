@@ -36,6 +36,7 @@ class JupyterFigures(widgets.Tab):
         self.children = (*self.children, tab)
         index = len(self.children) - 1
         self.set_title(index, figure_spec.title)
+        # TODO On figure_spec.events.title, update tab title.
         # Workaround: If the tabs are cleared and then children are added
         # again, no tab is selected.
         if index == 0:
@@ -68,18 +69,29 @@ class JupyterFigure(widgets.HBox):
         super().__init__()
         self.model = model
         self.figure, self.axes_list = _make_figure(model)
+        self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
             self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
         self.children = (self.figure.canvas,)
+
+        model.events.title.connect(self._on_title_changed)
+        # The FigureSpec model does not currently allow axes to be added or
+        # removed, so we do not need to handle changes in model.axes.
 
     @property
     def axes(self):
         "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
         return DictView(self._axes)
 
-        # The FigureSpec model does not currently allow axes to be added or
-        # removed, so we do not need to handle changes in model.axes.
+    def _on_title_changed(self, event):
+        self.figure.suptitle(event.value)
+
+    def _redraw(self):
+        "Redraw the canvas."
+        # Schedule matplotlib to redraw the canvas at the next opportunity, in
+        # a threadsafe fashion.
+        self.figure.canvas.draw_idle()
 
 
 class _JupyterFigureTab(widgets.HBox):

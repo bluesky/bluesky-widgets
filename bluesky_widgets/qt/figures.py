@@ -102,6 +102,7 @@ class QtFigures(QTabWidget):
         tab = QtFigure(figure_spec, parent=self)
         self.addTab(tab, figure_spec.title)
         self._figures[figure_spec.uuid] = tab
+        # TODO On figure_spec.events.title, update tab title.
 
     def _on_figure_removed(self, event):
         "Remove the associated tab and close its canvas."
@@ -125,9 +126,12 @@ class QtFigure(QWidget):
         super().__init__(parent)
         self.model = model
         self.figure, self.axes_list = _make_figure(model)
+        self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = ThreadsafeMatplotlibAxes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = ThreadsafeMatplotlibAxes(
+                model=axes_spec, axes=axes
+            )
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
         canvas.setParent(self)
@@ -138,6 +142,7 @@ class QtFigure(QWidget):
         layout.addWidget(toolbar)
         self.setLayout(layout)
 
+        model.events.title.connect(self._on_title_changed)
         # The FigureSpec model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
 
@@ -145,6 +150,16 @@ class QtFigure(QWidget):
     def axes(self):
         "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
         return DictView(self._axes)
+
+    def _on_title_changed(self, event):
+        self.figure.suptitle(event.value)
+        self._redraw()
+
+    def _redraw(self):
+        "Redraw the canvas."
+        # Schedule matplotlib to redraw the canvas at the next opportunity, in
+        # a threadsafe fashion.
+        self.figure.canvas.draw_idle()
 
 
 def _make_figure(figure_spec):

@@ -126,8 +126,10 @@ class MatplotlibAxes:
         self._redraw()
 
     def _redraw(self):
+        "Update the legend and redraw the canvas."
         self.axes.legend(loc="best")  # Update the legend.
-        # Schedule matplotlib to redraw the canvas to at the next opportunity.
+        # Schedule matplotlib to redraw the canvas at the next opportunity, in
+        # a threadsafe fashion.
         self.axes.figure.canvas.draw_idle()
 
 
