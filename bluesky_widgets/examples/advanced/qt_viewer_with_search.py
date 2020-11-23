@@ -15,7 +15,7 @@ python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.models.search import SearchList, Search
-from bluesky_widgets.models.plot_builders import AutoLastNLines
+from bluesky_widgets.models.plot_builders import AutoRecentLines
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.qt.figures import QtFigures
 from bluesky_widgets.utils.event import Event
@@ -61,7 +61,7 @@ class SearchAndView:
 
     def _on_view(self, event):
         for uid, run in self.searches.active.selection_as_catalog.items():
-            self.viewer.runs.append(run)
+            self.viewer.add_run(run, pinned=True)
 
 
 class QtSearchAndView(QWidget):
@@ -90,7 +90,7 @@ class ExampleApp:
         super().__init__()
         self.title = title
         self.searches = SearchListWithButton()
-        self.viewer = AutoLastNLines(3)
+        self.viewer = AutoRecentLines(3)
         self.model = SearchAndView(self.searches, self.viewer)
         widget = QtSearchAndView(self.model)
         self._window = Window(widget, show=show)
@@ -119,14 +119,14 @@ def main(argv):
 
         # Optional: Receive live streaming data.
         if len(argv) > 1:
-            from bluesky_widgets.qt.stream_listener import RemoteDispatcher
+            from bluesky_widgets.qt.zmq_dispatcher import RemoteDispatcher
             from bluesky_widgets.utils.streaming import (
-                connect_dispatcher_to_list_of_runs,
+                stream_documents_into_runs,
             )
 
             address = argv[1]
             dispatcher = RemoteDispatcher(address)
-            connect_dispatcher_to_list_of_runs(dispatcher, app.viewer.runs)
+            dispatcher.subscribe(stream_documents_into_runs(app.viewer.add_run))
             dispatcher.start()
 
         # We can access and modify the model as in...
