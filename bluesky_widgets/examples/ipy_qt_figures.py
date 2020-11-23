@@ -19,12 +19,12 @@ view = QtFigures(model.figures)
 view.show()
 
 RE = RunEngine()
-RE.subscribe(stream_documents_into_runs(model.runs.add_run))
+RE.subscribe(stream_documents_into_runs(model.add_run))
 
 
 catalog = get_catalog()
 scans = catalog.search({"plan_name": "scan"})
-model.pinned_runs.append(scans[-1])
+model.add_run(scans[-1], pinned=True)
 
 
 def plan():
