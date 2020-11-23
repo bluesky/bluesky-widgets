@@ -2,7 +2,7 @@ import tempfile
 from suitcase.msgpack import Serializer
 from bluesky import RunEngine
 from bluesky.plans import count, scan
-from ophyd.sim import img, det, motor, SynSignal
+from ophyd.sim import det, motor, SynSignal
 import numpy as np
 
 from databroker._drivers.msgpack import BlueskyMsgpackCatalog

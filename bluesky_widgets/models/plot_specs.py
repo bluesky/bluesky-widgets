@@ -132,10 +132,25 @@ class AxesSpec(BaseSpec):
     [LineSpec(...)]  # typically contains just one element
     """
 
-    __slots__ = ("_figure", "_artists", "_lines", "_images", "_title", "_x_label", "_y_label")
+    __slots__ = (
+        "_figure",
+        "_artists",
+        "_lines",
+        "_images",
+        "_title",
+        "_x_label",
+        "_y_label",
+    )
 
     def __init__(
-        self, *, lines=None, images=None, title=None, x_label=None, y_label=None, uuid=None
+        self,
+        *,
+        lines=None,
+        images=None,
+        title=None,
+        x_label=None,
+        y_label=None,
+        uuid=None,
     ):
         self._figure = None
         self._lines = LineSpecList(lines or [])
@@ -145,7 +160,9 @@ class AxesSpec(BaseSpec):
         self._title = title
         self._x_label = x_label
         self._y_label = y_label
-        self.events = EmitterGroup(source=self, title=Event, x_label=Event, y_label=Event)
+        self.events = EmitterGroup(
+            source=self, title=Event, x_label=Event, y_label=Event
+        )
         super().__init__(uuid)
         self._lines.events.added.connect(self._on_artist_added)
         self._lines.events.removed.connect(self._on_artist_removed)
