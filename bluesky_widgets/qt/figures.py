@@ -110,11 +110,10 @@ class QtFigures(QTabWidget):
         widget = self._figures[figure_spec.uuid]
         index = self.indexOf(widget)
         self.removeTab(index)
-        widget.figure.canvas.close()
+        widget.close_figure()
         del widget
-        del self._figures[figure_spec.uuid]
-        # Ensure that the canvas widget is cleaned up.
         gc.collect()
+        del self._figures[figure_spec.uuid]
 
 
 class QtFigure(QWidget):
@@ -135,7 +134,7 @@ class QtFigure(QWidget):
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
         canvas.setParent(self)
-        toolbar = NavigationToolbar(canvas, self)
+        toolbar = NavigationToolbar(canvas, parent=self)
 
         layout = QVBoxLayout()
         layout.addWidget(canvas)
@@ -160,6 +159,9 @@ class QtFigure(QWidget):
         # Schedule matplotlib to redraw the canvas at the next opportunity, in
         # a threadsafe fashion.
         self.figure.canvas.draw_idle()
+
+    def close_figure(self):
+        self.figure.canvas.close()
 
 
 def _make_figure(figure_spec):

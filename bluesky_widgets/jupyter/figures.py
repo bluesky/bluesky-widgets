@@ -1,5 +1,4 @@
 import collections.abc
-import gc
 
 from ipywidgets import widgets
 import matplotlib
@@ -49,10 +48,8 @@ class JupyterFigures(widgets.Tab):
         children = list(self.children)
         children.remove(widget)
         self.children = tuple(children)
-        widget.jupyter_figure.figure.canvas.close()
-        del widget
+        widget.close_figure()
         del self._figures[figure_spec.uuid]
-        gc.collect()
 
     def on_close_tab_requested(self, model):
         # When closing is initiated from the view, remove the associated
@@ -93,6 +90,9 @@ class JupyterFigure(widgets.HBox):
         # a threadsafe fashion.
         self.figure.canvas.draw_idle()
 
+    def close_figure(self):
+        self.figure.canvas.close()
+
 
 class _JupyterFigureTab(widgets.HBox):
     """
@@ -113,6 +113,10 @@ class _JupyterFigureTab(widgets.HBox):
         # Pass-through accessors to match the API of QtFigure, which has/needs
         # one less layer.
         self.figure = self._jupyter_figure.figure
+
+    def close_figure(self):
+        # Pass through toe JupyterFigure instance.
+        return self._jupyter_figure.close_figure()
 
     @property
     def axes(self):
