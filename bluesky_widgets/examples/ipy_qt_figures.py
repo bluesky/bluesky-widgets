@@ -19,7 +19,7 @@ view = QtFigures(model.figures)
 view.show()
 
 RE = RunEngine()
-RE.subscribe(stream_documents_into_runs(model.runs.append))
+RE.subscribe(stream_documents_into_runs(model.runs.add_run))
 
 
 catalog = get_catalog()

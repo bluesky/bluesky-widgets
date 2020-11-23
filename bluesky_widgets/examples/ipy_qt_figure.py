@@ -19,7 +19,7 @@ view = QtFigure(model.figure)
 view.show()
 
 RE = RunEngine()
-RE.subscribe(stream_documents_into_runs(model.runs.append))
+RE.subscribe(stream_documents_into_runs(model.add_run))
 
 catalog = get_catalog()
 scans = catalog.search({"plan_name": "scan"})

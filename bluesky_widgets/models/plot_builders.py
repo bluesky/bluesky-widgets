@@ -192,6 +192,36 @@ class LastNLines:
         self.axes = axes
         self.figure = figure
 
+    def add_run(self, run, pinned=False):
+        """
+        Add a Run.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        pinned : Boolean
+            If True, retain this Run until it is removed by the user.
+        """
+        if pinned:
+            self.pinned_runs.append(run)
+        else:
+            self.runs.append(run)
+
+    def discard_run(self, run):
+        """
+        Discard a Run, including any pinned and unpinned.
+
+        If the Run is not present, this will return silently.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        """
+        if run in self.runs:
+            self.runs.remove(run)
+        if run in self.pinned_runs:
+            self.runs.remove(run)
+
     def _add_line(self, run):
         "Add a line."
         # Create a plot if we do not have one.
