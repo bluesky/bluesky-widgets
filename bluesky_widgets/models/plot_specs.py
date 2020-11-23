@@ -88,6 +88,8 @@ class AxesSpec(BaseSpec):
     Paraemeters
     -----------
     lines : List[LineSpec], optional
+    title: String, optional
+        Figure title text
     x_label: String, optional
         Text label for x axis
     y_label: String, optional
@@ -130,19 +132,20 @@ class AxesSpec(BaseSpec):
     [LineSpec(...)]  # typically contains just one element
     """
 
-    __slots__ = ("_figure", "_artists", "_lines", "_images", "_x_label", "_y_label")
+    __slots__ = ("_figure", "_artists", "_lines", "_images", "_title", "_x_label", "_y_label")
 
     def __init__(
-        self, *, lines=None, images=None, x_label=None, y_label=None, uuid=None
+        self, *, lines=None, images=None, title=None, x_label=None, y_label=None, uuid=None
     ):
         self._figure = None
         self._lines = LineSpecList(lines or [])
         self._images = ImageSpecList(images or [])
         # A colleciton of all artists, mappping UUID to object
         self._artists = {}
+        self._title = title
         self._x_label = x_label
         self._y_label = y_label
-        self.events = EmitterGroup(source=self, x_label=Event, y_label=Event)
+        self.events = EmitterGroup(source=self, title=Event, x_label=Event, y_label=Event)
         super().__init__(uuid)
         self._lines.events.added.connect(self._on_artist_added)
         self._lines.events.removed.connect(self._on_artist_removed)
@@ -213,6 +216,16 @@ class AxesSpec(BaseSpec):
         return DictView(self._artists)
 
     @property
+    def title(self):
+        "String for figure title. Settable"
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+        self.events.title(value=value)
+
+    @property
     def x_label(self):
         "String for x axes label. Settable."
         return self._x_label
@@ -244,7 +257,7 @@ class AxesSpec(BaseSpec):
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(lines={self.lines!r}, "
-            f"images={self.images!r}, "
+            f"images={self.images!r}, title={self.title!r},"
             f"x_label={self.x_label!r}, y_label={self.y_label!r}, "
             f"uuid={self.uuid!r})"
         )

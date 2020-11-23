@@ -31,6 +31,7 @@ class MatplotlibAxes:
         self.model = model
         self.axes = axes
 
+        axes.set_title(model.title)
         axes.set_xlabel(model.x_label)
         axes.set_ylabel(model.y_label)
 
@@ -53,6 +54,7 @@ class MatplotlibAxes:
             self._add_line(line_spec)
         self.connect(model.lines.events.added, self._on_line_added)
         self.connect(model.lines.events.removed, self._on_artist_removed)
+        self.connect(model.events.title, self._on_title_changed)
         self.connect(model.events.x_label, self._on_x_label_changed)
         self.connect(model.events.y_label, self._on_y_label_changed)
 
@@ -64,6 +66,10 @@ class MatplotlibAxes:
     def connect(self, emitter, callback):
         "The Qt view overwrites this with a threadsafe connect."
         emitter.connect(callback)
+
+    def _on_title_changed(self, event):
+        self.axes.set_title(event.value)
+        self._redraw()
 
     def _on_x_label_changed(self, event):
         self.axes.set_xlabel(event.value)
