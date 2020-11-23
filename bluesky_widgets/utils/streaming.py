@@ -28,10 +28,10 @@ def stream_documents_into_runs(add_run):
 
     >>> from bluesky_widgets.models.utils import RunList
     >>> runs = RunList()
+    >>> RE.subscribe(stream_documents_into_runs(runs.append))
 
     Add runs to a model with an ``add_run`` method.
 
-    >>> RE.subscribe(stream_documents_into_runs(runs.append))
     >>> RE.subscribe(stream_documents_into_runs(model.add_run))
     """
 

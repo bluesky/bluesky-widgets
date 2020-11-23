@@ -78,8 +78,8 @@ of them. This is an example of a builder that creates one Figure:
 
 .. code:: python
 
-    from bluesky_widgets.models.plot_builders import LastNLines
-    model = LastNLines("motor", "det", N=3)
+    from bluesky_widgets.models.plot_builders import RecentLines
+    model = RecentLines(3, "motor", "det")
     model.runs  # append Runs to this list
 
     # Build a view by passing model.figure to any Figure view, e.g.
@@ -90,8 +90,8 @@ And this is an example of a builder that creates a list of Figures:
 
 .. code:: python
 
-    from bluesky_widgets.models.plot_builders import AutoLastNLines
-    model = AutoLastNLines(N=3)
+    from bluesky_widgets.models.plot_builders import AutoRecentLines
+    model = AutoRecentLines(3)
     model.runs  # append Runs to this list
 
     # Build a view by passing model.figures to any Figures view, e.g.
@@ -101,14 +101,23 @@ And this is an example of a builder that creates a list of Figures:
 Builders with a Single Figure
 -----------------------------
 
-.. autoclass:: bluesky_widgets.models.plot_builders.LastNLines
+.. autoclass:: bluesky_widgets.models.plot_builders.RecentLines
    :members:
 
 Builders with a List of Figures
 -------------------------------
 
-.. autoclass:: bluesky_widgets.models.plot_builders.AutoLastNLines
+.. autoclass:: bluesky_widgets.models.plot_builders.AutoRecentLines
    :members:
 
 .. autoclass:: bluesky_widgets.models.plot_builders.PromptPlotter
    :members:
+
+Streaming Utilities
+===================
+
+.. autofunction:: bluesky_widgets.utils.streaming.stream_documents_into_runs
+
+.. autoclass:: bluesky_widgets.qt.zmq_dispatcher.RemoteDispatcher
+
+.. autoclass:: bluesky_widgets.jupyter.zmq_dispatcher.RemoteDispatcher
