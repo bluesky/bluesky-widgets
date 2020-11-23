@@ -292,7 +292,7 @@ class RecentLines:
         "Remove the line if its corresponding Run is removed."
         run_uid = event.item.metadata["start"]["uid"]
         try:
-            line = self._runs_to_lines[run_uid]
+            line = self._runs_to_lines.pop(run_uid)
         except KeyError:
             # The line has been removed before the Run was.
             return
