@@ -226,7 +226,7 @@ class AxesSpec(BaseSpec):
         mapping = collections.defaultdict(list)
         for artist in self._artists.values():
             mapping[artist.label].append(artist)
-        return DictView(mapping)
+        return DictView(dict(mapping))
 
     @property
     def by_uuid(self):
