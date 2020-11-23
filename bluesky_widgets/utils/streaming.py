@@ -2,27 +2,48 @@ from bluesky_live.bluesky_run import BlueskyRun, DocumentCache
 import event_model
 
 
-def connect_dispatcher_to_list_of_runs(dispatcher, runs):
+def stream_documents_into_runs(add_run):
     """
-    Consume documents from a dispatcher and append BlueskyRuns to a list or runs.
+    Convert a flat stream of documents to "live" BlueskyRuns.
 
     Parameters
     ----------
-    dispatcher : Dispatcher
-        Should implement subscribe() and push (name, doc) pairs.
-    runs: EventedList
-        List that will be appended to.
+    add_run : callable
+        This will be called as ``add_run(run: BlueskyRun)`` each time a 'start'
+        document is received.
+
+    Returns
+    -------
+    callback : callable
+        This should be subscribed to a callback registry that calls it like
+        ``callback(name, doc)``.
+
+    Examples
+    --------
+
+    This is used for connecting something that emits a flat stream of documents
+    to something that wants to receive BlueskyRuns.
+
+    Append to an observable list.
+
+    >>> from bluesky_widgets.models.utils import RunList
+    >>> runs = RunList()
+
+    Add runs to a model with an ``add_run`` method.
+
+    >>> RE.subscribe(stream_documents_into_runs(runs.append))
+    >>> RE.subscribe(stream_documents_into_runs(model.add_run))
     """
 
     def factory(name, doc):
         dc = DocumentCache()
 
-        def add_run_to_list(event):
+        def build_and_add_run(event):
             run = BlueskyRun(dc)
-            runs.append(run)
+            add_run(run)
 
-        dc.events.started.connect(add_run_to_list)
+        dc.events.started.connect(build_and_add_run)
         return [dc], []
 
     rr = event_model.RunRouter([factory])
-    dispatcher.subscribe(rr)
+    return rr

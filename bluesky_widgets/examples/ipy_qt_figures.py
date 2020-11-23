@@ -9,7 +9,7 @@ from bluesky import RunEngine
 from bluesky.plans import scan
 from ophyd.sim import motor, det
 
-from bluesky_widgets.utils.streaming import connect_dispatcher_to_list_of_runs
+from bluesky_widgets.utils.streaming import stream_documents_into_runs
 from bluesky_widgets.models.plot_builders import AutoLastNLines
 from bluesky_widgets.qt.figures import QtFigures
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
@@ -19,7 +19,7 @@ view = QtFigures(model.figures)
 view.show()
 
 RE = RunEngine()
-connect_dispatcher_to_list_of_runs(RE.dispatcher, model.runs)
+RE.subscribe(stream_documents_into_runs(model.runs.append))
 
 
 catalog = get_catalog()
