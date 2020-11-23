@@ -105,13 +105,13 @@ def prompt_line_builder(run):
 
 
 
-class LastNLines:
+class RecentLines:
     """
     Plot y vs x for the last N runs.
 
     Parameters
     ----------
-    N : int
+    max_runs : int
         Number of lines to show at once
     x : string
         Field name
@@ -129,13 +129,13 @@ class LastNLines:
 
     Attributes
     ----------
-    N : int
-        Number of lines to show at once. This may be changed at any point.
+    max_runs : int
+        Number of Runs to plot at once. This may be changed at any point.
         (Note: Increasing it will not restore any Runs that have already been
         removed, but it will allow more new Runs to be added.)
     runs : RunList[BlueskyRun]
         As runs are appended entries will be removed from the beginning of the
-        last (first in, first out) so that there are at most N.
+        last (first in, first out) so that there are at most ``max_runs``.
     pinned_runs : RunList[BlueskyRun]
         These runs will not be automatically removed.
     figure : FigureSpec
@@ -149,14 +149,14 @@ class LastNLines:
 
     Examples
     --------
-    >>> model = LastNLines(3, "motor", "det")
+    >>> model = RecentLines(3, "motor", "det")
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.pinned_runs.append(run)
 
     """
 
-    def __init__(self, N, x, y, stream_name="primary", func=None, axes=None):
+    def __init__(self, max_runs, x, y, stream_name="primary", func=None, axes=None):
         super().__init__()
 
         if func is None:
@@ -166,7 +166,7 @@ class LastNLines:
                 return ds[x], ds[y]
 
         # Stash these and expose them as read-only properties.
-        self._N = int(N)
+        self._max_runs = int(max_runs)
         self._x = x
         self._y = y
         self._stream_name = stream_name
@@ -252,8 +252,8 @@ class LastNLines:
         self.axes.lines.append(line)
 
     def _cull_runs(self):
-        "Remove Runs from the beginning of self.runs to keep the length <= N."
-        while len(self.runs) > self.N:
+        "Remove Runs from the beginning of self.runs to keep the length <= max_runs."
+        while len(self.runs) > self.max_runs:
             self.runs.pop(0)
 
     def _on_run_added(self, event):
@@ -297,12 +297,12 @@ class LastNLines:
         line.style.update({"color": next(self._color_cycle)})
 
     @property
-    def N(self):
-        return self._N
+    def max_runs(self):
+        return self._max_runs
 
-    @N.setter
-    def N(self, value):
-        self._N = value
+    @max_runs.setter
+    def max_runs(self, value):
+        self._max_runs = value
         self._cull_runs()
 
     # Read-only properties so that these settings are inspectable, but not
@@ -330,45 +330,53 @@ def infer_lines(stream):
     return [(("motor", "det"), "primary")]
 
 
-class AutoLastNLines:
+class BEC:
+    ...
+
+
+# class AutoRecentLines(Auto):
+#     class_ = RecentLines
+#     init_kwargs = ...
+#     default_heuristic = infer_lines
+
+
+class AutoRecentLines:
     """
     Automatically guess useful lines to plot. Show the last N runs (per figure).
 
     Parameters
     ----------
-    N : int
-        number of lines to show at once
+    max_runs : int
+        Number of Runs to plot at once, per figure
 
     Attributes
     ----------
     runs : RunList[BlueskyRun]
         As runs are appended entries will be removed from the beginning of the
-        last (first in, first out) so that there are at most N.
+        last (first in, first out) so that there are at most ``max_runs``.
     pinned_runs : RunList[BlueskyRun]
         These runs will not be automatically removed.
     figures : FigureSpecList[FigureSpec]
-    N : int
-        Number of lines to show at once. This may be changed at any point.
+    max_runs : int
+        Number of Runs to plot at once. This may be changed at any point.
         (Note: Increasing it will not restore any Runs that have already been
         removed, but it will allow more new Runs to be added.)
     keys_to_figures : dict
-        Read-only mapping of each key to the active LastNLines instance.
+        Read-only mapping of each key to the active RecentLines instance.
 
     Examples
     --------
-    >>> model = AutoLastNLines(3)
+    >>> model = AutoRecentLines(3)
     >>> from bluesky_widgets.jupyter.figures import JupyterFigures
     >>> view = JupyterFigures(model.figures)
     >>> model.pinned_runs.append(run)
     """
 
-    def __init__(self, N):
+    def __init__(self, max_runs):
         self.figures = FigureSpecList()
-        self.runs = RunList()
-        self.pinned_runs = RunList()
-        self._N = N
+        self._max_runs = max_runs
 
-        # Map key like ((x, y), stream_name) to LastNLines instance so configured.
+        # Map key like ((x, y), stream_name) to RecentLines instance so configured.
         self._key_to_instance = {}
         # Map FigureSpec UUID to key like ((x, y), stream_name)
         self._figure_to_key = {}
@@ -382,12 +390,12 @@ class AutoLastNLines:
 
     @property
     def keys_to_figures(self):
-        "Read-only mapping of each key to the active LastNLines instance."
+        "Read-only mapping of each key to the active RecentLines instance."
         return DictView({v: k for k, v in self._figure_to_key.items()})
 
     def new_instance_for_key(self, key):
         """
-        Make a new LastNLine instance for a key.
+        Make a new RecentLine instance for a key.
 
         If there is an existing one the instance and figure will remain but
         will no longer be updated with new Runs. Those will go to a new
@@ -397,11 +405,41 @@ class AutoLastNLines:
         old_instance = self._key_to_instance.pop(key, None)
         if old_instance is not None:
             self._inactive_instances[key][old_instance.figure.uuid] = old_instance
-        instance = LastNLines(x, y, self._N, stream_name)
+        instance = RecentLines(x, y, self.max_runs, stream_name)
         self._key_to_instance[key] = instance
         self._figure_to_key[instance.figure.uuid] = key
         self.figures.append(instance.figure)
         return instance
+
+    def add_run(self, run, pinned=False):
+        """
+        Add a Run.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        pinned : Boolean
+            If True, retain this Run until it is removed by the user.
+        """
+        if pinned:
+            self.pinned_runs.append(run)
+        else:
+            self.runs.append(run)
+
+    def discard_run(self, run):
+        """
+        Discard a Run, including any pinned and unpinned.
+
+        If the Run is not present, this will return silently.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        """
+        if run in self.runs:
+            self.runs.remove(run)
+        if run in self.pinned_runs:
+            self.runs.remove(run)
 
     def _on_run_added(self, event):
         run = event.item
@@ -409,7 +447,7 @@ class AutoLastNLines:
             self._handle_stream(run, stream_name)
         if not run_is_live_and_not_completed(run):
             # We are done with this Run.
-            # We have either passed it down to LastNLines instance(s) or found
+            # We have either passed it down to RecentLines instance(s) or found
             # nothing we know to do with it.
             # HACK!
             if run in self.pinned_runs:
@@ -426,7 +464,7 @@ class AutoLastNLines:
         self._handle_stream(event.run, event.name)
 
     def _handle_stream(self, run, stream_name):
-        "This examines a stream and adds this run to LastNLines instances."
+        "This examines a stream and adds this run to RecentLines instances."
         for key in infer_lines(run[stream_name]):
             try:
                 instance = self._key_to_instance[key]
@@ -441,7 +479,7 @@ class AutoLastNLines:
         """
         A figure was removed from self.figures.
 
-        Remove the relevant LastNLines instance.
+        Remove the relevant RecentLines instance.
         """
         figure = event.item
         try:
@@ -454,11 +492,11 @@ class AutoLastNLines:
             self._key_to_instance.pop(key)
 
     @property
-    def N(self):
-        return self._N
+    def max_runs(self):
+        return self._max_runs
 
-    @N.setter
-    def N(self, value):
-        self._N = value
+    @max_runs.setter
+    def max_runs(self, value):
+        self._max_runs = value
         for instance in self._key_to_instance.values():
-            instance.N = value
+            instance.max_runs = value
