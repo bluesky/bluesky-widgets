@@ -36,7 +36,7 @@ class RemoteDispatcher:
     >>> d.stop()  # stops them and blocks until they stop
     """
 
-    def __init__(self, address, *, prefix=b"", deserializer=pickle.loads, parent=None):
+    def __init__(self, address, *, prefix=b"", deserializer=pickle.loads):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
         if b" " in prefix:
