@@ -75,7 +75,7 @@ class MatplotlibAxes:
         x, y = line_spec.func(run)
 
         # Initialize artist with currently-available data.
-        (artist,) = self.axes.plot(x, y, **line_spec.artist_kwargs)
+        (artist,) = self.axes.plot(x, y, label=line_spec.label, **line_spec.style)
 
         # If this is connected to a streaming data source and is not yet
         # complete, listen for updates.
@@ -107,13 +107,18 @@ class MatplotlibAxes:
         # ArtistSpec from the artist artist if we need to.
         artist.set_gid(artist_spec.uuid)
 
-        # Listen for changes to artist_kwargs.
-        self.connect(
-            artist_spec.events.artist_kwargs_updated, self._on_artist_kwargs_updated
-        )
+        # Listen for changes to label and style.
+        self.connect(artist_spec.events.label, self._on_label_changed)
+        self.connect(artist_spec.events.style_updated, self._on_style_updated)
         self._redraw()
 
-    def _on_artist_kwargs_updated(self, event):
+    def _on_label_changed(self, event):
+        artist_spec = event.artist_spec
+        artist = self._artists[artist_spec.uuid]
+        artist.set(label=event.value)
+        self._redraw()
+
+    def _on_style_updated(self, event):
         artist_spec = event.artist_spec
         artist = self._artists[artist_spec.uuid]
         artist.set(**event.update)

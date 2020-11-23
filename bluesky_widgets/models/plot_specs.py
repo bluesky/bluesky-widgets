@@ -187,13 +187,11 @@ class AxesSpec(BaseSpec):
         Look up an object (e.g. a line) by its label and change its color.
 
         >>> spec = axes_spec.by_label["Scan 3"]
-        >>> spec.artist_kwargs.update(color="red")
+        >>> spec.style.update(color="red")
         """
         mapping = collections.defaultdict(list)
         for artist in self._artists.values():
-            label = artist.artist_kwargs.get("label")
-            if label is not None:
-                mapping[label].append(artist)
+            mapping[artist.label].append(artist)
         return DictView(mapping)
 
     @property
@@ -252,8 +250,10 @@ class ArtistSpec(BaseSpec):
 
         The expected return type varies by artist.
     run : BlueskyRun
-        Contains data to be visualized
-    artist_kwargs : Dict, optional
+        Contains data to be visualized.
+    label : String
+        Label used in legend and for lookup by label on AxesSpec.
+    style : Dict, optional
         Options passed through to plotting framework, such as ``color`` or
         ``label``.
     axes : AxesSpec, optional
@@ -264,18 +264,19 @@ class ArtistSpec(BaseSpec):
         used internally to track it.
     """
 
-    __slots__ = ("_func", "_run", "_artist_kwargs", "_axes")
+    __slots__ = ("_func", "_run", "_label", "_style", "_axes")
 
-    def __init__(self, func, run, artist_kwargs, axes=None, uuid=None):
+    def __init__(self, func, run, label, style=None, axes=None, uuid=None):
         self._func = func
         self._run = run
-        self._artist_kwargs = UpdateOnlyDict(artist_kwargs)
+        self._label = label
+        self._style = UpdateOnlyDict(style or {})
         self._axes = axes
-        self.events = EmitterGroup(source=self, artist_kwargs_updated=Event)
+        self.events = EmitterGroup(source=self, label=Event, style_updated=Event)
         # Re-emit updates. It's important to re-emit (not just pass through)
         # because the consumer will need access to self.
-        self._artist_kwargs.events.updated.connect(
-            lambda event: self.events.artist_kwargs_updated(
+        self._style.events.updated.connect(
+            lambda event: self.events.style_updated(
                 update=event.update, artist_spec=self
             )
         )
@@ -316,34 +317,44 @@ class ArtistSpec(BaseSpec):
         return self._run
 
     @property
-    def artist_kwargs(self):
+    def label(self):
+        "Label used in legend and for lookup by label on AxesSpec. Settable."
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        self._label = str(value)
+        self.events.label(value=value, artist_spec=self)
+
+    @property
+    def style(self):
         """
         Options passed to the artist.
 
         This *is* settable but it has to be done like:
 
-        >>> spec.artist_kwargs.update({"color": "blue"})
+        >>> spec.style.update({"color": "blue"})
 
         Attempts to modify the contents will be disallowed:
 
-        >>> spec.artist_kwargs["color"] = blue  # TypeError!
-        >>> del spec.artist_kwargs["color"]  # TypeError!
+        >>> spec.style["color"] = blue  # TypeError!
+        >>> del spec.style["color"]  # TypeError!
         """
-        return self._artist_kwargs
+        return self._style
 
-    @artist_kwargs.setter
-    def artist_kwargs(self, update):
+    @style.setter
+    def style(self, update):
         # Provide a more helpful error than the default,
         # AttributeError: can't set attribute.
         raise AttributeError(
-            f"can't set attribute. Use artist_kwargs.update({update!r}) "
-            f"instead of artist_kwargs = {update!r}."
+            f"can't set attribute. Use style.update({update!r}) "
+            f"instead of style = {update!r}."
         )
 
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(func={self.func!r}, run={self.run!r}, "
-            f"artist_kwargs={self.artist_kwargs!r}, axes={self.axes!r}"
+            f"label={self.label!r}, style={self.style!r}, axes={self.axes!r}"
             f"uuid={self.uuid!r})"
         )
 
@@ -358,8 +369,10 @@ class LineSpec(ArtistSpec):
             func(run: BlueskyRun) -> x: Array, y: Array
 
     run : BlueskyRun
-        Contains data to be visualized
-    artist_kwargs : Dict, optional
+        Contains data to be visualized.
+    label : String
+        Label used in legend and for lookup by label on AxesSpec.
+    style : Dict, optional
         Options passed through to plotting framework, such as ``color`` or
         ``label``.
     axes : AxesSpec, optional

@@ -96,7 +96,7 @@ def prompt_line_builder(run):
         return ds["motor"], ds["det"]
 
     label = f"Scan {run.metadata['start']['scan_id']}"
-    line = LineSpec(func, run, {"label": label})
+    line = LineSpec(func, run, label)
     axes = AxesSpec(lines=[line], x_label="motor", y_label="det")
     figure = FigureSpec((axes,), title="det v motor")
 
@@ -217,13 +217,14 @@ class LastNLines:
             run.events.completed.connect(self._on_run_complete)
         else:
             color = next(self._color_cycle)
-        artist_kwargs = {"label": label, "color": color}
+        style = {"color": color}
 
         # Style pinned runs differently.
         if run in self.pinned_runs:
-            artist_kwargs.update(linestyle="dashed", label=label + " (pinned)")
+            style.update(linestyle="dashed")
+            label += " (pinned)"
 
-        line = LineSpec(func, run, artist_kwargs)
+        line = LineSpec(func, run, label, style)
         run_uid = run.metadata["start"]["uid"]
         self._runs_to_lines[run_uid] = line
         self.axes.lines.append(line)
@@ -271,7 +272,7 @@ class LastNLines:
         except KeyError:
             # The line has been removed before the Run completed.
             return
-        line.artist_kwargs.update({"color": next(self._color_cycle)})
+        line.style.update({"color": next(self._color_cycle)})
 
     @property
     def N(self):
