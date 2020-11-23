@@ -103,21 +103,6 @@ def prompt_line_builder(run):
     return [figure]
 
 
-# This is matplotlib's default color cycle, obtained via
-# plt.rcParams['axes.prop_cycle'].by_key()['color']
-DEFAULT_COLOR_CYCLE = [
-    "#1f77b4",
-    "#ff7f0e",
-    "#2ca02c",
-    "#d62728",
-    "#9467bd",
-    "#8c564b",
-    "#e377c2",
-    "#7f7f7f",
-    "#bcbd22",
-    "#17becf",
-]
-
 
 class LastNLines:
     """
@@ -176,7 +161,7 @@ class LastNLines:
         self.runs = RunList()
         self.pinned_runs = RunList()
 
-        self._color_cycle = itertools.cycle(DEFAULT_COLOR_CYCLE)
+        self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
         # Maps Run (uid) to LineSpec
         self._runs_to_lines = weakref.WeakValueDictionary()
 
