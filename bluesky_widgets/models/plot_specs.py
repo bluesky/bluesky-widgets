@@ -132,9 +132,10 @@ class AxesSpec(BaseSpec):
 
     __slots__ = ("_figure", "_artists", "_lines", "_x_label", "_y_label")
 
-    def __init__(self, *, lines=None, x_label=None, y_label=None, uuid=None):
+    def __init__(self, *, lines=None, image_stacks=None, x_label=None, y_label=None, uuid=None):
         self._figure = None
         self._lines = LineSpecList(lines or [])
+        self._image_stacks = ImageStackSpecList(image_stacks or [])
         # A colleciton of all artists, mappping UUID to object
         self._artists = {}
         self._x_label = x_label
@@ -143,6 +144,8 @@ class AxesSpec(BaseSpec):
         super().__init__(uuid)
         self._lines.events.added.connect(self._on_artist_added)
         self._lines.events.removed.connect(self._on_artist_removed)
+        self._image_stacks.events.added.connect(self._on_artist_added)
+        self._image_stacks.events.removed.connect(self._on_artist_removed)
 
     @property
     def figure(self):
@@ -172,6 +175,11 @@ class AxesSpec(BaseSpec):
     def lines(self):
         "List of LineSpecs on these Axes. Mutable."
         return self._lines
+
+    @property
+    def image_stacks(self):
+        "List of ImageStackSpecs on these Axes. Mutable"
+        return self._image_stacks
 
     @property
     def by_label(self):
@@ -233,7 +241,8 @@ class AxesSpec(BaseSpec):
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(artists={self.lines!r}, "
+            f"{self.__class__.__name__}(lines={self.lines!r}, "
+            f"image_stacks={self.image_stacks!r}, "
             f"x_label={self.x_label!r}, y_label={self.y_label!r}, "
             f"uuid={self.uuid!r})"
         )
@@ -386,6 +395,10 @@ class LineSpec(ArtistSpec):
     __slots__ = ()
 
 
+class ImageStackSpec(ArtistSpec):
+    "Describes an image stack (both data and style)"
+
+
 # EventedLists for each type of spec. We plan to add type-checking to these,
 # hence a specific container for each.
 
@@ -399,4 +412,8 @@ class AxesSpecList(EventedList):
 
 
 class LineSpecList(EventedList):
+    __slots__ = ()
+
+
+class ImageStackSpecList(EventedList):
     __slots__ = ()
