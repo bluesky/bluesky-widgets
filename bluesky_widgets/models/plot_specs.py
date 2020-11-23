@@ -164,6 +164,10 @@ class AxesSpec(BaseSpec):
             source=self, title=Event, x_label=Event, y_label=Event
         )
         super().__init__(uuid)
+        for line in self._lines:
+            self._adopt_artist(line)
+        for image in self._images:
+            self._adopt_artist(image)
         self._lines.events.added.connect(self._on_artist_added)
         self._lines.events.removed.connect(self._on_artist_removed)
         self._images.events.added.connect(self._on_artist_added)
@@ -264,6 +268,9 @@ class AxesSpec(BaseSpec):
 
     def _on_artist_added(self, event):
         artist = event.item
+        self._adopt_artist(artist)
+
+    def _adopt_artist(self, artist):
         artist.set_axes(self)
         self._artists[artist.uuid] = artist
 
