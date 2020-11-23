@@ -330,16 +330,6 @@ def infer_lines(stream):
     return [(("motor", "det"), "primary")]
 
 
-class BEC:
-    ...
-
-
-# class AutoRecentLines(Auto):
-#     class_ = RecentLines
-#     init_kwargs = ...
-#     default_heuristic = infer_lines
-
-
 class AutoRecentLines:
     """
     Automatically guess useful lines to plot. Show the last N runs (per figure).
@@ -351,11 +341,6 @@ class AutoRecentLines:
 
     Attributes
     ----------
-    runs : RunList[BlueskyRun]
-        As runs are appended entries will be removed from the beginning of the
-        last (first in, first out) so that there are at most ``max_runs``.
-    pinned_runs : RunList[BlueskyRun]
-        These runs will not be automatically removed.
     figures : FigureSpecList[FigureSpec]
     max_runs : int
         Number of Runs to plot at once. This may be changed at any point.
@@ -384,9 +369,7 @@ class AutoRecentLines:
         # with new Runs. Structure is a dict-of-dicts like:
         # {key: {figure_uuid: instance, ...}, ...}
         self._inactive_instances = defaultdict(dict)
-        self.runs.events.added.connect(self._on_run_added)
-        self.pinned_runs.events.added.connect(self._on_run_added)
-        self.figures.events.removed.connect(self._on_figure_removed_from_us)
+        self.figures.events.removed.connect(self._on_figure_removed)
 
     @property
     def keys_to_figures(self):
@@ -405,7 +388,7 @@ class AutoRecentLines:
         old_instance = self._key_to_instance.pop(key, None)
         if old_instance is not None:
             self._inactive_instances[key][old_instance.figure.uuid] = old_instance
-        instance = RecentLines(x, y, self.max_runs, stream_name)
+        instance = RecentLines(max_runs=self.max_runs, x=x, y=y, stream_name=stream_name)
         self._key_to_instance[key] = instance
         self._figure_to_key[instance.figure.uuid] = key
         self.figures.append(instance.figure)
@@ -421,61 +404,43 @@ class AutoRecentLines:
         pinned : Boolean
             If True, retain this Run until it is removed by the user.
         """
-        if pinned:
-            self.pinned_runs.append(run)
-        else:
-            self.runs.append(run)
+        for stream_name in run:
+            self._handle_stream(run, stream_name, pinned)
+        if run_is_live_and_not_completed(run):
+            # Listen for additional streams.
+            run.events.new_stream.connect(lambda event: self._handle_stream(run, event.name, pinned))
 
     def discard_run(self, run):
         """
         Discard a Run, including any pinned and unpinned.
 
-        If the Run is not present, this will return silently.
+        If the Run is not present, this will return silently. Also,
+        note that this only affect "active" plots that are currently
+        receive new runs. Inactive ones will be left as they are.
 
         Parameters
         ----------
         run : BlueskyRun
         """
-        if run in self.runs:
-            self.runs.remove(run)
-        if run in self.pinned_runs:
-            self.runs.remove(run)
+        for instance in self._key_to_instance.values():
+            if run in instance.runs:
+                instance.runs.remove(run)
+            if run in instance.pinned_runs:
+                instance.runs.remove(run)
 
-    def _on_run_added(self, event):
-        run = event.item
-        for stream_name in run:
-            self._handle_stream(run, stream_name)
-        if not run_is_live_and_not_completed(run):
-            # We are done with this Run.
-            # We have either passed it down to RecentLines instance(s) or found
-            # nothing we know to do with it.
-            # HACK!
-            if run in self.pinned_runs:
-                self.pinned_runs.remove(run)
-            else:
-                self.runs.remove(run)
-        else:
-            # Listen for additional streams.
-            run.events.new_stream.connect(self._on_new_stream)
-            run.events.completed.connect(lambda event: self.runs.remove(event.run))
-
-    def _on_new_stream(self, event):
-        "This callback runs whenever BlueskyRun has a new stream."
-        self._handle_stream(event.run, event.name)
-
-    def _handle_stream(self, run, stream_name):
+    def _handle_stream(self, run, stream_name, pinned):
         "This examines a stream and adds this run to RecentLines instances."
         for key in infer_lines(run[stream_name]):
             try:
                 instance = self._key_to_instance[key]
             except KeyError:
                 instance = self.new_instance_for_key(key)
-            if run in self.pinned_runs:
+            if pinned:
                 instance.pinned_runs.append(run)
             else:
                 instance.runs.append(run)
 
-    def _on_figure_removed_from_us(self, event):
+    def _on_figure_removed(self, event):
         """
         A figure was removed from self.figures.
 
