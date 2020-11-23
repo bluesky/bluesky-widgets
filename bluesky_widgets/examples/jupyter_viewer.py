@@ -12,9 +12,8 @@ Connect a consumer to localhost:XXXXX
 
 python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
 """
-from bluesky_widgets.models.viewer import Viewer
-from bluesky_widgets.models.plot_builders import LastNLines
-from bluesky_widgets.jupyter.viewer import JupyterViewer
+from bluesky_widgets.models.plot_builders import AutoRecentLines
+from bluesky_widgets.jupyter.figures import JupyterFigures
 
 
 class ExampleApp:
@@ -32,9 +31,8 @@ class ExampleApp:
     def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        self.viewer = Viewer()
-        self.viewer.streaming_builders.append(LastNLines("motor", "det", 3))
-        self._widget = JupyterViewer(self.viewer)
+        self.model = AutoRecentLines(3)
+        self._widget = JupyterFigures(self.model.figures)
 
     def _ipython_display_(self, *args, **kwargs):
         "When this object is displayed by Jupyter, display its widget."
@@ -43,12 +41,10 @@ class ExampleApp:
 
 def listen_for_data(app, address):
     # Optional: Receive live streaming data.
-    from bluesky_widgets.jupyter.stream_listener import RemoteDispatcher
-    from bluesky_widgets.utils.streaming import (
-        connect_dispatcher_to_list_of_runs,
-    )
+    from bluesky_widgets.jupyter.zmq_dispatcher import RemoteDispatcher
+    from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
     dispatcher = RemoteDispatcher(address)
-    connect_dispatcher_to_list_of_runs(dispatcher, app.viewer.runs)
-    dispatcher.start()  # launches thread
+    dispatcher.subscribe(stream_documents_into_runs(app.model.add_run))
+    dispatcher.start()  # launches process and thread
     return dispatcher.stop
