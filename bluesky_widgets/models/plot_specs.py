@@ -89,7 +89,7 @@ class AxesSpec(BaseSpec):
     -----------
     lines : List[LineSpec], optional
     title: String, optional
-        Figure title text
+        Axes title text
     x_label: String, optional
         Text label for x axis
     y_label: String, optional
