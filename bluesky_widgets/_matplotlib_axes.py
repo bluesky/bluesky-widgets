@@ -112,7 +112,7 @@ class MatplotlibAxes:
         array = image_spec.func(run)
 
         # Initialize artist with currently-available data.
-        artist = self.axes.imshow(array, **image_spec.artist_kwargs)
+        artist = self.axes.imshow(array, label=image_spec.label, **image_spec.style)
 
         # If this is connected to a streaming data source and is not yet
         # complete, listen for updates.

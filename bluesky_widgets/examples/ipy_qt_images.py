@@ -22,8 +22,8 @@ def prompt_image_builder(run):
         ds = run.primary.read()
         # Do any computation you want in here....
         return ds["random_img"].data.sum((0, 1))
-    label = {}
-    image_spec = ImageSpec(func, run, {})
+
+    image_spec = ImageSpec(func, run, label="random_img")
     axes_spec = AxesSpec(images=[image_spec])
     figure_spec = FigureSpec((axes_spec,), title="random_img")
 

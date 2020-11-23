@@ -130,7 +130,7 @@ class AxesSpec(BaseSpec):
     [LineSpec(...)]  # typically contains just one element
     """
 
-    __slots__ = ("_figure", "_artists", "_lines", "_x_label", "_y_label")
+    __slots__ = ("_figure", "_artists", "_lines", "_images", "_x_label", "_y_label")
 
     def __init__(self, *, lines=None, images=None, x_label=None, y_label=None, uuid=None):
         self._figure = None
