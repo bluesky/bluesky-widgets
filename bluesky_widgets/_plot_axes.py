@@ -4,7 +4,7 @@ bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
 import logging
 
-from .models.plot_specs import AxesSpec, LineSpec
+from .models.plot_specs import AxesSpec, LineSpec, ImageStackSpec
 
 
 class Axes:
@@ -26,15 +26,22 @@ class Axes:
         self._artists = {}
         # And keep type-specific references in type-specific caches.
         self._lines = {}
+        self._image_stacks = {}
 
         self.type_map = {
             LineSpec: self._lines,
+            ImageStackSpec: self._image_stacks,
         }
 
         for line_spec in model.lines:
             self._add_line(line_spec)
         self.connect(model.lines.events.added, self._on_line_added)
         self.connect(model.lines.events.removed, self._on_artist_removed)
+
+        for image_stack_spec in model.image_stacks:
+            self._add_image_stack(image_stack_spec)
+        self.connect(model.image_stacks.events.added, self._on_image_stack_added)
+        self.connect(model.image_stacks.events.removed, self._on_artist_removed)
 
     def connect(self, emitter, callback):
         "The Qt view overwrites this with a threadsafe connect."
@@ -43,6 +50,10 @@ class Axes:
     def _on_line_added(self, event):
         line_spec = event.item
         self._add_line(line_spec)
+
+    def _on_image_stack_added(self, event):
+        image_stack_spec = event.item
+        self._add_image_stack(image_stack_spec)
 
     def _add_line(self, line_spec):
         run = line_spec.run
@@ -69,6 +80,32 @@ class Axes:
             )
 
         self._add_artist(line_spec, artist)
+
+    def _add_image_stack(self, image_stack_spec):
+        run = image_stack_spec.run
+        array = image_stack_spec.func(run)
+
+        # Initialize artist with currently-available data.
+        (artist,) = self.axes.imshow(array, **image_stack_spec.artist_kwargs)
+
+        # If this is connected to a streaming data source and is not yet
+        # complete, listen for updates.
+        if hasattr(run, "events") and (run.metadata["stop"] is None):
+
+            def update(event):
+                array = image_stack_spec.func(run)
+                artist.set_data(array)
+                self.axes.relim()  # Recompute data limits.
+                self.axes.autoscale_view()  # Rescale the view using those new limits.
+                self.axes.figure.canvas.draw_idle()
+
+            self.connect(run.events.new_data, update)
+            self.connect(
+                run.events.completed,
+                lambda event: run.events.new_data.disconnect(update),
+            )
+
+        self._add_artist(image_stack_spec, artist)
 
     def _add_artist(self, artist_spec, artist):
         """
