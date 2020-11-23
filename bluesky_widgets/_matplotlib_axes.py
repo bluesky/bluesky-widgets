@@ -24,8 +24,6 @@ class MatplotlibAxes:
     receives pre-made Axes from the outside, ultimately via plt.subplots(...).
     """
 
-    __slots__ = ("model", "axes", "_artists", "_lines", "_images", "type_map", "__weakref__")
-
     def __init__(self, model: AxesSpec, axes, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
