@@ -100,7 +100,7 @@ class QtFigures(QTabWidget):
     def _add_figure(self, figure_spec):
         "Add a new tab with a matplotlib Figure."
         tab = QtFigure(figure_spec, parent=self)
-        self.addTab(tab, figure_spec.title)
+        self.addTab(tab, figure_spec.short_title or figure_spec.title)
         self._figures[figure_spec.uuid] = tab
         # TODO On figure_spec.events.title, update tab title.
 
