@@ -104,7 +104,6 @@ def prompt_line_builder(run):
     return [figure]
 
 
-
 class RecentLines:
     """
     Plot y vs x for the last N runs.
@@ -388,7 +387,9 @@ class AutoRecentLines:
         old_instance = self._key_to_instance.pop(key, None)
         if old_instance is not None:
             self._inactive_instances[key][old_instance.figure.uuid] = old_instance
-        instance = RecentLines(max_runs=self.max_runs, x=x, y=y, stream_name=stream_name)
+        instance = RecentLines(
+            max_runs=self.max_runs, x=x, y=y, stream_name=stream_name
+        )
         self._key_to_instance[key] = instance
         self._figure_to_key[instance.figure.uuid] = key
         self.figures.append(instance.figure)
@@ -408,7 +409,9 @@ class AutoRecentLines:
             self._handle_stream(run, stream_name, pinned)
         if run_is_live_and_not_completed(run):
             # Listen for additional streams.
-            run.events.new_stream.connect(lambda event: self._handle_stream(run, event.name, pinned))
+            run.events.new_stream.connect(
+                lambda event: self._handle_stream(run, event.name, pinned)
+            )
 
     def discard_run(self, run):
         """
