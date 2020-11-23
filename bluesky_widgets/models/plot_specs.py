@@ -132,7 +132,9 @@ class AxesSpec(BaseSpec):
 
     __slots__ = ("_figure", "_artists", "_lines", "_images", "_x_label", "_y_label")
 
-    def __init__(self, *, lines=None, images=None, x_label=None, y_label=None, uuid=None):
+    def __init__(
+        self, *, lines=None, images=None, x_label=None, y_label=None, uuid=None
+    ):
         self._figure = None
         self._lines = LineSpecList(lines or [])
         self._images = ImageSpecList(images or [])

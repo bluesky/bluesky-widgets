@@ -8,7 +8,7 @@ import numpy as np
 from databroker._drivers.msgpack import BlueskyMsgpackCatalog
 
 
-random_img = SynSignal(func=lambda: np.random.random((5, 10, 10)), name='random_img')
+random_img = SynSignal(func=lambda: np.random.random((5, 10, 10)), name="random_img")
 
 
 def get_catalog():
