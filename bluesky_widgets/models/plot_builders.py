@@ -1,5 +1,6 @@
 from collections import defaultdict
 import collections.abc
+import functools
 import itertools
 import weakref
 
@@ -110,19 +111,28 @@ class LastNLines:
 
     Parameters
     ----------
+    N : int
+        Number of lines to show at once
     x : string
         Field name
     y : string
         Field name
-    N : int
-        Number of lines to show at once
     stream_name : string, optional
         Stream where fields x and y are found. Default is "primary".
+    func : callable, optional
+        Expected signature::
+
+            func(run: BlueskyRun, stream_name: str, x: str, y: str) -> x: Array, y: Array
+
     axes : AxesSpec, optional
         If None, an axes and figure are created with default labels and titles.
 
     Attributes
     ----------
+    N : int
+        Number of lines to show at once. This may be changed at any point.
+        (Note: Increasing it will not restore any Runs that have already been
+        removed, but it will allow more new Runs to be added.)
     runs : RunList[BlueskyRun]
         As runs are appended entries will be removed from the beginning of the
         last (first in, first out) so that there are at most N.
@@ -130,10 +140,6 @@ class LastNLines:
         These runs will not be automatically removed.
     figure : FigureSpec
     axes : AxesSpec
-    N : int
-        Number of lines to show at once. This may be changed at any point.
-        (Note: Increasing it will not restore any Runs that have already been
-        removed, but it will allow more new Runs to be added.)
     x : string
         Read-only access to x field name
     y : string
@@ -143,20 +149,28 @@ class LastNLines:
 
     Examples
     --------
-    >>> model = LastNLines("motor", "det", 3)
+    >>> model = LastNLines(3, "motor", "det")
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.pinned_runs.append(run)
 
     """
 
-    def __init__(self, x, y, N, stream_name="primary", axes=None):
+    def __init__(self, N, x, y, stream_name="primary", func=None, axes=None):
         super().__init__()
+
+        if func is None:
+
+            def func(run, stream_name, x, y):
+                ds = run[stream_name].to_dask()
+                return ds[x], ds[y]
+
         # Stash these and expose them as read-only properties.
         self._N = int(N)
         self._x = x
         self._y = y
         self._stream_name = stream_name
+        self._func = func
 
         self.runs = RunList()
         self.pinned_runs = RunList()
@@ -184,16 +198,6 @@ class LastNLines:
         # If necessary, removes runs to make room for the new one.
         self._cull_runs()
 
-        stream_name = self.stream_name
-        x = self.x
-        y = self.y
-
-        def func(run):
-            # *Lazily* read the data so that large arrays are not loaded unless
-            # the yare used.
-            ds = run[stream_name].to_dask()
-            return ds[x], ds[y]
-
         label = f"Scan {run.metadata['start']['scan_id']}"
         # If run is in progress, give it a special color so it stands out.
         if run_is_live_and_not_completed(run):
@@ -209,6 +213,9 @@ class LastNLines:
             style.update(linestyle="dashed")
             label += " (pinned)"
 
+        func = functools.partial(
+            self.func, stream_name=self.stream_name, x=self.x, y=self.y
+        )
         line = LineSpec(func, run, label, style)
         run_uid = run.metadata["start"]["uid"]
         self._runs_to_lines[run_uid] = line
@@ -282,6 +289,10 @@ class LastNLines:
     @property
     def stream_name(self):
         return self._stream_name
+
+    @property
+    def func(self):
+        return self._func
 
 
 def infer_lines(stream):
