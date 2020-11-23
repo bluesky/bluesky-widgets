@@ -52,6 +52,29 @@ class PromptPlotter:
         self.builders.extend(builders)
         self.runs.events.added.connect(self._on_run_added)
 
+    def add_run(self, run):
+        """
+        Add a Run.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        """
+        self.runs.append(run)
+
+    def discard_run(self, run):
+        """
+        Discard a Run.
+
+        If the Run is not present, this will return silently.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        """
+        if run in self.runs:
+            self.runs.remove(run)
+
     def _on_run_added(self, event):
         run = event.item
         # If Run is complete, process is now. Otherwise, schedule it to
