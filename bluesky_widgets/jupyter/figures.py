@@ -108,7 +108,7 @@ class _JupyterFigureTab(widgets.HBox):
         self.button = widgets.Button(description="Close")
         self.button.on_click(lambda _: self.parent.on_close_tab_requested(self.model))
         self._jupyter_figure = JupyterFigure(model)
-        self.children = (self.jupyter_figure, self.button)
+        self.children = (self._jupyter_figure, self.button)
 
         # Pass-through accessors to match the API of QtFigure, which has/needs
         # one less layer.
