@@ -1,11 +1,13 @@
 """
-This is roughly adapted from bluesky.callbacks.best_effort. It needs a major
-reworking.
+This module and all the interfaces in it are *highly* provisional likely to be
+drastically re-thought in the near future.
+
+This is roughly adapted from bluesky.callbacks.best_effort.
 """
 from warnings import warn
 
 
-def infer_lines(run, stream):
+def infer_lines_to_plot(run, stream):
     """
     Given a run and stream, suggest what to plot.
 
