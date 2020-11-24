@@ -207,8 +207,8 @@ class AxesSpec(BaseSpec):
         """
         if self._figure is not None:
             raise RuntimeError(
-                f"Figure may only be set once. The Axes  {self} already belongs "
-                f"to {self.figure} and thus cannot be added to {figure}."
+                f"Figure may only be set once. The Axes {self} already belongs "
+                f"to {self.figure} and thus cannot be added to a new Figure."
             )
         self._figure = figure
 
