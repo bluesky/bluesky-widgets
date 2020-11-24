@@ -5,15 +5,11 @@ import itertools
 
 import dateutil.tz
 
-from ..utils.list import ListModel
+from ..utils.list import EventedList
 from ..utils.event import EmitterGroup, Event
 
 LOCAL_TIMEZONE = dateutil.tz.tzlocal()
 _epoch = datetime(1970, 1, 1, 0, 0, tzinfo=LOCAL_TIMEZONE)
-
-
-class RunList(ListModel):
-    ...
 
 
 """
@@ -294,6 +290,7 @@ class SearchInput:
         if query == self.query:
             return
         self._query = query
+        self.events.query(query=query)
 
     @property
     def since(self):
@@ -395,7 +392,7 @@ class SearchResults:
     def __init__(self, columns):
         self._catalog = {}
         self._row_cache = {}
-        self._selected_rows = ListModel()
+        self._selected_rows = EventedList()
         self._active_row = None
         self.columns = columns
         self.events = EmitterGroup(
@@ -682,7 +679,7 @@ class Search:
         return isinstance(catalog, Broker)
 
 
-class SearchList(ListModel):
+class SearchList(EventedList):
     """
     Model for a list of Search models
     """

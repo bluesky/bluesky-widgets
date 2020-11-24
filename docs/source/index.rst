@@ -12,6 +12,7 @@ bluesky-widgets Documentation
    goals
    installation
    examples
+   reference
    design 
    release-history
    min_versions

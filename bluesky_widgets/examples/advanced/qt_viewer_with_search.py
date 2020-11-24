@@ -1,14 +1,27 @@
 """
-Select some runs and click the button. Their IDs will be printed to the
-terminal. In a real application, this could kick off data processing, export,
-or visualization.
+Search for runs and visualize their data.
+
+This example can be run alone as
+
+$ python -m bluesky_widgets.examples.advanced.qt_viewer_with_search
+
+or with the data streaming utility which will print an address to connect to
+
+$ python -m bluesky_widgets.examples.utils.stream_data
+Connect a consumer to localhost:XXXXX
+
+python -m bluesky_widgets.examples.advanced.qt_viewer_with_search localhost:XXXXX
 """
-from bluesky_widgets.qt import Window, gui_qt
+from bluesky_widgets.qt import Window
+from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.models.search import SearchList, Search
+from bluesky_widgets.models.plot_builders import AutoRecentLines
 from bluesky_widgets.qt.search import QtSearches
+from bluesky_widgets.qt.figures import QtFigures
+from bluesky_widgets.utils.event import Event
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
-from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
+from qtpy.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout
 
 
 class SearchListWithButton(SearchList):
@@ -16,12 +29,9 @@ class SearchListWithButton(SearchList):
     A SearchList model with a method to handle a click event.
     """
 
-    def process(self):
-        for uid, run in self.active.selection_as_catalog.items():
-            # Pretend to kick off data processing or something.
-            print(
-                f"Processing Run {uid[:8]} (scan_id={run.metadata['start']['scan_id']})"
-            )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.events.add(view=Event)
 
 
 class QtSearchListWithButton(QWidget):
@@ -38,14 +48,30 @@ class QtSearchListWithButton(QWidget):
         self.setLayout(layout)
         layout.addWidget(QtSearches(model))
 
-        # Add a button that does something with the currently-selected Runs
-        # when you click it.
-        go_button = QPushButton("Process Selected Runs")
+        go_button = QPushButton("View Selected Runs")
         layout.addWidget(go_button)
-        go_button.clicked.connect(self.on_click)
+        go_button.clicked.connect(self.model.events.view)
 
-    def on_click(self):
-        self.model.process()
+
+class SearchAndView:
+    def __init__(self, searches, viewer):
+        self.searches = searches
+        self.viewer = viewer
+        self.searches.events.view.connect(self._on_view)
+
+    def _on_view(self, event):
+        for uid, run in self.searches.active.selection_as_catalog.items():
+            self.viewer.add_run(run, pinned=True)
+
+
+class QtSearchAndView(QWidget):
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = model
+        layout = QHBoxLayout()
+        self.setLayout(layout)
+        layout.addWidget(QtSearchListWithButton(model.searches))
+        layout.addWidget(QtFigures(model.viewer.figures))
 
 
 class ExampleApp:
@@ -64,7 +90,9 @@ class ExampleApp:
         super().__init__()
         self.title = title
         self.searches = SearchListWithButton()
-        widget = QtSearchListWithButton(self.searches)
+        self.viewer = AutoRecentLines(3)
+        self.model = SearchAndView(self.searches, self.viewer)
+        widget = QtSearchAndView(self.model)
         self._window = Window(widget, show=show)
 
         # Initialize with a two search tabs: one with some generated example data...
@@ -72,7 +100,7 @@ class ExampleApp:
         # ...and one listing any and all catalogs discovered on the system.
         from databroker import catalog
 
-        self.searches.append(Search(catalog, columns=columns))
+        self.model.searches.append(Search(catalog, columns=columns))
 
     def show(self):
         """Resize, show, and raise the window."""
@@ -83,10 +111,23 @@ class ExampleApp:
         self._window.close()
 
 
-def main():
+def main(argv):
     print(__doc__)
+
     with gui_qt("Example App"):
         app = ExampleApp()
+
+        # Optional: Receive live streaming data.
+        if len(argv) > 1:
+            from bluesky_widgets.qt.zmq_dispatcher import RemoteDispatcher
+            from bluesky_widgets.utils.streaming import (
+                stream_documents_into_runs,
+            )
+
+            address = argv[1]
+            dispatcher = RemoteDispatcher(address)
+            dispatcher.subscribe(stream_documents_into_runs(app.viewer.add_run))
+            dispatcher.start()
 
         # We can access and modify the model as in...
         len(app.searches)
@@ -100,4 +141,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv)

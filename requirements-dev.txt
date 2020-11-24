@@ -9,6 +9,7 @@ napari
 ophyd>=1.5.3
 pytest
 pytest-qt
+pyzmq
 qtpy
 sphinx
 # These are dependencies of various sphinx extensions for documentation.

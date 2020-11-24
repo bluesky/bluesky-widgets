@@ -15,8 +15,8 @@ from qtpy.QtWidgets import (  # noqa: E402
 )
 from qtpy.QtCore import Qt  # noqa: E402
 
-from .event_loop import get_our_app_name
-from ..qt.threading import wait_for_workers_to_quit
+from ._event_loop import get_our_app_name
+from .threading import wait_for_workers_to_quit
 
 
 class Window:

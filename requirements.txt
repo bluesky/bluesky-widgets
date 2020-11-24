@@ -1,1 +1,1 @@
-# List required packages in this file, one per line.
+bluesky-live >=0.0.5
