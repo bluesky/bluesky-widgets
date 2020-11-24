@@ -349,7 +349,10 @@ class RecentLines:
 
 def infer_lines(stream):
     "A temporary stand-in for the hints-parsing logic in BestEffortCallback."
-    return [(("motor", "det"), "primary")]
+    if stream.name == "primary":
+        return [(("motor", "det"), "primary")]
+    else:
+        return []
 
 
 class AutoRecentLines:
