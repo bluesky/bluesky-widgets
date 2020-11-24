@@ -7,6 +7,7 @@ import weakref
 from .plot_specs import (
     FigureSpec,
     AxesSpec,
+    ImageSpec,
     LineSpec,
     FigureSpecList,
 )
@@ -504,3 +505,121 @@ class AutoRecentLines:
         self._max_runs = value
         for instance in self._key_to_instance.values():
             instance.max_runs = value
+
+
+class Image:
+    """
+    field : string
+        Field name ("data key") for this image
+    stream_name : string, optional
+        Stream where fields x and y are found. Default is "primary".
+    func : callable, optional
+        Expected signature::
+
+            func(run: BlueskyRun, stream_name: str, x: str, y: str) -> x: Array, y: Array
+
+        Default::
+
+            def func(run, field):
+                ds = run[stream_name].to_dask()
+                data = ds[field].data
+                # Reduce the data until it is 2D by repeatedly averaging over
+                # the leading axis until there only two axes.
+                while data.ndim > 2:
+                    data = data.sum(0)
+                return data
+
+    axes : AxesSpec, optional
+        If None, an axes and figure are created with default labels and titles
+        derived from the ``x`` and ``y`` parameters.
+
+    Attributes
+    ----------
+    max_runs : int
+        Number of Runs to plot at once. This may be changed at any point.
+        (Note: Increasing it will not restore any Runs that have already been
+        removed, but it will allow more new Runs to be added.)
+    runs : RunList[BlueskyRun]
+        As runs are appended entries will be removed from the beginning of the
+        last (first in, first out) so that there are at most ``max_runs``.
+    pinned_runs : RunList[BlueskyRun]
+        These runs will not be automatically removed.
+    figure : FigureSpec
+    func : callable
+    axes : AxesSpec
+    x : string
+        Read-only access to x field name
+    y : string
+        Read-only access to y field name
+    stream_name : string
+        Read-only access to stream name
+
+    Examples
+    --------
+    >>> model = RecentLines(3, "motor", "det")
+    >>> from bluesky_widgets.jupyter.figures import JupyterFigure
+    >>> view = JupyterFigure(model.figure)
+    >>> model.add_run(run)
+    >>> model.add_run(another_run, pinned=True)
+
+    """
+
+    def __init__(self, field, stream_name="primary", func=None, axes=None):
+        super().__init__()
+
+        if func is None:
+
+            def func(run, field):
+                ds = run[stream_name].to_dask()
+                data = ds[field].data
+                # Reduce the data until it is 2D by repeatedly averaging over
+                # the leading axis until there only two axes.
+                while data.ndim > 2:
+                    data = data.sum(0)
+                return data
+
+        # Stash these and expose them as read-only properties.
+        self._field = field
+        self._stream_name = stream_name
+        self._func = func
+
+        self._run = None
+
+        if axes is None:
+            axes = AxesSpec()
+            figure = FigureSpec((axes,), title="")
+        else:
+            figure = axes.figure
+        self.axes = axes
+        self.figure = figure
+
+    @property
+    def run(self):
+        return self._run
+
+    @run.setter
+    def run(self, value):
+        self._run = value
+        self.axes.images.clear()
+        if self._run is not None:
+            self._add_image()
+
+    def _add_image(self):
+        md = self.run.metadata["start"]
+        title = f"Scan ID {md['scan_id']}   UID {md['uid'][:8]}"
+        func = functools.partial(self.func, field=self.field)
+        image = ImageSpec(func, self.run, label=self.field)
+        self.axes.images.append(image)
+        self.axes.title = title
+        # TODO Set axes x, y from xarray dims
+
+    @property
+    def func(self):
+        return self._func
+
+    def stream_name(self):
+        return self._stream_name
+
+    @property
+    def field(self):
+        return self._field
