@@ -29,7 +29,7 @@ def run_proxy(queue):
     proxy.start()
 
 
-def run_publisher(in_port, data_path):
+def run_publisher(in_port, data_path, quiet=False):
     """
     Acquire data in an infinite loop and publish it.
     """
@@ -46,7 +46,8 @@ def run_publisher(in_port, data_path):
 
     rr = RunRouter([factory])
     RE.subscribe(rr)
-    RE.subscribe(LiveTable(["motor", "det"]))
+    if not quiet:
+        RE.subscribe(LiveTable(["motor", "det"]))
 
     motor.delay = 0.2
     det.kind = "hinted"
@@ -65,7 +66,7 @@ def run_publisher(in_port, data_path):
         RE.halt()
 
 
-def stream_example_data(data_path):
+def stream_example_data(data_path, quiet=False):
     data_path = Path(data_path)
     log.info(
         f"Writing example data into directory {data_path!s}. "
@@ -78,7 +79,7 @@ def stream_example_data(data_path):
     in_port, out_port = queue.get()
     log.info(f"Connect a consumer to localhost:{out_port}")
 
-    publisher_process = Process(target=run_publisher, args=(in_port, data_path))
+    publisher_process = Process(target=run_publisher, args=(in_port, data_path, quiet))
     publisher_process.start()
     log.info("Demo acquisition has started.")
 
@@ -87,11 +88,14 @@ def stream_example_data(data_path):
 
 if __name__ == "__main__":
     import logging
+    import sys
+
+    quiet = (len(sys.argv) > 1) and (sys.argv[1] in ("--quiet", "-q"))
 
     handler = logging.StreamHandler()
     handler.setLevel("INFO")
     log.setLevel("DEBUG")
     log.addHandler(handler)
     with tempfile.TemporaryDirectory() as directory:
-        stream_example_data(directory)
+        stream_example_data(directory, quiet)
     # Delete example data at exit.
