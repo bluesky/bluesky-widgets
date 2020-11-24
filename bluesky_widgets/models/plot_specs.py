@@ -76,7 +76,7 @@ class FigureSpec(BaseSpec):
     @title.setter
     def title(self, value):
         self._title = value
-        self.events.title(value=value)
+        self.events.title(value=value, figure_spec=self)
 
     @property
     def short_title(self):
@@ -86,7 +86,7 @@ class FigureSpec(BaseSpec):
     @short_title.setter
     def short_title(self, value):
         self._short_title = value
-        self.events.short_title(value=value)
+        self.events.short_title(value=value, figure_spec=self)
 
     def __repr__(self):
         return (

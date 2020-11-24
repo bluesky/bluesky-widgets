@@ -102,7 +102,12 @@ class QtFigures(QTabWidget):
         tab = QtFigure(figure_spec, parent=self)
         self.addTab(tab, figure_spec.short_title or figure_spec.title)
         self._figures[figure_spec.uuid] = tab
-        # TODO On figure_spec.events.title, update tab title.
+        # Update the tab title when short_title changes (or, if short_title is
+        # None, when title changes).
+        self._threadsafe_connect(figure_spec.events.title, self._on_title_changed)
+        self._threadsafe_connect(
+            figure_spec.events.short_title, self._on_short_title_changed
+        )
 
     def _on_figure_removed(self, event):
         "Remove the associated tab and close its canvas."
@@ -114,6 +119,25 @@ class QtFigures(QTabWidget):
         del widget
         gc.collect()
         del self._figures[figure_spec.uuid]
+
+    def _on_short_title_changed(self, event):
+        "This sets the tab title."
+        figure_spec = event.figure_spec
+        widget = self._figures[figure_spec.uuid]
+        index = self.indexOf(widget)
+        # Fall back to title if short_title is being unset.
+        if event.value is None:
+            self.setTabText(index, figure_spec.title)
+        else:
+            self.setTabText(index, event.value)
+
+    def _on_title_changed(self, event):
+        "This sets the tab title only if short_title is None."
+        figure_spec = event.figure_spec
+        if figure_spec.short_title is None:
+            widget = self._figures[figure_spec.uuid]
+            index = self.indexOf(widget)
+            self.setTabText(index, event.value)
 
 
 class QtFigure(QWidget):

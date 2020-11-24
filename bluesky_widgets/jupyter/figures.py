@@ -40,7 +40,8 @@ class JupyterFigures(widgets.Tab):
         self.children = (*self.children, tab)
         index = len(self.children) - 1
         self.set_title(index, figure_spec.title)
-        # TODO On figure_spec.events.title, update tab title.
+        figure_spec.events.title.connect(self._on_title_changed)
+        figure_spec.events.short_title.connect(self._on_short_title_changed)
         # Workaround: If the tabs are cleared and then children are added
         # again, no tab is selected.
         if index == 0:
@@ -55,6 +56,25 @@ class JupyterFigures(widgets.Tab):
         self.children = tuple(children)
         widget.close_figure()
         del self._figures[figure_spec.uuid]
+
+    def _on_short_title_changed(self, event):
+        "This sets the tab title."
+        figure_spec = event.figure_spec
+        widget = self._figures[figure_spec.uuid]
+        index = self.children.index(widget)
+        # Fall back to title if short_title is being unset.
+        if event.value is None:
+            self.set_title(index, figure_spec.title)
+        else:
+            self.set_title(index, event.value)
+
+    def _on_title_changed(self, event):
+        "This sets the tab title only if short_title is None."
+        figure_spec = event.figure_spec
+        if figure_spec.short_title is None:
+            widget = self._figures[figure_spec.uuid]
+            index = self.children.index(widget)
+            self.set_title(index, event.value)
 
     def on_close_tab_requested(self, model):
         # When closing is initiated from the view, remove the associated
