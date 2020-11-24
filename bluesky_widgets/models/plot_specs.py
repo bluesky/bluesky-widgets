@@ -41,7 +41,8 @@ class FigureSpec(BaseSpec):
         Automatically assigned to provide a unique identifier for this Figure,
         used internally to track it.
     short_title: String, optional
-        Short figure title for tab label
+        Shorter figure title text, used in (for example) tab labels. Views
+        should fall back on ``title`` if this is None.
     """
 
     __slots__ = ("_axes", "_title", "_short_title")
@@ -90,8 +91,8 @@ class FigureSpec(BaseSpec):
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(axes={self.axes!r}, "
-            f"title={self.title!r}, uuid={self.uuid!r}, "
-            f"short_title={self.short_title!r})"
+            f"title={self.title!r}, short_title={self.short_title!r}, "
+            f"uuid={self.uuid!r})"
         )
 
 
