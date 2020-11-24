@@ -103,6 +103,7 @@ class AxesSpec(BaseSpec):
     Paraemeters
     -----------
     lines : List[LineSpec], optional
+    images : List[ImageSpec], optional
     title: String, optional
         Axes title text
     x_label: String, optional
