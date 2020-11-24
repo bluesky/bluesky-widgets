@@ -146,8 +146,15 @@ class RecentLines:
 
             func(run: BlueskyRun, stream_name: str, x: str, y: str) -> x: Array, y: Array
 
+        Default::
+
+            def func(run, stream_name, x, y):
+                ds = run[stream_name].to_dask()
+                return ds[x], ds[y]
+
     axes : AxesSpec, optional
-        If None, an axes and figure are created with default labels and titles.
+        If None, an axes and figure are created with default labels and titles
+        derived from the ``x`` and ``y`` parameters.
 
     Attributes
     ----------
@@ -161,6 +168,7 @@ class RecentLines:
     pinned_runs : RunList[BlueskyRun]
         These runs will not be automatically removed.
     figure : FigureSpec
+    func : callable
     axes : AxesSpec
     x : string
         Read-only access to x field name
@@ -174,7 +182,8 @@ class RecentLines:
     >>> model = RecentLines(3, "motor", "det")
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
-    >>> model.pinned_runs.append(run)
+    >>> model.add_run(run)
+    >>> model.add_run(another_run, pinned=True)
 
     """
 
@@ -379,7 +388,8 @@ class AutoRecentLines:
     >>> model = AutoRecentLines(3)
     >>> from bluesky_widgets.jupyter.figures import JupyterFigures
     >>> view = JupyterFigures(model.figures)
-    >>> model.pinned_runs.append(run)
+    >>> model.add_run(run)
+    >>> model.add_run(another_run, pinned=True)
     """
 
     def __init__(self, max_runs):

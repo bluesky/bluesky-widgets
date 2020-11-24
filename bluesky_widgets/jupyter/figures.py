@@ -24,6 +24,11 @@ class JupyterFigures(widgets.Tab):
         self.model.events.added.connect(self._on_figure_added)
         self.model.events.removed.connect(self._on_figure_removed)
 
+    @property
+    def figures(self):
+        "Read-only access to the mapping FigureSpec UUID -> JupyterFigure"
+        return DictView(self._figures)
+
     def _on_figure_added(self, event):
         figure_spec = event.item
         self._add_figure(figure_spec)

@@ -24,13 +24,24 @@ def stream_documents_into_runs(add_run):
     This is used for connecting something that emits a flat stream of documents
     to something that wants to receive BlueskyRuns.
 
-    Append to an observable list.
+    Append to a plain list.
+
+    >>> from bluesky import RunEngine
+    >>> RE = RunEngine()
+    >>> runs = []
+    >>> RE.subscribe(stream_documents_into_runs(runs.append))
+
+    Or, more usefully to an observable list.
 
     >>> from bluesky_widgets.models.utils import RunList
     >>> runs = RunList()
     >>> RE.subscribe(stream_documents_into_runs(runs.append))
 
-    Add runs to a model with an ``add_run`` method.
+    Add runs to a model with an ``add_run`` method. For example, it might be a
+    model that generates figures.
+
+    >>> from bluesky_widgets.models.plot_builders import AutoRecentLines
+    >>> model = AutoRecentLines(3)
 
     >>> RE.subscribe(stream_documents_into_runs(model.add_run))
     """
