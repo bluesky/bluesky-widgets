@@ -509,6 +509,14 @@ class AutoRecentLines:
 
 class Image:
     """
+    Plot an image from a Run.
+
+    By default, higher-dimensional data is handled by repeatedly averaging over
+    the leading dimension until there are only two dimensions.
+
+    Parameters
+    ----------
+
     field : string
         Field name ("data key") for this image
     stream_name : string, optional
@@ -535,15 +543,8 @@ class Image:
 
     Attributes
     ----------
-    max_runs : int
-        Number of Runs to plot at once. This may be changed at any point.
-        (Note: Increasing it will not restore any Runs that have already been
-        removed, but it will allow more new Runs to be added.)
-    runs : RunList[BlueskyRun]
-        As runs are appended entries will be removed from the beginning of the
-        last (first in, first out) so that there are at most ``max_runs``.
-    pinned_runs : RunList[BlueskyRun]
-        These runs will not be automatically removed.
+    run : BlueskyRun
+        The currently-viewed Run
     figure : FigureSpec
     func : callable
     axes : AxesSpec
@@ -561,7 +562,6 @@ class Image:
     >>> view = JupyterFigure(model.figure)
     >>> model.add_run(run)
     >>> model.add_run(another_run, pinned=True)
-
     """
 
     def __init__(self, field, stream_name="primary", func=None, axes=None):

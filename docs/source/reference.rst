@@ -104,6 +104,9 @@ Builders with a Single Figure
 .. autoclass:: bluesky_widgets.models.plot_builders.RecentLines
    :members:
 
+.. autoclass:: bluesky_widgets.models.plot_builders.Image
+   :members:
+
 Builders with a List of Figures
 -------------------------------
 
