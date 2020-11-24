@@ -7,7 +7,7 @@ This is roughly adapted from bluesky.callbacks.best_effort.
 from warnings import warn
 
 
-def infer_lines(run, stream):
+def infer_lines_to_plot(run, stream):
     """
     Given a run and stream, suggest what to plot.
 

@@ -11,7 +11,7 @@ from .plot_specs import (
     LineSpec,
     FigureSpecList,
 )
-from ._heuristics import infer_lines
+from ._heuristics import infer_lines_to_plot
 from .utils import RunList, run_is_live_and_not_completed
 from ..utils.list import EventedList
 from ..utils.dict_view import DictView
@@ -463,7 +463,7 @@ class AutoRecentLines:
 
     def _handle_stream(self, run, stream_name, pinned):
         "This examines a stream and adds this run to RecentLines instances."
-        for key in infer_lines(run, run[stream_name]):
+        for key in infer_lines_to_plot(run, run[stream_name]):
             try:
                 instance = self._key_to_instance[key]
             except KeyError:
