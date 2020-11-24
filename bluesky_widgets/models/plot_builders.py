@@ -11,6 +11,7 @@ from .plot_specs import (
     LineSpec,
     FigureSpecList,
 )
+from ._heuristics import infer_lines
 from .utils import RunList, run_is_live_and_not_completed
 from ..utils.list import EventedList
 from ..utils.dict_view import DictView
@@ -357,14 +358,6 @@ class RecentLines:
         return self._func
 
 
-def infer_lines(stream):
-    "A temporary stand-in for the hints-parsing logic in BestEffortCallback."
-    if stream.name == "primary":
-        return [(("motor", "det"), "primary")]
-    else:
-        return []
-
-
 class AutoRecentLines:
     """
     Automatically guess useful lines to plot. Show the last N runs (per figure).
@@ -470,7 +463,7 @@ class AutoRecentLines:
 
     def _handle_stream(self, run, stream_name, pinned):
         "This examines a stream and adds this run to RecentLines instances."
-        for key in infer_lines(run[stream_name]):
+        for key in infer_lines(run, run[stream_name]):
             try:
                 instance = self._key_to_instance[key]
             except KeyError:
