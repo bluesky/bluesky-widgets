@@ -3,14 +3,14 @@ Search for runs and visualize their data.
 
 This example can be run alone as
 
-$ python -m bluesky_widgets.examples.qt_viewer_with_search
+$ python -m bluesky_widgets.examples.advanced.qt_viewer_with_search
 
 or with the data streaming utility which will print an address to connect to
 
 $ python -m bluesky_widgets.examples.utils.stream_data
 Connect a consumer to localhost:XXXXX
 
-python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
+python -m bluesky_widgets.examples.advanced.qt_viewer_with_search localhost:XXXXX
 """
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt

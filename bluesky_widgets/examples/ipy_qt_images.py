@@ -1,3 +1,10 @@
+"""
+Use within IPython like
+
+ipython --gui=qt
+
+In [1]: %run -m bluesky_widgets.examples.ipy_qt_images
+"""
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.models.plot_builders import PromptPlotter
 from bluesky_widgets.models.plot_specs import AxesSpec, ImageSpec, FigureSpec

@@ -3,7 +3,7 @@ Use within IPython like
 
 ipython --gui=qt
 
-In [1]: %run -m bluesky_widgets.examples.qt_figures
+In [1]: %run -m bluesky_widgets.examples.ipy_qt_figures
 """
 from bluesky import RunEngine
 from bluesky.plans import scan
