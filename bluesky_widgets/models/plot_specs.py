@@ -40,16 +40,20 @@ class FigureSpec(BaseSpec):
     uuid : UUID, optional
         Automatically assigned to provide a unique identifier for this Figure,
         used internally to track it.
+    short_title: String, optional
+        Shorter figure title text, used in (for example) tab labels. Views
+        should fall back on ``title`` if this is None.
     """
 
-    __slots__ = ("_axes", "_title")
+    __slots__ = ("_axes", "_title", "_short_title")
 
-    def __init__(self, axes, *, title, uuid=None):
+    def __init__(self, axes, *, title, uuid=None, short_title=None):
         for ax in axes:
             ax.set_figure(self)
         self._axes = tuple(axes)
         self._title = title
-        self.events = EmitterGroup(source=self, title=Event)
+        self._short_title = short_title
+        self.events = EmitterGroup(source=self, title=Event, short_title=Event)
         super().__init__(uuid)
 
     @property
@@ -74,10 +78,21 @@ class FigureSpec(BaseSpec):
         self._title = value
         self.events.title(value=value)
 
+    @property
+    def short_title(self):
+        "String for figure title tab label. Settable"
+        return self._short_title
+
+    @short_title.setter
+    def short_title(self, value):
+        self._short_title = value
+        self.events.short_title(value=value)
+
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(axes={self.axes!r}, "
-            f"title={self.title!r}, uuid={self.uuid!r})"
+            f"title={self.title!r}, short_title={self.short_title!r}, "
+            f"uuid={self.uuid!r})"
         )
 
 
