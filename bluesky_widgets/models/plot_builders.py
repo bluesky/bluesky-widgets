@@ -526,7 +526,7 @@ class Image:
                 # Reduce the data until it is 2D by repeatedly averaging over
                 # the leading axis until there only two axes.
                 while data.ndim > 2:
-                    data = data.sum(0)
+                    data = data.mean(0)
                 return data
 
     axes : AxesSpec, optional
@@ -575,7 +575,7 @@ class Image:
                 # Reduce the data until it is 2D by repeatedly averaging over
                 # the leading axis until there only two axes.
                 while data.ndim > 2:
-                    data = data.sum(0)
+                    data = data.mean(0)
                 return data
 
         # Stash these and expose them as read-only properties.
