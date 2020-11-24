@@ -88,6 +88,7 @@ class JupyterFigure(widgets.HBox):
 
     def _on_title_changed(self, event):
         self.figure.suptitle(event.value)
+        self._redraw()
 
     def _redraw(self):
         "Redraw the canvas."
