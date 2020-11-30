@@ -62,20 +62,35 @@ class MatplotlibAxes:
         self.connect(model.images.events.removed, self._on_artist_removed)
 
     def connect(self, emitter, callback):
-        "The Qt view overwrites this with a threadsafe connect."
+        """
+        Add a callback to an emitter.
+
+        This is exposed as a separate method so that The Qt view can override
+        it this with a threadsafe connect.
+        """
         emitter.connect(callback)
+
+    def draw_idle(self):
+        """
+        Re-draw the figure when the UI is ready.
+
+        This is exposed as a separate method so that it can be overriden with a
+        more aggressive draw() for debugging in contexts where thread-safety
+        is not a concern.
+        """
+        self.axes.figure.canvas.draw_idle()
 
     def _on_title_changed(self, event):
         self.axes.set_title(event.value)
-        self._redraw()
+        self._update_and_draw()
 
     def _on_x_label_changed(self, event):
         self.axes.set_xlabel(event.value)
-        self._redraw()
+        self._update_and_draw()
 
     def _on_y_label_changed(self, event):
         self.axes.set_ylabel(event.value)
-        self._redraw()
+        self._update_and_draw()
 
     def _on_line_added(self, event):
         line_spec = event.item
@@ -101,7 +116,7 @@ class MatplotlibAxes:
                 artist.set_data(x, y)
                 self.axes.relim()  # Recompute data limits.
                 self.axes.autoscale_view()  # Rescale the view using those new limits.
-                self.axes.figure.canvas.draw_idle()
+                self.draw_idle()
 
             self.connect(run.events.new_data, update)
             self.connect(
@@ -127,7 +142,7 @@ class MatplotlibAxes:
                 artist.set_data(array)
                 self.axes.relim()  # Recompute data limits.
                 self.axes.autoscale_view()  # Rescale the view using those new limits.
-                self.axes.figure.canvas.draw_idle()
+                self.draw_idle()
 
             self.connect(run.events.new_data, update)
             self.connect(
@@ -151,19 +166,19 @@ class MatplotlibAxes:
         # Listen for changes to label and style.
         self.connect(artist_spec.events.label, self._on_label_changed)
         self.connect(artist_spec.events.style_updated, self._on_style_updated)
-        self._redraw()
+        self._update_and_draw()
 
     def _on_label_changed(self, event):
         artist_spec = event.artist_spec
         artist = self._artists[artist_spec.uuid]
         artist.set(label=event.value)
-        self._redraw()
+        self._update_and_draw()
 
     def _on_style_updated(self, event):
         artist_spec = event.artist_spec
         artist = self._artists[artist_spec.uuid]
         artist.set(**event.update)
-        self._redraw()
+        self._update_and_draw()
 
     def _on_artist_removed(self, event):
         artist_spec = event.item
@@ -172,14 +187,12 @@ class MatplotlibAxes:
         self.type_map[type(artist_spec)].pop(artist_spec.uuid)
         # Remove it from the canvas.
         artist.remove()
-        self._redraw()
+        self._update_and_draw()
 
-    def _redraw(self):
+    def _update_and_draw(self):
         "Update the legend and redraw the canvas."
         self.axes.legend(loc="best")  # Update the legend.
-        # Schedule matplotlib to redraw the canvas at the next opportunity, in
-        # a threadsafe fashion.
-        self.axes.figure.canvas.draw_idle()
+        self.draw_idle()  # Ask matplotlib to redraw the figure.
 
 
 def _quiet_mpl_noisy_logger():

@@ -8,6 +8,22 @@ from .._matplotlib_axes import MatplotlibAxes
 from ..utils.dict_view import DictView
 
 
+class _PatchedMatplotlibAxes(MatplotlibAxes):
+    """
+    Workaround an issue in ipympl we do not yet fully understand.
+
+    During the execution of the cell that first creates the figure, draw_idle()
+    does not display updates, but draw() does. Thereafter, draw_idle() is
+    sufficient, which suggests that there is a better, less aggressive fix for
+    this.
+    """
+    def draw_idle(self):
+        # HACK! Use draw instead of draw_idle(). This changes the behavior by
+        # drawing *every* update, not just updates the the UI is ready to
+        # receive.
+        self.axes.figure.canvas.draw()
+
+
 class JupyterFigures(widgets.Tab):
     """
     A Jupyter (ipywidgets) view for a FigureSpecList model.
@@ -94,7 +110,7 @@ class JupyterFigure(widgets.HBox):
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = _PatchedMatplotlibAxes(model=axes_spec, axes=axes)
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
