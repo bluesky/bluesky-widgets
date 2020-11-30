@@ -98,6 +98,16 @@ class JupyterFigure(widgets.HBox):
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
+
+        # By "resizing" (even without actually changing the size) we bump the
+        # ipympl machinery that sets up frontend--backend communication and
+        # starting displaying data from the figure. Without this, the figure
+        # *widget* displays instantly but the actual *plot* (the PNG data sent from
+        # matplotlib) is not displayed until cell execution completes.
+        _, _, width, height = self.figure.bbox.bounds
+        self.figure.canvas.manager.resize(width, height)
+        self.figure.canvas.draw()
+
         # The FigureSpec model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
 
