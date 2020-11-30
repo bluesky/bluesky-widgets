@@ -124,7 +124,7 @@ class JupyterFigure(widgets.HBox):
         "Redraw the canvas."
         # Schedule matplotlib to redraw the canvas at the next opportunity, in
         # a threadsafe fashion.
-        self.figure.canvas.draw_idle()
+        self.figure.canvas.draw()
 
     def close_figure(self):
         self.figure.canvas.close()
