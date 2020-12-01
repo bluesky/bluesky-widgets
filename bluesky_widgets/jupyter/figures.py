@@ -16,6 +16,9 @@ class _PatchedMatplotlibAxes(MatplotlibAxes):
     does not display updates, but draw() does. Thereafter, draw_idle() is
     sufficient, which suggests that there is a better, less aggressive fix for
     this.
+
+    Progress toward removal of this workaround is tracked at
+    https://github.com/bluesky/bluesky-widgets/pull/54
     """
 
     def draw_idle(self):
