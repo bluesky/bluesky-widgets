@@ -8,6 +8,26 @@ from .._matplotlib_axes import MatplotlibAxes
 from ..utils.dict_view import DictView
 
 
+class _PatchedMatplotlibAxes(MatplotlibAxes):
+    """
+    Workaround an issue in ipympl we do not yet fully understand.
+
+    During the execution of the cell that first creates the figure, draw_idle()
+    does not display updates, but draw() does. Thereafter, draw_idle() is
+    sufficient, which suggests that there is a better, less aggressive fix for
+    this.
+
+    Progress toward removal of this workaround is tracked at
+    https://github.com/bluesky/bluesky-widgets/pull/54
+    """
+
+    def draw_idle(self):
+        # HACK! Use draw instead of draw_idle(). This changes the behavior by
+        # drawing *every* update, not just updates the the UI is ready to
+        # receive.
+        self.axes.figure.canvas.draw()
+
+
 class JupyterFigures(widgets.Tab):
     """
     A Jupyter (ipywidgets) view for a FigureSpecList model.
@@ -94,10 +114,22 @@ class JupyterFigure(widgets.HBox):
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = _PatchedMatplotlibAxes(
+                model=axes_spec, axes=axes
+            )
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
+
+        # By "resizing" (even without actually changing the size) we bump the
+        # ipympl machinery that sets up frontend--backend communication and
+        # starting displaying data from the figure. Without this, the figure
+        # *widget* displays instantly but the actual *plot* (the PNG data sent from
+        # matplotlib) is not displayed until cell execution completes.
+        _, _, width, height = self.figure.bbox.bounds
+        self.figure.canvas.manager.resize(width, height)
+        self.figure.canvas.draw()
+
         # The FigureSpec model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
 
@@ -112,9 +144,7 @@ class JupyterFigure(widgets.HBox):
 
     def _redraw(self):
         "Redraw the canvas."
-        # Schedule matplotlib to redraw the canvas at the next opportunity, in
-        # a threadsafe fashion.
-        self.figure.canvas.draw_idle()
+        self.figure.canvas.draw()
 
     def close_figure(self):
         self.figure.canvas.close()
