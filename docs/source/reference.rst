@@ -70,6 +70,15 @@ Jupyter
 .. autoclass:: bluesky_widgets.jupyter.figures.JupyterFigures
    :members:
 
+Headless
+^^^^^^^^
+
+.. autoclass:: bluesky_widgets.headless.figures.HeadlessFigure
+   :members:
+
+.. autoclass:: bluesky_widgets.headless.figures.HeadlessFigures
+   :members:
+
 Plot Builders
 =============
 
