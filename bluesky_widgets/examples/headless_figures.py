@@ -1,9 +1,9 @@
 """
-Use within IPython like
+Run like:
 
-ipython --gui=qt
+python -m bluesky_widgets.examples.headless_figures
 
-In [1]: %run -m bluesky_widgets.examples.ipy_qt_figures
+and it will print to stdout the names of the figures that it creates, one per line
 """
 import tempfile
 
@@ -38,5 +38,4 @@ RE(plan())
 
 directory = tempfile.mkdtemp()
 filenames = view.export_all(directory)
-print("Figures exported:")
 print("\n".join(f'"{filename}"' for filename in filenames))
