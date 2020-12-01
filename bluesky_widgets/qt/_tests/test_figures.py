@@ -60,12 +60,12 @@ def test_short_title_syncing(qtbot):
     model = func(run)
     figures = FigureSpecList([model])
     view = QtFigures(figures)
-    actual_title = view.figures[next(iter(view.figures))].figure._suptitle.get_text()
+    actual_title = view.figures[model.uuid].figure._suptitle.get_text()
     assert view.tabText(0) == actual_title
     expected_short_title = "new short title"
     model.short_title = expected_short_title
     assert model.short_title == expected_short_title
-    actual_title = view.figures[next(iter(view.figures))].figure._suptitle.get_text()
+    actual_title = view.figures[model.uuid].figure._suptitle.get_text()
     assert view.tabText(0) == expected_short_title
     assert actual_title == model.title
     expected_title = "new title"
@@ -73,6 +73,16 @@ def test_short_title_syncing(qtbot):
     assert view.tabText(0) == model.short_title
     model.short_title = None
     assert view.tabText(0) == expected_title
+
+
+def test_non_null_short_title_syncing(qtbot):
+    model = func(run)
+    model.short_title = "short title"
+    figures = FigureSpecList([model])
+    view = QtFigures(figures)
+    actual_title = view.figures[model.uuid].figure._suptitle.get_text()
+    assert view.tabText(0) == model.short_title
+    assert actual_title == model.title
 
 
 @pytest.mark.parametrize(
