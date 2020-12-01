@@ -1,0 +1,828 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bluesky_widgets.models.plot_builders &mdash; bluesky-widgets 0.0.5b1.post10+gd46dcdf documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> bluesky-widgets
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.5b1.post10+gd46dcdf
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../goals.html">Goals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../design.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release-history.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../min_versions.html">Minimum Version of Python and NumPy</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">bluesky-widgets</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>bluesky_widgets.models.plot_builders</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for bluesky_widgets.models.plot_builders</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">collections.abc</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+
+<span class="kn">from</span> <span class="nn">.plot_specs</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FigureSpec</span><span class="p">,</span>
+    <span class="n">AxesSpec</span><span class="p">,</span>
+    <span class="n">ImageSpec</span><span class="p">,</span>
+    <span class="n">LineSpec</span><span class="p">,</span>
+    <span class="n">FigureSpecList</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">._heuristics</span> <span class="kn">import</span> <span class="n">infer_lines_to_plot</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">RunList</span><span class="p">,</span> <span class="n">run_is_live_and_not_completed</span>
+<span class="kn">from</span> <span class="nn">..utils.list</span> <span class="kn">import</span> <span class="n">EventedList</span>
+<span class="kn">from</span> <span class="nn">..utils.dict_view</span> <span class="kn">import</span> <span class="n">DictView</span>
+
+
+<span class="k">class</span> <span class="nc">BuilderList</span><span class="p">(</span><span class="n">EventedList</span><span class="p">):</span>
+    <span class="s2">&quot;A list of functions that accept a BlueskyRun and return FigureSpec(s).&quot;</span>
+    <span class="o">...</span>
+
+
+<div class="viewcode-block" id="PromptPlotter"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.PromptPlotter">[docs]</a><span class="k">class</span> <span class="nc">PromptPlotter</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Produce Figures from BlueskyRuns promptly (as Run completion time).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    builders : BuilderList[callable]</span>
+<span class="sd">        A list of functions that accept a BlueskyRun and return FigureSpec(s).</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    runs : RunList[BlueskyRun]</span>
+<span class="sd">        Add or remove runs from this list.</span>
+<span class="sd">    figures : FigureSpecList[FigureSpec]</span>
+<span class="sd">        Figures will be added to this list.</span>
+<span class="sd">    builders : BuilderList[callable]</span>
+<span class="sd">        A list of functions with the expected signature::</span>
+
+<span class="sd">            f(run: BlueskyRun) -&gt; FigureSpec</span>
+
+<span class="sd">        or::</span>
+
+<span class="sd">            f(run: BlueskyRun) -&gt; List{FigureSpec]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builders</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figures</span> <span class="o">=</span> <span class="n">FigureSpecList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">builders</span> <span class="o">=</span> <span class="n">BuilderList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runs</span> <span class="o">=</span> <span class="n">RunList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">builders</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">builders</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_added</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PromptPlotter.add_run"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.PromptPlotter.add_run">[docs]</a>    <span class="k">def</span> <span class="nf">add_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a Run.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        run : BlueskyRun</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PromptPlotter.discard_run"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.PromptPlotter.discard_run">[docs]</a>    <span class="k">def</span> <span class="nf">discard_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Discard a Run.</span>
+
+<span class="sd">        If the Run is not present, this will return silently.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        run : BlueskyRun</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_on_run_added</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span>
+        <span class="c1"># If Run is complete, process is now. Otherwise, schedule it to</span>
+        <span class="c1"># process when it completes.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">run_is_live_and_not_completed</span><span class="p">(</span><span class="n">run</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process_run</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">run</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">completed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_run</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">run</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_on_builder_added</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="n">builder</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">builders</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">builder</span><span class="p">)</span>
+        <span class="c1"># Process all runs we already have with the new builder.</span>
+        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">run_is_live_and_not_completed</span><span class="p">(</span><span class="n">run</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_process_run</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">run</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">completed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_run</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">run</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_process_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">builder</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">builders</span><span class="p">:</span>
+            <span class="n">figures</span> <span class="o">=</span> <span class="n">builder</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+        <span class="c1"># Tolerate a FigureSpec or a list of them.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">figures</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="n">figures</span> <span class="o">=</span> <span class="p">[</span><span class="n">figures</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figures</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">figures</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">prompt_line_builder</span><span class="p">(</span><span class="n">run</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a simple example.</span>
+
+<span class="sd">    This makes a hard-coded assumption that the data has columns &quot;motor&quot; and</span>
+<span class="sd">    &quot;det&quot; in the primary stream.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">run</span><span class="p">):</span>
+        <span class="s2">&quot;Return any arrays x, y. They must be of equal length.&quot;</span>
+        <span class="c1"># *Lazily* read the data so that large arrays are not loaded unless</span>
+        <span class="c1"># the yare used.</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">primary</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="c1"># Do any computation you want in here....</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;motor&quot;</span><span class="p">],</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;det&quot;</span><span class="p">]</span>
+
+    <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Scan </span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">][</span><span class="s1">&#39;scan_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="n">LineSpec</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSpec</span><span class="p">(</span><span class="n">lines</span><span class="o">=</span><span class="p">[</span><span class="n">line</span><span class="p">],</span> <span class="n">x_label</span><span class="o">=</span><span class="s2">&quot;motor&quot;</span><span class="p">,</span> <span class="n">y_label</span><span class="o">=</span><span class="s2">&quot;det&quot;</span><span class="p">)</span>
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">FigureSpec</span><span class="p">((</span><span class="n">axes</span><span class="p">,),</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;det v motor&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">figure</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="RecentLines"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.RecentLines">[docs]</a><span class="k">class</span> <span class="nc">RecentLines</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot y vs x for the last N runs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    max_runs : int</span>
+<span class="sd">        Number of lines to show at once</span>
+<span class="sd">    x : string</span>
+<span class="sd">        Field name</span>
+<span class="sd">    y : string</span>
+<span class="sd">        Field name</span>
+<span class="sd">    stream_name : string, optional</span>
+<span class="sd">        Stream where fields x and y are found. Default is &quot;primary&quot;.</span>
+<span class="sd">    func : callable, optional</span>
+<span class="sd">        Expected signature::</span>
+
+<span class="sd">            func(run: BlueskyRun, stream_name: str, x: str, y: str) -&gt; x: Array, y: Array</span>
+
+<span class="sd">        Default::</span>
+
+<span class="sd">            def func(run, stream_name, x, y):</span>
+<span class="sd">                ds = run[stream_name].to_dask()</span>
+<span class="sd">                return ds[x], ds[y]</span>
+
+<span class="sd">    axes : AxesSpec, optional</span>
+<span class="sd">        If None, an axes and figure are created with default labels and titles</span>
+<span class="sd">        derived from the ``x`` and ``y`` parameters.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    max_runs : int</span>
+<span class="sd">        Number of Runs to plot at once. This may be changed at any point.</span>
+<span class="sd">        (Note: Increasing it will not restore any Runs that have already been</span>
+<span class="sd">        removed, but it will allow more new Runs to be added.)</span>
+<span class="sd">    runs : RunList[BlueskyRun]</span>
+<span class="sd">        As runs are appended entries will be removed from the beginning of the</span>
+<span class="sd">        last (first in, first out) so that there are at most ``max_runs``.</span>
+<span class="sd">    pinned_runs : RunList[BlueskyRun]</span>
+<span class="sd">        These runs will not be automatically removed.</span>
+<span class="sd">    figure : FigureSpec</span>
+<span class="sd">    func : callable</span>
+<span class="sd">    axes : AxesSpec</span>
+<span class="sd">    x : string</span>
+<span class="sd">        Read-only access to x field name</span>
+<span class="sd">    y : string</span>
+<span class="sd">        Read-only access to y field name</span>
+<span class="sd">    stream_name : string</span>
+<span class="sd">        Read-only access to stream name</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; model = RecentLines(3, &quot;motor&quot;, &quot;det&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; from bluesky_widgets.jupyter.figures import JupyterFigure</span>
+<span class="sd">    &gt;&gt;&gt; view = JupyterFigure(model.figure)</span>
+<span class="sd">    &gt;&gt;&gt; model.add_run(run)</span>
+<span class="sd">    &gt;&gt;&gt; model.add_run(another_run, pinned=True)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_runs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+                <span class="n">ds</span> <span class="o">=</span> <span class="n">run</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_dask</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">ds</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">ds</span><span class="p">[</span><span class="n">y</span><span class="p">]</span>
+
+        <span class="c1"># Stash these and expose them as read-only properties.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_runs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_runs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_name</span> <span class="o">=</span> <span class="n">stream_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func</span> <span class="o">=</span> <span class="n">func</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">runs</span> <span class="o">=</span> <span class="n">RunList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span> <span class="o">=</span> <span class="n">RunList</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_color_cycle</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+        <span class="c1"># Maps Run (uid) to LineSpec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runs_to_lines</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakValueDictionary</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_added</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_removed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_added</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_removed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSpec</span><span class="p">(</span><span class="n">x_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">figure</span> <span class="o">=</span> <span class="n">FigureSpec</span><span class="p">((</span><span class="n">axes</span><span class="p">,),</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="si">}</span><span class="s2"> v </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">figure</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">figure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span> <span class="o">=</span> <span class="n">figure</span>
+
+<div class="viewcode-block" id="RecentLines.add_run"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.RecentLines.add_run">[docs]</a>    <span class="k">def</span> <span class="nf">add_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">pinned</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a Run.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        run : BlueskyRun</span>
+<span class="sd">        pinned : Boolean</span>
+<span class="sd">            If True, retain this Run until it is removed by the user.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pinned</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RecentLines.discard_run"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.RecentLines.discard_run">[docs]</a>    <span class="k">def</span> <span class="nf">discard_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Discard a Run, including any pinned and unpinned.</span>
+
+<span class="sd">        If the Run is not present, this will return silently.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        run : BlueskyRun</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_add_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
+        <span class="s2">&quot;Add a line.&quot;</span>
+        <span class="c1"># Create a plot if we do not have one.</span>
+        <span class="c1"># If necessary, removes runs to make room for the new one.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cull_runs</span><span class="p">()</span>
+
+        <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Scan </span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">][</span><span class="s1">&#39;scan_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># If run is in progress, give it a special color so it stands out.</span>
+        <span class="k">if</span> <span class="n">run_is_live_and_not_completed</span><span class="p">(</span><span class="n">run</span><span class="p">):</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span>
+            <span class="c1"># Later, when it completes, flip the color to one from the cycle.</span>
+            <span class="n">run</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">completed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_complete</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_color_cycle</span><span class="p">)</span>
+        <span class="n">style</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">color</span><span class="p">}</span>
+
+        <span class="c1"># Style pinned runs differently.</span>
+        <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="p">:</span>
+            <span class="n">style</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;dashed&quot;</span><span class="p">)</span>
+            <span class="n">label</span> <span class="o">+=</span> <span class="s2">&quot; (pinned)&quot;</span>
+
+        <span class="n">func</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_name</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span>
+        <span class="p">)</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">LineSpec</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">style</span><span class="p">)</span>
+        <span class="n">run_uid</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runs_to_lines</span><span class="p">[</span><span class="n">run_uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_cull_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Remove Runs from the beginning of self.runs to keep the length &lt;= max_runs.&quot;</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_runs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_run_added</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="s2">&quot;When a new Run is added, draw a line or schedule it to be drawn.&quot;</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span>
+        <span class="c1"># If the stream of interest is defined already, plot now.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_name</span> <span class="ow">in</span> <span class="n">run</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_line</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise, connect a callback to run when the stream of interest arrives.</span>
+            <span class="n">run</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">new_stream</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_new_stream</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_run_removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="s2">&quot;Remove the line if its corresponding Run is removed.&quot;</span>
+        <span class="n">run_uid</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runs_to_lines</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">run_uid</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c1"># The line has been removed before the Run was.</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c1"># The line has been removed before the Run was.</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_on_new_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="s2">&quot;This callback runs whenever BlueskyRun has a new stream.&quot;</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_line</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">run</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">new_stream</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_new_stream</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_run_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="s2">&quot;When a run completes, update the color from back to a color.&quot;</span>
+        <span class="n">run_uid</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">run</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runs_to_lines</span><span class="p">[</span><span class="n">run_uid</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c1"># The line has been removed before the Run completed.</span>
+            <span class="k">return</span>
+        <span class="n">line</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_color_cycle</span><span class="p">)})</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_runs</span>
+
+    <span class="nd">@max_runs</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">max_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_runs</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cull_runs</span><span class="p">()</span>
+
+    <span class="c1"># Read-only properties so that these settings are inspectable, but not</span>
+    <span class="c1"># changeable.</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stream_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span></div>
+
+
+<div class="viewcode-block" id="AutoRecentLines"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.AutoRecentLines">[docs]</a><span class="k">class</span> <span class="nc">AutoRecentLines</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Automatically guess useful lines to plot. Show the last N runs (per figure).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    max_runs : int</span>
+<span class="sd">        Number of Runs to plot at once, per figure</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    figures : FigureSpecList[FigureSpec]</span>
+<span class="sd">    max_runs : int</span>
+<span class="sd">        Number of Runs to plot at once. This may be changed at any point.</span>
+<span class="sd">        (Note: Increasing it will not restore any Runs that have already been</span>
+<span class="sd">        removed, but it will allow more new Runs to be added.)</span>
+<span class="sd">    keys_to_figures : dict</span>
+<span class="sd">        Read-only mapping of each key to the active RecentLines instance.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; model = AutoRecentLines(3)</span>
+<span class="sd">    &gt;&gt;&gt; from bluesky_widgets.jupyter.figures import JupyterFigures</span>
+<span class="sd">    &gt;&gt;&gt; view = JupyterFigures(model.figures)</span>
+<span class="sd">    &gt;&gt;&gt; model.add_run(run)</span>
+<span class="sd">    &gt;&gt;&gt; model.add_run(another_run, pinned=True)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_runs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figures</span> <span class="o">=</span> <span class="n">FigureSpecList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_runs</span> <span class="o">=</span> <span class="n">max_runs</span>
+
+        <span class="c1"># Map key like ((x, y), stream_name) to RecentLines instance so configured.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Map FigureSpec UUID to key like ((x, y), stream_name)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_figure_to_key</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Track inactive instances/figures which are no longer being updated</span>
+        <span class="c1"># with new Runs. Structure is a dict-of-dicts like:</span>
+        <span class="c1"># {key: {figure_uuid: instance, ...}, ...}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inactive_instances</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figures</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_figure_removed</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">keys_to_figures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Read-only mapping of each key to the active RecentLines instance.&quot;</span>
+        <span class="k">return</span> <span class="n">DictView</span><span class="p">({</span><span class="n">v</span><span class="p">:</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_figure_to_key</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+
+<div class="viewcode-block" id="AutoRecentLines.new_instance_for_key"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.AutoRecentLines.new_instance_for_key">[docs]</a>    <span class="k">def</span> <span class="nf">new_instance_for_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a new RecentLine instance for a key.</span>
+
+<span class="sd">        If there is an existing one the instance and figure will remain but</span>
+<span class="sd">        will no longer be updated with new Runs. Those will go to a new</span>
+<span class="sd">        instance and figure, created here.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">stream_name</span> <span class="o">=</span> <span class="n">key</span>
+        <span class="n">old_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">old_instance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inactive_instances</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">old_instance</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">old_instance</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="n">RecentLines</span><span class="p">(</span>
+            <span class="n">max_runs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_runs</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="n">stream_name</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_figure_to_key</span><span class="p">[</span><span class="n">instance</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figures</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">figure</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">instance</span></div>
+
+<div class="viewcode-block" id="AutoRecentLines.add_run"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.AutoRecentLines.add_run">[docs]</a>    <span class="k">def</span> <span class="nf">add_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">pinned</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a Run.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        run : BlueskyRun</span>
+<span class="sd">        pinned : Boolean</span>
+<span class="sd">            If True, retain this Run until it is removed by the user.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">stream_name</span> <span class="ow">in</span> <span class="n">run</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_handle_stream</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">pinned</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">run_is_live_and_not_completed</span><span class="p">(</span><span class="n">run</span><span class="p">):</span>
+            <span class="c1"># Listen for additional streams.</span>
+            <span class="n">run</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">new_stream</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_stream</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pinned</span><span class="p">)</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AutoRecentLines.discard_run"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.AutoRecentLines.discard_run">[docs]</a>    <span class="k">def</span> <span class="nf">discard_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Discard a Run, including any pinned and unpinned.</span>
+
+<span class="sd">        If the Run is not present, this will return silently. Also,</span>
+<span class="sd">        note that this only affect &quot;active&quot; plots that are currently</span>
+<span class="sd">        receive new runs. Inactive ones will be left as they are.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        run : BlueskyRun</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="p">:</span>
+                <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">pinned_runs</span><span class="p">:</span>
+                <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_handle_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">pinned</span><span class="p">):</span>
+        <span class="s2">&quot;This examines a stream and adds this run to RecentLines instances.&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">infer_lines_to_plot</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">run</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_instance_for_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pinned</span><span class="p">:</span>
+                <span class="n">instance</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_figure_removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A figure was removed from self.figures.</span>
+
+<span class="sd">        Remove the relevant RecentLines instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">figure</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_figure_to_key</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">figure</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c1"># This figure belongs to an inactive instance.</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inactive_instances</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">figure</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_runs</span>
+
+    <span class="nd">@max_runs</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">max_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_runs</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">max_runs</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="Image"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.Image">[docs]</a><span class="k">class</span> <span class="nc">Image</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot an image from a Run.</span>
+
+<span class="sd">    By default, higher-dimensional data is handled by repeatedly averaging over</span>
+<span class="sd">    the leading dimension until there are only two dimensions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    field : string</span>
+<span class="sd">        Field name (&quot;data key&quot;) for this image</span>
+<span class="sd">    stream_name : string, optional</span>
+<span class="sd">        Stream where fields x and y are found. Default is &quot;primary&quot;.</span>
+<span class="sd">    func : callable, optional</span>
+<span class="sd">        Expected signature::</span>
+
+<span class="sd">            func(run: BlueskyRun, stream_name: str, x: str, y: str) -&gt; x: Array, y: Array</span>
+
+<span class="sd">        Default::</span>
+
+<span class="sd">            def func(run, field):</span>
+<span class="sd">                ds = run[stream_name].to_dask()</span>
+<span class="sd">                data = ds[field].data</span>
+<span class="sd">                # Reduce the data until it is 2D by repeatedly averaging over</span>
+<span class="sd">                # the leading axis until there only two axes.</span>
+<span class="sd">                while data.ndim &gt; 2:</span>
+<span class="sd">                    data = data.mean(0)</span>
+<span class="sd">                return data</span>
+
+<span class="sd">    axes : AxesSpec, optional</span>
+<span class="sd">        If None, an axes and figure are created with default labels and titles</span>
+<span class="sd">        derived from the ``x`` and ``y`` parameters.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    run : BlueskyRun</span>
+<span class="sd">        The currently-viewed Run</span>
+<span class="sd">    figure : FigureSpec</span>
+<span class="sd">    func : callable</span>
+<span class="sd">    axes : AxesSpec</span>
+<span class="sd">    x : string</span>
+<span class="sd">        Read-only access to x field name</span>
+<span class="sd">    y : string</span>
+<span class="sd">        Read-only access to y field name</span>
+<span class="sd">    stream_name : string</span>
+<span class="sd">        Read-only access to stream name</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; model = RecentLines(3, &quot;motor&quot;, &quot;det&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; from bluesky_widgets.jupyter.figures import JupyterFigure</span>
+<span class="sd">    &gt;&gt;&gt; view = JupyterFigure(model.figure)</span>
+<span class="sd">    &gt;&gt;&gt; model.add_run(run)</span>
+<span class="sd">    &gt;&gt;&gt; model.add_run(another_run, pinned=True)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">stream_name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+                <span class="n">ds</span> <span class="o">=</span> <span class="n">run</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_dask</span><span class="p">()</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="c1"># Reduce the data until it is 2D by repeatedly averaging over</span>
+                <span class="c1"># the leading axis until there only two axes.</span>
+                <span class="k">while</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">data</span>
+
+        <span class="c1"># Stash these and expose them as read-only properties.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_field</span> <span class="o">=</span> <span class="n">field</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_name</span> <span class="o">=</span> <span class="n">stream_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func</span> <span class="o">=</span> <span class="n">func</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSpec</span><span class="p">()</span>
+            <span class="n">figure</span> <span class="o">=</span> <span class="n">FigureSpec</span><span class="p">((</span><span class="n">axes</span><span class="p">,),</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">figure</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">figure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span> <span class="o">=</span> <span class="n">figure</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span>
+
+    <span class="nd">@run</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_image</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_add_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Scan ID </span><span class="si">{</span><span class="n">md</span><span class="p">[</span><span class="s1">&#39;scan_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">   UID </span><span class="si">{</span><span class="n">md</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">][:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">ImageSpec</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="c1"># TODO Set axes x, y from xarray dims</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span>
+
+    <span class="k">def</span> <span class="nf">stream_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">field</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Brookhaven National Lab
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

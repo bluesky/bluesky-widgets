@@ -1,0 +1,1098 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>API Reference &mdash; bluesky-widgets 0.0.5b1.post10+gd46dcdf documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Design" href="design.html" />
+    <link rel="prev" title="Examples" href="examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> bluesky-widgets
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.5b1.post10+gd46dcdf
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="goals.html">Goals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#run-tree">Run Tree</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#models">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#views">Views</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#qt">Qt</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#plots">Plots</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#figures-axes-and-plot-entities">Figures, Axes, and Plot Entities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#base-classes">Base Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Views</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id3">Qt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#jupyter">Jupyter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#plot-builders">Plot Builders</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#builders-with-a-single-figure">Builders with a Single Figure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#builders-with-a-list-of-figures">Builders with a List of Figures</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#streaming-utilities">Streaming Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release-history.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="min_versions.html">Minimum Version of Python and NumPy</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bluesky-widgets</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>API Reference</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/reference.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="api-reference">
+<h1><a class="toc-backref" href="#id4">API Reference</a><a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#api-reference" id="id4">API Reference</a></p>
+<ul>
+<li><p><a class="reference internal" href="#run-tree" id="id5">Run Tree</a></p>
+<ul>
+<li><p><a class="reference internal" href="#models" id="id6">Models</a></p></li>
+<li><p><a class="reference internal" href="#views" id="id7">Views</a></p>
+<ul>
+<li><p><a class="reference internal" href="#qt" id="id8">Qt</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#plots" id="id9">Plots</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id10">Models</a></p>
+<ul>
+<li><p><a class="reference internal" href="#figures-axes-and-plot-entities" id="id11">Figures, Axes, and Plot Entities</a></p></li>
+<li><p><a class="reference internal" href="#base-classes" id="id12">Base Classes</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#id2" id="id13">Views</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id3" id="id14">Qt</a></p></li>
+<li><p><a class="reference internal" href="#jupyter" id="id15">Jupyter</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#plot-builders" id="id16">Plot Builders</a></p>
+<ul>
+<li><p><a class="reference internal" href="#builders-with-a-single-figure" id="id17">Builders with a Single Figure</a></p></li>
+<li><p><a class="reference internal" href="#builders-with-a-list-of-figures" id="id18">Builders with a List of Figures</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#streaming-utilities" id="id19">Streaming Utilities</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="run-tree">
+<h2><a class="toc-backref" href="#id5">Run Tree</a><a class="headerlink" href="#run-tree" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="models">
+<h3><a class="toc-backref" href="#id6">Models</a><a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="bluesky_widgets.models.run_tree.RunTree">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.run_tree.</code><code class="sig-name descname">RunTree</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/run_tree.html#RunTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.run_tree.RunTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tree viewer for the metadata in a BlueskyRun.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run: BlueskyRun or None, optional</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="bluesky_widgets.models.run_tree.RunTree.run">
+<em class="property">property </em><code class="sig-name descname">run</code><a class="headerlink" href="#bluesky_widgets.models.run_tree.RunTree.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>The currently-viewed Run. (None if empty.)</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="views">
+<h3><a class="toc-backref" href="#id7">Views</a><a class="headerlink" href="#views" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="qt">
+<h4><a class="toc-backref" href="#id8">Qt</a><a class="headerlink" href="#qt" title="Permalink to this headline">¶</a></h4>
+<dl class="py class">
+<dt id="bluesky_widgets.qt.run_tree.QtTreeView">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.qt.run_tree.</code><code class="sig-name descname">QtTreeView</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">parent</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/qt/run_tree.html#QtTreeView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.qt.run_tree.QtTreeView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tree view showing a run</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+<div class="section" id="plots">
+<h2><a class="toc-backref" href="#id9">Plots</a><a class="headerlink" href="#plots" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id10">Models</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="figures-axes-and-plot-entities">
+<h4><a class="toc-backref" href="#id11">Figures, Axes, and Plot Entities</a><a class="headerlink" href="#figures-axes-and-plot-entities" title="Permalink to this headline">¶</a></h4>
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_specs.FigureSpec">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_specs.</code><code class="sig-name descname">FigureSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">title</span></em>, <em class="sig-param"><span class="n">uuid</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">short_title</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_specs.html#FigureSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_specs.FigureSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a Figure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>axes</strong><span class="classifier">Tuple[AxesSpec]</span></dt><dd></dd>
+<dt><strong>title</strong><span class="classifier">String</span></dt><dd><p>Figure title text</p>
+</dd>
+<dt><strong>uuid</strong><span class="classifier">UUID, optional</span></dt><dd><p>Automatically assigned to provide a unique identifier for this Figure,
+used internally to track it.</p>
+</dd>
+<dt><strong>short_title: String, optional</strong></dt><dd><p>Shorter figure title text, used in (for example) tab labels. Views
+should fall back on <code class="docutils literal notranslate"><span class="pre">title</span></code> if this is None.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.FigureSpec.axes">
+<em class="property">property </em><code class="sig-name descname">axes</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.FigureSpec.axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple of AxesSpecs. Set at FigureSpec creation time and immutable.</p>
+<p>Why is it immutable? Because rearranging Axes to make room for a new
+one is currently painful to do in matplotlib. This constraint might be
+relaxed in the future if the situation improves in matplotlib or if
+support for other plotting frameworks is added to bluesky-widgets.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.FigureSpec.short_title">
+<em class="property">property </em><code class="sig-name descname">short_title</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.FigureSpec.short_title" title="Permalink to this definition">¶</a></dt>
+<dd><p>String for figure title tab label. Settable</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.FigureSpec.title">
+<em class="property">property </em><code class="sig-name descname">title</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.FigureSpec.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>String for figure title. Settable.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_specs.</code><code class="sig-name descname">AxesSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">lines</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">images</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">y_label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">uuid</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_specs.html#AxesSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a set of Axes</p>
+<p class="rubric">Examples</p>
+<p>Note that plot entities like lines may be declared at init time:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSpec</span><span class="p">(</span><span class="n">lines</span><span class="o">=</span><span class="p">[</span><span class="n">LineSpec</span><span class="p">(</span><span class="o">...</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>Or added later:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSpec</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LineSpec</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Or a mix:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSpec</span><span class="p">(</span><span class="n">lines</span><span class="o">=</span><span class="p">[</span><span class="n">LineSpec</span><span class="p">(</span><span class="o">...</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LineSpec</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>And they can be removed at any point:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">axes</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Remove the first one.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">axes</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Remove the last one.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># Remove them all.</span>
+</pre></div>
+</div>
+<p>They may be accessed by type</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span><span class="o">.</span><span class="n">lines</span>  <span class="c1"># all lines</span>
+<span class="go">[LineSpec(...), LineSpec(...), ...]</span>
+</pre></div>
+</div>
+<p>Or by label</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span><span class="o">.</span><span class="n">by_label</span><span class="p">[</span><span class="s2">&quot;Scan 8&quot;</span><span class="p">]</span>  <span class="c1"># list of all plot entities with this label</span>
+<span class="go">[LineSpec(...)]  # typically contains just one element</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.by_label">
+<em class="property">property </em><code class="sig-name descname">by_label</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.by_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Access artists as a read-only dict keyed by label.</p>
+<p>Since two artists are allowed to have the same label, the values are
+<em>lists</em>. In the common case, the list will have just one element.</p>
+<p class="rubric">Examples</p>
+<p>Look up an object (e.g. a line) by its label and change its color.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">spec</span> <span class="o">=</span> <span class="n">axes_spec</span><span class="o">.</span><span class="n">by_label</span><span class="p">[</span><span class="s2">&quot;Scan 3&quot;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">spec</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.by_uuid">
+<em class="property">property </em><code class="sig-name descname">by_uuid</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.by_uuid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Access artists as a read-only dict keyed by uuid.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.figure">
+<em class="property">property </em><code class="sig-name descname">figure</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.figure" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Figure in which this Axes is located.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#bluesky_widgets.models.plot_specs.AxesSpec.set_figure" title="bluesky_widgets.models.plot_specs.AxesSpec.set_figure"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_figure()</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.images">
+<em class="property">property </em><code class="sig-name descname">images</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.images" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of ImageSpecs on these Axes. Mutable</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.lines">
+<em class="property">property </em><code class="sig-name descname">lines</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of LineSpecs on these Axes. Mutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.set_figure">
+<code class="sig-name descname">set_figure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">figure</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_specs.html#AxesSpec.set_figure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.set_figure" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is called by FigureSpec when the Axes is added to it.</p>
+<p>It may only be called once.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.title">
+<em class="property">property </em><code class="sig-name descname">title</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>String for figure title. Settable</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.x_label">
+<em class="property">property </em><code class="sig-name descname">x_label</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.x_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>String for x axes label. Settable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.AxesSpec.y_label">
+<em class="property">property </em><code class="sig-name descname">y_label</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.AxesSpec.y_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>String for y axes label. Settable.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_specs.LineSpec">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_specs.</code><code class="sig-name descname">LineSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">run</span></em>, <em class="sig-param"><span class="n">label</span></em>, <em class="sig-param"><span class="n">style</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">axes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">uuid</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_specs.html#LineSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_specs.LineSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes the data, computation, and style for a line</p>
+<dl>
+<dt>func<span class="classifier">callable</span></dt><dd><p>Expected signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">func</span><span class="p">(</span><span class="n">run</span><span class="p">:</span> <span class="n">BlueskyRun</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span>
+</pre></div>
+</div>
+</dd>
+<dt>run<span class="classifier">BlueskyRun</span></dt><dd><p>Contains data to be visualized.</p>
+</dd>
+<dt>label<span class="classifier">String</span></dt><dd><p>Label used in legend and for lookup by label on AxesSpec.</p>
+</dd>
+<dt>style<span class="classifier">Dict, optional</span></dt><dd><p>Options passed through to plotting framework, such as <code class="docutils literal notranslate"><span class="pre">color</span></code> or
+<code class="docutils literal notranslate"><span class="pre">label</span></code>.</p>
+</dd>
+<dt>axes<span class="classifier">AxesSpec, optional</span></dt><dd><p>This may be specified here or set later using <code class="xref py py-meth docutils literal notranslate"><span class="pre">set_axes()</span></code>. Once
+specified, it cannot be changed.</p>
+</dd>
+<dt>uuid<span class="classifier">UUID, optional</span></dt><dd><p>Automatically assigned to provide a unique identifier for this Figure,
+used internally to track it.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="base-classes">
+<h4><a class="toc-backref" href="#id12">Base Classes</a><a class="headerlink" href="#base-classes" title="Permalink to this headline">¶</a></h4>
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_specs.ArtistSpec">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_specs.</code><code class="sig-name descname">ArtistSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">run</span></em>, <em class="sig-param"><span class="n">label</span></em>, <em class="sig-param"><span class="n">style</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">axes</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">uuid</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_specs.html#ArtistSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_specs.ArtistSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes the data, computation, and style for an artist (plot element)</p>
+<dl>
+<dt>func<span class="classifier">callable</span></dt><dd><p>Expected signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">func</span><span class="p">(</span><span class="n">run</span><span class="p">:</span> <span class="n">BlueskyRun</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The expected return type varies by artist.</p>
+</dd>
+<dt>run<span class="classifier">BlueskyRun</span></dt><dd><p>Contains data to be visualized.</p>
+</dd>
+<dt>label<span class="classifier">String</span></dt><dd><p>Label used in legend and for lookup by label on AxesSpec.</p>
+</dd>
+<dt>style<span class="classifier">Dict, optional</span></dt><dd><p>Options passed through to plotting framework, such as <code class="docutils literal notranslate"><span class="pre">color</span></code> or
+<code class="docutils literal notranslate"><span class="pre">label</span></code>.</p>
+</dd>
+<dt>axes<span class="classifier">AxesSpec, optional</span></dt><dd><p>This may be specified here or set later using <a class="reference internal" href="#bluesky_widgets.models.plot_specs.ArtistSpec.set_axes" title="bluesky_widgets.models.plot_specs.ArtistSpec.set_axes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_axes()</span></code></a>. Once
+specified, it cannot be changed.</p>
+</dd>
+<dt>uuid<span class="classifier">UUID, optional</span></dt><dd><p>Automatically assigned to provide a unique identifier for this Figure,
+used internally to track it.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.ArtistSpec.axes">
+<em class="property">property </em><code class="sig-name descname">axes</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.ArtistSpec.axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Axes on which this Artist is drawn.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#bluesky_widgets.models.plot_specs.ArtistSpec.set_axes" title="bluesky_widgets.models.plot_specs.ArtistSpec.set_axes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_axes()</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.ArtistSpec.func">
+<em class="property">property </em><code class="sig-name descname">func</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.ArtistSpec.func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function that transforms BlueskyRun to plottble data. Immutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.ArtistSpec.label">
+<em class="property">property </em><code class="sig-name descname">label</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.ArtistSpec.label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Label used in legend and for lookup by label on AxesSpec. Settable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.ArtistSpec.run">
+<em class="property">property </em><code class="sig-name descname">run</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.ArtistSpec.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>BlueskyRun that is the data source. Immutable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.ArtistSpec.set_axes">
+<code class="sig-name descname">set_axes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_specs.html#ArtistSpec.set_axes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_specs.ArtistSpec.set_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is called by AxesSpec when the Artist is added to it.</p>
+<p>It may only be called once.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_specs.ArtistSpec.style">
+<em class="property">property </em><code class="sig-name descname">style</code><a class="headerlink" href="#bluesky_widgets.models.plot_specs.ArtistSpec.style" title="Permalink to this definition">¶</a></dt>
+<dd><p>Options passed to the artist.</p>
+<p>This <em>is</em> settable but it has to be done like:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">spec</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;blue&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Attempts to modify the contents will be disallowed:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">spec</span><span class="o">.</span><span class="n">style</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">blue</span>  <span class="c1"># TypeError!</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">spec</span><span class="o">.</span><span class="n">style</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">]</span>  <span class="c1"># TypeError!</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_specs.BaseSpec">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_specs.</code><code class="sig-name descname">BaseSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">uuid</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_specs.html#BaseSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_specs.BaseSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just a class with a uuid attribute and some slots.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="id2">
+<h3><a class="toc-backref" href="#id13">Views</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id3">
+<h4><a class="toc-backref" href="#id14">Qt</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<dl class="py class">
+<dt id="bluesky_widgets.qt.figures.QtFigure">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.qt.figures.</code><code class="sig-name descname">QtFigure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#bluesky_widgets.models.plot_specs.FigureSpec" title="bluesky_widgets.models.plot_specs.FigureSpec">bluesky_widgets.models.plot_specs.FigureSpec</a></span></em>, <em class="sig-param"><span class="n">parent</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/qt/figures.html#QtFigure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.qt.figures.QtFigure" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Qt view for a FigureSpec model. This always contains one Figure.</p>
+<dl class="py method">
+<dt id="bluesky_widgets.qt.figures.QtFigure.axes">
+<em class="property">property </em><code class="sig-name descname">axes</code><a class="headerlink" href="#bluesky_widgets.qt.figures.QtFigure.axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read-only access to the mapping AxesSpec UUID -&gt; MatplotlibAxes</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.qt.figures.QtFigures">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.qt.figures.</code><code class="sig-name descname">QtFigures</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">bluesky_widgets.models.plot_specs.FigureSpecList</span></em>, <em class="sig-param"><span class="n">parent</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/qt/figures.html#QtFigures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.qt.figures.QtFigures" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Jupyter (ipywidgets) view for a FigureSpecList model.</p>
+<dl class="py method">
+<dt id="bluesky_widgets.qt.figures.QtFigures.figures">
+<em class="property">property </em><code class="sig-name descname">figures</code><a class="headerlink" href="#bluesky_widgets.qt.figures.QtFigures.figures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read-only access to the mapping FigureSpec UUID -&gt; QtFigure</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="jupyter">
+<h4><a class="toc-backref" href="#id15">Jupyter</a><a class="headerlink" href="#jupyter" title="Permalink to this headline">¶</a></h4>
+<dl class="py class">
+<dt id="bluesky_widgets.jupyter.figures.JupyterFigure">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.jupyter.figures.</code><code class="sig-name descname">JupyterFigure</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/jupyter/figures.html#JupyterFigure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.jupyter.figures.JupyterFigure" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Jupyter view for a FigureSpec model. This always contains one Figure.</p>
+<dl class="py method">
+<dt id="bluesky_widgets.jupyter.figures.JupyterFigure.axes">
+<em class="property">property </em><code class="sig-name descname">axes</code><a class="headerlink" href="#bluesky_widgets.jupyter.figures.JupyterFigure.axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read-only access to the mapping AxesSpec UUID -&gt; MatplotlibAxes</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.jupyter.figures.JupyterFigures">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.jupyter.figures.</code><code class="sig-name descname">JupyterFigures</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/jupyter/figures.html#JupyterFigures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.jupyter.figures.JupyterFigures" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Jupyter (ipywidgets) view for a FigureSpecList model.</p>
+<dl class="py method">
+<dt id="bluesky_widgets.jupyter.figures.JupyterFigures.figures">
+<em class="property">property </em><code class="sig-name descname">figures</code><a class="headerlink" href="#bluesky_widgets.jupyter.figures.JupyterFigures.figures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read-only access to the mapping FigureSpec UUID -&gt; JupyterFigure</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+<div class="section" id="plot-builders">
+<h2><a class="toc-backref" href="#id16">Plot Builders</a><a class="headerlink" href="#plot-builders" title="Permalink to this headline">¶</a></h2>
+<p>These are models which build a <code class="xref py py-class docutils literal notranslate"><span class="pre">models.plot_specs.FigureSpec</span></code> or a list
+of them. This is an example of a builder that creates one Figure:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky_widgets.models.plot_builders</span> <span class="kn">import</span> <span class="n">RecentLines</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">RecentLines</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;motor&quot;</span><span class="p">,</span> <span class="s2">&quot;det&quot;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">runs</span>  <span class="c1"># append Runs to this list</span>
+
+<span class="c1"># Build a view by passing model.figure to any Figure view, e.g.</span>
+<span class="kn">from</span> <span class="nn">bluesky_widgets.jupyter.figures</span> <span class="kn">import</span> <span class="n">JupyterFigure</span>
+<span class="n">view</span> <span class="o">=</span> <span class="n">JupyterFigure</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">figure</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And this is an example of a builder that creates a list of Figures:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky_widgets.models.plot_builders</span> <span class="kn">import</span> <span class="n">AutoRecentLines</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoRecentLines</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">runs</span>  <span class="c1"># append Runs to this list</span>
+
+<span class="c1"># Build a view by passing model.figures to any Figures view, e.g.</span>
+<span class="kn">from</span> <span class="nn">bluesky_widgets.jupyter.figures</span> <span class="kn">import</span> <span class="n">JupyterFigures</span>
+<span class="n">view</span> <span class="o">=</span> <span class="n">JupyterFigures</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">figures</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="builders-with-a-single-figure">
+<h3><a class="toc-backref" href="#id17">Builders with a Single Figure</a><a class="headerlink" href="#builders-with-a-single-figure" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_builders.RecentLines">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_builders.</code><code class="sig-name descname">RecentLines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_runs</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">stream_name</span><span class="o">=</span><span class="default_value">'primary'</span></em>, <em class="sig-param"><span class="n">func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">axes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#RecentLines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.RecentLines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot y vs x for the last N runs.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>max_runs</strong><span class="classifier">int</span></dt><dd><p>Number of lines to show at once</p>
+</dd>
+<dt><strong>x</strong><span class="classifier">string</span></dt><dd><p>Field name</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">string</span></dt><dd><p>Field name</p>
+</dd>
+<dt><strong>stream_name</strong><span class="classifier">string, optional</span></dt><dd><p>Stream where fields x and y are found. Default is “primary”.</p>
+</dd>
+<dt><strong>func</strong><span class="classifier">callable, optional</span></dt><dd><p>Expected signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">func</span><span class="p">(</span><span class="n">run</span><span class="p">:</span> <span class="n">BlueskyRun</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span>
+</pre></div>
+</div>
+<p>Default:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">run</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_dask</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ds</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">ds</span><span class="p">[</span><span class="n">y</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>axes</strong><span class="classifier">AxesSpec, optional</span></dt><dd><p>If None, an axes and figure are created with default labels and titles
+derived from the <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> parameters.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">RecentLines</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;motor&quot;</span><span class="p">,</span> <span class="s2">&quot;det&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky_widgets.jupyter.figures</span> <span class="kn">import</span> <span class="n">JupyterFigure</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">view</span> <span class="o">=</span> <span class="n">JupyterFigure</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">figure</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="n">another_run</span><span class="p">,</span> <span class="n">pinned</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>max_runs</strong><span class="classifier">int</span></dt><dd><p>Number of Runs to plot at once. This may be changed at any point.
+(Note: Increasing it will not restore any Runs that have already been
+removed, but it will allow more new Runs to be added.)</p>
+</dd>
+<dt><strong>runs</strong><span class="classifier">RunList[BlueskyRun]</span></dt><dd><p>As runs are appended entries will be removed from the beginning of the
+last (first in, first out) so that there are at most <code class="docutils literal notranslate"><span class="pre">max_runs</span></code>.</p>
+</dd>
+<dt><strong>pinned_runs</strong><span class="classifier">RunList[BlueskyRun]</span></dt><dd><p>These runs will not be automatically removed.</p>
+</dd>
+<dt><strong>figure</strong><span class="classifier">FigureSpec</span></dt><dd></dd>
+<dt><strong>func</strong><span class="classifier">callable</span></dt><dd></dd>
+<dt><strong>axes</strong><span class="classifier">AxesSpec</span></dt><dd></dd>
+<dt><strong>x</strong><span class="classifier">string</span></dt><dd><p>Read-only access to x field name</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">string</span></dt><dd><p>Read-only access to y field name</p>
+</dd>
+<dt><strong>stream_name</strong><span class="classifier">string</span></dt><dd><p>Read-only access to stream name</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.RecentLines.add_run">
+<code class="sig-name descname">add_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run</span></em>, <em class="sig-param"><span class="n">pinned</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#RecentLines.add_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.RecentLines.add_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a Run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run</strong><span class="classifier">BlueskyRun</span></dt><dd></dd>
+<dt><strong>pinned</strong><span class="classifier">Boolean</span></dt><dd><p>If True, retain this Run until it is removed by the user.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.RecentLines.discard_run">
+<code class="sig-name descname">discard_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#RecentLines.discard_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.RecentLines.discard_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discard a Run, including any pinned and unpinned.</p>
+<p>If the Run is not present, this will return silently.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run</strong><span class="classifier">BlueskyRun</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_builders.Image">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_builders.</code><code class="sig-name descname">Image</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">field</span></em>, <em class="sig-param"><span class="n">stream_name</span><span class="o">=</span><span class="default_value">'primary'</span></em>, <em class="sig-param"><span class="n">func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">axes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#Image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.Image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot an image from a Run.</p>
+<p>By default, higher-dimensional data is handled by repeatedly averaging over
+the leading dimension until there are only two dimensions.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>field</strong><span class="classifier">string</span></dt><dd><p>Field name (“data key”) for this image</p>
+</dd>
+<dt><strong>stream_name</strong><span class="classifier">string, optional</span></dt><dd><p>Stream where fields x and y are found. Default is “primary”.</p>
+</dd>
+<dt><strong>func</strong><span class="classifier">callable, optional</span></dt><dd><p>Expected signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">func</span><span class="p">(</span><span class="n">run</span><span class="p">:</span> <span class="n">BlueskyRun</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span>
+</pre></div>
+</div>
+<p>Default:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">run</span><span class="p">[</span><span class="n">stream_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_dask</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="c1"># Reduce the data until it is 2D by repeatedly averaging over</span>
+    <span class="c1"># the leading axis until there only two axes.</span>
+    <span class="k">while</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>axes</strong><span class="classifier">AxesSpec, optional</span></dt><dd><p>If None, an axes and figure are created with default labels and titles
+derived from the <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> parameters.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">RecentLines</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;motor&quot;</span><span class="p">,</span> <span class="s2">&quot;det&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky_widgets.jupyter.figures</span> <span class="kn">import</span> <span class="n">JupyterFigure</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">view</span> <span class="o">=</span> <span class="n">JupyterFigure</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">figure</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="n">another_run</span><span class="p">,</span> <span class="n">pinned</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run</strong><span class="classifier">BlueskyRun</span></dt><dd><p>The currently-viewed Run</p>
+</dd>
+<dt><strong>figure</strong><span class="classifier">FigureSpec</span></dt><dd></dd>
+<dt><strong>func</strong><span class="classifier">callable</span></dt><dd></dd>
+<dt><strong>axes</strong><span class="classifier">AxesSpec</span></dt><dd></dd>
+<dt><strong>x</strong><span class="classifier">string</span></dt><dd><p>Read-only access to x field name</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">string</span></dt><dd><p>Read-only access to y field name</p>
+</dd>
+<dt><strong>stream_name</strong><span class="classifier">string</span></dt><dd><p>Read-only access to stream name</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="builders-with-a-list-of-figures">
+<h3><a class="toc-backref" href="#id18">Builders with a List of Figures</a><a class="headerlink" href="#builders-with-a-list-of-figures" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_builders.AutoRecentLines">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_builders.</code><code class="sig-name descname">AutoRecentLines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_runs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#AutoRecentLines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.AutoRecentLines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically guess useful lines to plot. Show the last N runs (per figure).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>max_runs</strong><span class="classifier">int</span></dt><dd><p>Number of Runs to plot at once, per figure</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">AutoRecentLines</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky_widgets.jupyter.figures</span> <span class="kn">import</span> <span class="n">JupyterFigures</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">view</span> <span class="o">=</span> <span class="n">JupyterFigures</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">figures</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="n">another_run</span><span class="p">,</span> <span class="n">pinned</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>figures</strong><span class="classifier">FigureSpecList[FigureSpec]</span></dt><dd></dd>
+<dt><strong>max_runs</strong><span class="classifier">int</span></dt><dd><p>Number of Runs to plot at once. This may be changed at any point.
+(Note: Increasing it will not restore any Runs that have already been
+removed, but it will allow more new Runs to be added.)</p>
+</dd>
+<dt><a class="reference internal" href="#bluesky_widgets.models.plot_builders.AutoRecentLines.keys_to_figures" title="bluesky_widgets.models.plot_builders.AutoRecentLines.keys_to_figures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">keys_to_figures</span></code></a><span class="classifier">dict</span></dt><dd><p>Read-only mapping of each key to the active RecentLines instance.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.AutoRecentLines.add_run">
+<code class="sig-name descname">add_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run</span></em>, <em class="sig-param"><span class="n">pinned</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#AutoRecentLines.add_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.AutoRecentLines.add_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a Run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run</strong><span class="classifier">BlueskyRun</span></dt><dd></dd>
+<dt><strong>pinned</strong><span class="classifier">Boolean</span></dt><dd><p>If True, retain this Run until it is removed by the user.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.AutoRecentLines.discard_run">
+<code class="sig-name descname">discard_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#AutoRecentLines.discard_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.AutoRecentLines.discard_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discard a Run, including any pinned and unpinned.</p>
+<p>If the Run is not present, this will return silently. Also,
+note that this only affect “active” plots that are currently
+receive new runs. Inactive ones will be left as they are.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run</strong><span class="classifier">BlueskyRun</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.AutoRecentLines.keys_to_figures">
+<em class="property">property </em><code class="sig-name descname">keys_to_figures</code><a class="headerlink" href="#bluesky_widgets.models.plot_builders.AutoRecentLines.keys_to_figures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read-only mapping of each key to the active RecentLines instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.AutoRecentLines.new_instance_for_key">
+<code class="sig-name descname">new_instance_for_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#AutoRecentLines.new_instance_for_key"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.AutoRecentLines.new_instance_for_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a new RecentLine instance for a key.</p>
+<p>If there is an existing one the instance and figure will remain but
+will no longer be updated with new Runs. Those will go to a new
+instance and figure, created here.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.models.plot_builders.PromptPlotter">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_builders.</code><code class="sig-name descname">PromptPlotter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">builders</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#PromptPlotter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.PromptPlotter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce Figures from BlueskyRuns promptly (as Run completion time).</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>builders</strong><span class="classifier">BuilderList[callable]</span></dt><dd><p>A list of functions that accept a BlueskyRun and return FigureSpec(s).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl>
+<dt><strong>runs</strong><span class="classifier">RunList[BlueskyRun]</span></dt><dd><p>Add or remove runs from this list.</p>
+</dd>
+<dt><strong>figures</strong><span class="classifier">FigureSpecList[FigureSpec]</span></dt><dd><p>Figures will be added to this list.</p>
+</dd>
+<dt><strong>builders</strong><span class="classifier">BuilderList[callable]</span></dt><dd><p>A list of functions with the expected signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">(</span><span class="n">run</span><span class="p">:</span> <span class="n">BlueskyRun</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FigureSpec</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">(</span><span class="n">run</span><span class="p">:</span> <span class="n">BlueskyRun</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">{</span><span class="n">FigureSpec</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.PromptPlotter.add_run">
+<code class="sig-name descname">add_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#PromptPlotter.add_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.PromptPlotter.add_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a Run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run</strong><span class="classifier">BlueskyRun</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.models.plot_builders.PromptPlotter.discard_run">
+<code class="sig-name descname">discard_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#PromptPlotter.discard_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.PromptPlotter.discard_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discard a Run.</p>
+<p>If the Run is not present, this will return silently.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run</strong><span class="classifier">BlueskyRun</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="streaming-utilities">
+<h2><a class="toc-backref" href="#id19">Streaming Utilities</a><a class="headerlink" href="#streaming-utilities" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="bluesky_widgets.utils.streaming.stream_documents_into_runs">
+<code class="sig-prename descclassname">bluesky_widgets.utils.streaming.</code><code class="sig-name descname">stream_documents_into_runs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">add_run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/utils/streaming.html#stream_documents_into_runs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.utils.streaming.stream_documents_into_runs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a flat stream of documents to “live” BlueskyRuns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>add_run</strong><span class="classifier">callable</span></dt><dd><p>This will be called as <code class="docutils literal notranslate"><span class="pre">add_run(run:</span> <span class="pre">BlueskyRun)</span></code> each time a ‘start’
+document is received.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>callback</strong><span class="classifier">callable</span></dt><dd><p>This should be subscribed to a callback registry that calls it like
+<code class="docutils literal notranslate"><span class="pre">callback(name,</span> <span class="pre">doc)</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>This is used for connecting something that emits a flat stream of documents
+to something that wants to receive BlueskyRuns.</p>
+<p>Append to a plain list.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky</span> <span class="kn">import</span> <span class="n">RunEngine</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span> <span class="o">=</span> <span class="n">RunEngine</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">runs</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">stream_documents_into_runs</span><span class="p">(</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Or, more usefully to an observable list.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky_widgets.models.utils</span> <span class="kn">import</span> <span class="n">RunList</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">runs</span> <span class="o">=</span> <span class="n">RunList</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">stream_documents_into_runs</span><span class="p">(</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Add runs to a model with an <code class="docutils literal notranslate"><span class="pre">add_run</span></code> method. For example, it might be a
+model that generates figures.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bluesky_widgets.models.plot_builders</span> <span class="kn">import</span> <span class="n">AutoRecentLines</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">AutoRecentLines</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">stream_documents_into_runs</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.qt.zmq_dispatcher.RemoteDispatcher">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.qt.zmq_dispatcher.</code><code class="sig-name descname">RemoteDispatcher</code><span class="sig-paren">(</span><em class="sig-param">address</em>, <em class="sig-param">*</em>, <em class="sig-param">prefix=b''</em>, <em class="sig-param">deserializer=&lt;built-in function loads&gt;</em>, <em class="sig-param">parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/qt/zmq_dispatcher.html#RemoteDispatcher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.qt.zmq_dispatcher.RemoteDispatcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dispatch documents received over the network from a 0MQ proxy.</p>
+<p>This is designed to be run in a Qt application.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>address</strong><span class="classifier">tuple | str</span></dt><dd><p>Address of a running 0MQ proxy, given either as a string like
+<code class="docutils literal notranslate"><span class="pre">'127.0.0.1:5567'</span></code> or as a tuple like <code class="docutils literal notranslate"><span class="pre">('127.0.0.1',</span> <span class="pre">5567)</span></code></p>
+</dd>
+<dt><strong>prefix</strong><span class="classifier">bytes, optional</span></dt><dd><p>User-defined bytestring used to distinguish between multiple
+Publishers. If set, messages without this prefix will be ignored.
+If unset, no mesages will be ignored.</p>
+</dd>
+<dt><strong>deserializer: function, optional</strong></dt><dd><p>optional function to deserialize data. Default is pickle.loads</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Print all documents generated by remote RunEngines.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">RemoteDispatcher</span><span class="p">((</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">5568</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">stream_documents_into_runs</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>  <span class="c1"># launches periodic workers on background threads</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># stop launching workers</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.jupyter.zmq_dispatcher.RemoteDispatcher">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.jupyter.zmq_dispatcher.</code><code class="sig-name descname">RemoteDispatcher</code><span class="sig-paren">(</span><em class="sig-param">address</em>, <em class="sig-param">*</em>, <em class="sig-param">prefix=b''</em>, <em class="sig-param">deserializer=&lt;built-in function loads&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/jupyter/zmq_dispatcher.html#RemoteDispatcher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.jupyter.zmq_dispatcher.RemoteDispatcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dispatch documents received over the network from a 0MQ proxy.</p>
+<p>This is designed to be run in a Jupyter kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>address</strong><span class="classifier">tuple | str</span></dt><dd><p>Address of a running 0MQ proxy, given either as a string like
+<code class="docutils literal notranslate"><span class="pre">'127.0.0.1:5567'</span></code> or as a tuple like <code class="docutils literal notranslate"><span class="pre">('127.0.0.1',</span> <span class="pre">5567)</span></code></p>
+</dd>
+<dt><strong>prefix</strong><span class="classifier">bytes, optional</span></dt><dd><p>User-defined bytestring used to distinguish between multiple
+Publishers. If set, messages without this prefix will be ignored.
+If unset, no mesages will be ignored.</p>
+</dd>
+<dt><strong>deserializer: function, optional</strong></dt><dd><p>optional function to deserialize data. Default is pickle.loads</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Print all documents generated by remote RunEngines.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">RemoteDispatcher</span><span class="p">((</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">5568</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">stream_documents_into_runs</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">add_run</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>  <span class="c1"># starts a thread and a long-running subprocess</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># stops them and blocks until they stop</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="design.html" class="btn btn-neutral float-right" title="Design" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Brookhaven National Lab
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

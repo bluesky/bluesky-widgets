@@ -1,0 +1,684 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bluesky_widgets.models.plot_specs &mdash; bluesky-widgets 0.0.5b1.post10+gd46dcdf documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> bluesky-widgets
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.5b1.post10+gd46dcdf
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../goals.html">Goals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../design.html">Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release-history.html">Release History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../min_versions.html">Minimum Version of Python and NumPy</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">bluesky-widgets</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>bluesky_widgets.models.plot_specs</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for bluesky_widgets.models.plot_specs</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Models representing entities in a plot, including containers (Figure, Axes) and</span>
+<span class="sd">artists (Line, Grid, Image).</span>
+
+<span class="sd">We follow the pattern that parents know about their children but children do</span>
+<span class="sd">not know about their parents: thus, Figures know about their Axes and Axes know</span>
+<span class="sd">about their Artists.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">uuid</span> <span class="k">as</span> <span class="nn">uuid_module</span>
+
+<span class="kn">from</span> <span class="nn">..utils.event</span> <span class="kn">import</span> <span class="n">EmitterGroup</span><span class="p">,</span> <span class="n">Event</span>
+<span class="kn">from</span> <span class="nn">..utils.list</span> <span class="kn">import</span> <span class="n">EventedList</span>
+<span class="kn">from</span> <span class="nn">..utils.dict_view</span> <span class="kn">import</span> <span class="n">UpdateOnlyDict</span><span class="p">,</span> <span class="n">DictView</span>
+
+
+<div class="viewcode-block" id="BaseSpec"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_specs.BaseSpec">[docs]</a><span class="k">class</span> <span class="nc">BaseSpec</span><span class="p">:</span>
+    <span class="s2">&quot;Just a class with a uuid attribute and some slots.&quot;</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;_uuid&quot;</span><span class="p">,</span> <span class="s2">&quot;events&quot;</span><span class="p">,</span> <span class="s2">&quot;__weakref__&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uuid</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">uuid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">uuid</span> <span class="o">=</span> <span class="n">uuid_module</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uuid</span> <span class="o">=</span> <span class="n">uuid</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uuid</span></div>
+
+
+<div class="viewcode-block" id="FigureSpec"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_specs.FigureSpec">[docs]</a><span class="k">class</span> <span class="nc">FigureSpec</span><span class="p">(</span><span class="n">BaseSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Describes a Figure</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    axes : Tuple[AxesSpec]</span>
+<span class="sd">    title : String</span>
+<span class="sd">        Figure title text</span>
+<span class="sd">    uuid : UUID, optional</span>
+<span class="sd">        Automatically assigned to provide a unique identifier for this Figure,</span>
+<span class="sd">        used internally to track it.</span>
+<span class="sd">    short_title: String, optional</span>
+<span class="sd">        Shorter figure title text, used in (for example) tab labels. Views</span>
+<span class="sd">        should fall back on ``title`` if this is None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;_axes&quot;</span><span class="p">,</span> <span class="s2">&quot;_title&quot;</span><span class="p">,</span> <span class="s2">&quot;_short_title&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">short_title</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_short_title</span> <span class="o">=</span> <span class="n">short_title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="n">EmitterGroup</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">Event</span><span class="p">,</span> <span class="n">short_title</span><span class="o">=</span><span class="n">Event</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">uuid</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">axes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Tuple of AxesSpecs. Set at FigureSpec creation time and immutable.</span>
+
+<span class="sd">        Why is it immutable? Because rearranging Axes to make room for a new</span>
+<span class="sd">        one is currently painful to do in matplotlib. This constraint might be</span>
+<span class="sd">        relaxed in the future if the situation improves in matplotlib or if</span>
+<span class="sd">        support for other plotting frameworks is added to bluesky-widgets.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;String for figure title. Settable.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_title</span>
+
+    <span class="nd">@title</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">figure_spec</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">short_title</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;String for figure title tab label. Settable&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_short_title</span>
+
+    <span class="nd">@short_title</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">short_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_short_title</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">short_title</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">figure_spec</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(axes=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="si">!r}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;title=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="si">!r}</span><span class="s2">, short_title=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">short_title</span><span class="si">!r}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;uuid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">uuid</span><span class="si">!r}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AxesSpec"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_specs.AxesSpec">[docs]</a><span class="k">class</span> <span class="nc">AxesSpec</span><span class="p">(</span><span class="n">BaseSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Describes a set of Axes</span>
+
+<span class="sd">    Paraemeters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    lines : List[LineSpec], optional</span>
+<span class="sd">    images : List[ImageSpec], optional</span>
+<span class="sd">    title: String, optional</span>
+<span class="sd">        Axes title text</span>
+<span class="sd">    x_label: String, optional</span>
+<span class="sd">        Text label for x axis</span>
+<span class="sd">    y_label: String, optional</span>
+<span class="sd">        Text label for y axis</span>
+<span class="sd">    uuid : UUID, optional</span>
+<span class="sd">        Automatically assigned to provide a unique identifier for this Figure,</span>
+<span class="sd">        used internally to track it.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    Note that plot entities like lines may be declared at init time:</span>
+
+<span class="sd">    &gt;&gt;&gt; axes = AxesSpec(lines=[LineSpec(...)])</span>
+
+<span class="sd">    Or added later:</span>
+
+<span class="sd">    &gt;&gt;&gt; axes = AxesSpec()</span>
+<span class="sd">    &gt;&gt;&gt; axes.lines.append(LineSpec(...))</span>
+
+<span class="sd">    Or a mix:</span>
+
+<span class="sd">    &gt;&gt;&gt; axes = AxesSpec(lines=[LineSpec(...)])</span>
+<span class="sd">    &gt;&gt;&gt; axes.lines.append(LineSpec(...))</span>
+
+<span class="sd">    And they can be removed at any point:</span>
+
+<span class="sd">    &gt;&gt;&gt; del axes.lines[0]  # Remove the first one.</span>
+<span class="sd">    &gt;&gt;&gt; del axes.lines[-1]  # Remove the last one.</span>
+<span class="sd">    &gt;&gt;&gt; axes.lines.clear()  # Remove them all.</span>
+
+<span class="sd">    They may be accessed by type</span>
+
+<span class="sd">    &gt;&gt;&gt; axes.lines  # all lines</span>
+<span class="sd">    [LineSpec(...), LineSpec(...), ...]</span>
+
+<span class="sd">    Or by label</span>
+
+<span class="sd">    &gt;&gt;&gt; axes.by_label[&quot;Scan 8&quot;]  # list of all plot entities with this label</span>
+<span class="sd">    [LineSpec(...)]  # typically contains just one element</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;_figure&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_artists&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_lines&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_images&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_title&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_x_label&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_y_label&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">lines</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">images</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">x_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">y_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_figure</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lines</span> <span class="o">=</span> <span class="n">LineSpecList</span><span class="p">(</span><span class="n">lines</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_images</span> <span class="o">=</span> <span class="n">ImageSpecList</span><span class="p">(</span><span class="n">images</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="c1"># A colleciton of all artists, mappping UUID to object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_artists</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_x_label</span> <span class="o">=</span> <span class="n">x_label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_y_label</span> <span class="o">=</span> <span class="n">y_label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="n">EmitterGroup</span><span class="p">(</span>
+            <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">Event</span><span class="p">,</span> <span class="n">x_label</span><span class="o">=</span><span class="n">Event</span><span class="p">,</span> <span class="n">y_label</span><span class="o">=</span><span class="n">Event</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lines</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_adopt_artist</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_adopt_artist</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lines</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_artist_added</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lines</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_artist_removed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_artist_added</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_images</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_artist_removed</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">figure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The Figure in which this Axes is located.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`set_figure`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_figure</span>
+
+<div class="viewcode-block" id="AxesSpec.set_figure"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_specs.AxesSpec.set_figure">[docs]</a>    <span class="k">def</span> <span class="nf">set_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figure</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is called by FigureSpec when the Axes is added to it.</span>
+
+<span class="sd">        It may only be called once.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_figure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Figure may only be set once. The Axes </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2"> already belongs &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="si">}</span><span class="s2"> and thus cannot be added to a new Figure.&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_figure</span> <span class="o">=</span> <span class="n">figure</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">lines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;List of LineSpecs on these Axes. Mutable.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lines</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">images</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;List of ImageSpecs on these Axes. Mutable&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_images</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">by_label</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Access artists as a read-only dict keyed by label.</span>
+
+<span class="sd">        Since two artists are allowed to have the same label, the values are</span>
+<span class="sd">        *lists*. In the common case, the list will have just one element.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        Look up an object (e.g. a line) by its label and change its color.</span>
+
+<span class="sd">        &gt;&gt;&gt; spec = axes_spec.by_label[&quot;Scan 3&quot;]</span>
+<span class="sd">        &gt;&gt;&gt; spec.style.update(color=&quot;red&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">artist</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_artists</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">mapping</span><span class="p">[</span><span class="n">artist</span><span class="o">.</span><span class="n">label</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">artist</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">DictView</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">mapping</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">by_uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Access artists as a read-only dict keyed by uuid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Return a copy to prohibit mutation of internal bookkeeping.</span>
+        <span class="k">return</span> <span class="n">DictView</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_artists</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;String for figure title. Settable&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_title</span>
+
+    <span class="nd">@title</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_label</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;String for x axes label. Settable.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x_label</span>
+
+    <span class="nd">@x_label</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">x_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_x_label</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">x_label</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">y_label</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;String for y axes label. Settable.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y_label</span>
+
+    <span class="nd">@y_label</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">y_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_y_label</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">y_label</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_artist_added</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="n">artist</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_adopt_artist</span><span class="p">(</span><span class="n">artist</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_adopt_artist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artist</span><span class="p">):</span>
+        <span class="n">artist</span><span class="o">.</span><span class="n">set_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_artists</span><span class="p">[</span><span class="n">artist</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">artist</span>
+
+    <span class="k">def</span> <span class="nf">_on_artist_removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="n">artist</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_artists</span><span class="p">[</span><span class="n">artist</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(lines=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="si">!r}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;images=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="si">!r}</span><span class="s2">, title=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="si">!r}</span><span class="s2">,&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;x_label=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">x_label</span><span class="si">!r}</span><span class="s2">, y_label=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">y_label</span><span class="si">!r}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;uuid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">uuid</span><span class="si">!r}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ArtistSpec"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_specs.ArtistSpec">[docs]</a><span class="k">class</span> <span class="nc">ArtistSpec</span><span class="p">(</span><span class="n">BaseSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Describes the data, computation, and style for an artist (plot element)</span>
+
+<span class="sd">    func : callable</span>
+<span class="sd">        Expected signature::</span>
+
+<span class="sd">            func(run: BlueskyRun)</span>
+
+<span class="sd">        The expected return type varies by artist.</span>
+<span class="sd">    run : BlueskyRun</span>
+<span class="sd">        Contains data to be visualized.</span>
+<span class="sd">    label : String</span>
+<span class="sd">        Label used in legend and for lookup by label on AxesSpec.</span>
+<span class="sd">    style : Dict, optional</span>
+<span class="sd">        Options passed through to plotting framework, such as ``color`` or</span>
+<span class="sd">        ``label``.</span>
+<span class="sd">    axes : AxesSpec, optional</span>
+<span class="sd">        This may be specified here or set later using :meth:`set_axes`. Once</span>
+<span class="sd">        specified, it cannot be changed.</span>
+<span class="sd">    uuid : UUID, optional</span>
+<span class="sd">        Automatically assigned to provide a unique identifier for this Figure,</span>
+<span class="sd">        used internally to track it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;_func&quot;</span><span class="p">,</span> <span class="s2">&quot;_run&quot;</span><span class="p">,</span> <span class="s2">&quot;_label&quot;</span><span class="p">,</span> <span class="s2">&quot;_style&quot;</span><span class="p">,</span> <span class="s2">&quot;_axes&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="n">run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_label</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_style</span> <span class="o">=</span> <span class="n">UpdateOnlyDict</span><span class="p">(</span><span class="n">style</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="n">axes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="n">EmitterGroup</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">Event</span><span class="p">,</span> <span class="n">style_updated</span><span class="o">=</span><span class="n">Event</span><span class="p">)</span>
+        <span class="c1"># Re-emit updates. It&#39;s important to re-emit (not just pass through)</span>
+        <span class="c1"># because the consumer will need access to self.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_style</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">updated</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">style_updated</span><span class="p">(</span>
+                <span class="n">update</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">update</span><span class="p">,</span> <span class="n">artist_spec</span><span class="o">=</span><span class="bp">self</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">uuid</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ArtistSpec.set_axes"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_specs.ArtistSpec.set_axes">[docs]</a>    <span class="k">def</span> <span class="nf">set_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is called by AxesSpec when the Artist is added to it.</span>
+
+<span class="sd">        It may only be called once.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Axes may only be set once. The artist </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2"> already belongs &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="si">}</span><span class="s2"> and thus cannot be added to </span><span class="si">{</span><span class="n">axes</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="n">axes</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">axes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The Axes on which this Artist is drawn.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`set_axes`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Function that transforms BlueskyRun to plottble data. Immutable.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;BlueskyRun that is the data source. Immutable.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">label</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Label used in legend and for lookup by label on AxesSpec. Settable.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_label</span>
+
+    <span class="nd">@label</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">artist_spec</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">style</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Options passed to the artist.</span>
+
+<span class="sd">        This *is* settable but it has to be done like:</span>
+
+<span class="sd">        &gt;&gt;&gt; spec.style.update({&quot;color&quot;: &quot;blue&quot;})</span>
+
+<span class="sd">        Attempts to modify the contents will be disallowed:</span>
+
+<span class="sd">        &gt;&gt;&gt; spec.style[&quot;color&quot;] = blue  # TypeError!</span>
+<span class="sd">        &gt;&gt;&gt; del spec.style[&quot;color&quot;]  # TypeError!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_style</span>
+
+    <span class="nd">@style</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">):</span>
+        <span class="c1"># Provide a more helpful error than the default,</span>
+        <span class="c1"># AttributeError: can&#39;t set attribute.</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;can&#39;t set attribute. Use style.update(</span><span class="si">{</span><span class="n">update</span><span class="si">!r}</span><span class="s2">) &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;instead of style = </span><span class="si">{</span><span class="n">update</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(func=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="si">!r}</span><span class="s2">, run=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="si">!r}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;label=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="si">!r}</span><span class="s2">, style=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">style</span><span class="si">!r}</span><span class="s2">, axes=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;uuid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">uuid</span><span class="si">!r}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LineSpec"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_specs.LineSpec">[docs]</a><span class="k">class</span> <span class="nc">LineSpec</span><span class="p">(</span><span class="n">ArtistSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Describes the data, computation, and style for a line</span>
+
+<span class="sd">    func : callable</span>
+<span class="sd">        Expected signature::</span>
+
+<span class="sd">            func(run: BlueskyRun) -&gt; x: Array, y: Array</span>
+
+<span class="sd">    run : BlueskyRun</span>
+<span class="sd">        Contains data to be visualized.</span>
+<span class="sd">    label : String</span>
+<span class="sd">        Label used in legend and for lookup by label on AxesSpec.</span>
+<span class="sd">    style : Dict, optional</span>
+<span class="sd">        Options passed through to plotting framework, such as ``color`` or</span>
+<span class="sd">        ``label``.</span>
+<span class="sd">    axes : AxesSpec, optional</span>
+<span class="sd">        This may be specified here or set later using :meth:`set_axes`. Once</span>
+<span class="sd">        specified, it cannot be changed.</span>
+<span class="sd">    uuid : UUID, optional</span>
+<span class="sd">        Automatically assigned to provide a unique identifier for this Figure,</span>
+<span class="sd">        used internally to track it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span></div>
+
+
+<span class="k">class</span> <span class="nc">ImageSpec</span><span class="p">(</span><span class="n">ArtistSpec</span><span class="p">):</span>
+    <span class="s2">&quot;Describes an image stack (both data and style)&quot;</span>
+
+
+<span class="c1"># EventedLists for each type of spec. We plan to add type-checking to these,</span>
+<span class="c1"># hence a specific container for each.</span>
+
+
+<span class="k">class</span> <span class="nc">FigureSpecList</span><span class="p">(</span><span class="n">EventedList</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">AxesSpecList</span><span class="p">(</span><span class="n">EventedList</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">LineSpecList</span><span class="p">(</span><span class="n">EventedList</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">ImageSpecList</span><span class="p">(</span><span class="n">EventedList</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Brookhaven National Lab
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
