@@ -459,8 +459,7 @@ class AutoRecentLines:
         run : BlueskyRun
         """
         for instance in self._key_to_instance.values():
-            if run in instance.runs:
-                instance.runs.remove(run)
+            instance.discard_run(run)
 
     def _handle_stream(self, run, stream_name, pinned):
         "This examines a stream and adds this run to RecentLines instances."
