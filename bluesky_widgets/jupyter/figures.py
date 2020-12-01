@@ -17,6 +17,7 @@ class _PatchedMatplotlibAxes(MatplotlibAxes):
     sufficient, which suggests that there is a better, less aggressive fix for
     this.
     """
+
     def draw_idle(self):
         # HACK! Use draw instead of draw_idle(). This changes the behavior by
         # drawing *every* update, not just updates the the UI is ready to
@@ -110,7 +111,9 @@ class JupyterFigure(widgets.HBox):
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = _PatchedMatplotlibAxes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = _PatchedMatplotlibAxes(
+                model=axes_spec, axes=axes
+            )
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
