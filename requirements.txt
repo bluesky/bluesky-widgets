@@ -1,1 +1,2 @@
 bluesky-live >=0.0.5
+numpy

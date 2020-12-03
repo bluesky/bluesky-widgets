@@ -14,7 +14,7 @@ from bluesky_widgets.models.plot_builders import RecentLines
 from bluesky_widgets.qt.figures import QtFigure
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 
-model = RecentLines(3, "motor", "det")
+model = RecentLines(3, "motor", ["det"])
 view = QtFigure(model.figure)
 view.show()
 
