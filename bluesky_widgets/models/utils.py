@@ -51,7 +51,6 @@ def construct_namespace(run):
       ``"primary['It']"`` or ``"baseline['motor']"``
     * The ``BlueskyRun`` itself, as ``"run"``, from which any data or metadata
       can be obtained
-    * Any user-provided words, specified in the ``namespace`` parameter.
 
     In the event of name collisions, items lower in the list above will get
     precedence.
