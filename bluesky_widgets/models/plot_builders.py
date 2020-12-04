@@ -256,6 +256,7 @@ class RecentLines:
             ds = run["primary"].to_dask()
             ns.update({column: ds[column] for column in ds})
         ns.update({stream_name: run[stream_name].to_dask() for stream_name in run})
+        ns.update({"run": run})
         ns.update(self.namespace)
         return eval(x, ns), eval(y, ns)
 
