@@ -135,6 +135,24 @@ class RecentLines:
     """
     Plot y vs x for the last N runs.
 
+    This supports plotting columns like ``"I0"`` but also Python
+    expressions like ``"5 * log(I0/It)"`` and even
+    ``"my_custom_function(I0)"``. See examples below.
+
+    The words available in these expressions include:
+
+    * All functions in numpy. They can be spelled as ``log``, ``np.log``, or
+      ``numpy.log``
+    * The columns in the "primary" stream of data, as in ``"I0"``
+    * All the streams, with the data accessible as items in a dict, as in
+      ``"primary['It']"`` or ``"baseline['motor']"``
+    * The ``BlueskyRun`` itself, as ``"run"``, from which any data or metadata
+      can be obtained
+    * Any user-provided words, specified in the ``namespace`` parameter.
+
+    In the event of name collisions, items lower in the list above will get
+    precedence.
+
     Parameters
     ----------
     max_runs : Integer
@@ -181,12 +199,51 @@ class RecentLines:
 
     Examples
     --------
+
+    Plot "det" vs "motor" and view it.
+
     >>> model = RecentLines(3, "motor", ["det"])
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.add_run(run)
     >>> model.add_run(another_run, pinned=True)
 
+    Plot a mathematical transformation of the columns using any object in
+    numpy.
+
+    >>> model = RecentLines(3, "abs(motor)", ["-log(det)"])
+    >>> model = RecentLines(3, "abs(motor)", ["pi * det"])
+    >>> model = RecentLines(3, "abs(motor)", ["sqrt(det)"])
+
+    Plot multiple lines.
+
+    >>> model = RecentLines(3, "motor", ["log(I0/It)", "log(I0)", "log(It)"])
+
+    Plot every tenth point.
+
+    >>> model = RecentLines(3, "motor", ["intesnity[::10]"])
+
+    Access data outside the "primary" stream, such as a stream name "baseline".
+
+    >>> model = RecentLines(3, "motor", ["intensity/baseline['intensity'][0]"])
+
+    As shown, objects from numpy can be used in expressions. You may define
+    additional words, such as "savlog" for a Savitzky-Golay smoothing filter,
+    by passing it a dict mapping the new word to the new object.
+
+    >>> import scipy.signal
+    >>> namespace = {"savgol": scipy.signal.savgol_filter}
+    >>> model = RecentLines(3, "motor", ["savgol(intensity, 5, 2)"],
+    ...                     namespace=namespace)
+
+    Custom, user-defined objects may be added in the same way.
+
+    >>> def f(data):
+    ...     ...
+    ...
+    >>> namespace = {"my_custom_function": f}
+    >>> model = RecentLines(3, "motor", ["my_custom_function(intensity)"],
+    ...                     namespace=namespace)
     """
 
     def __init__(
