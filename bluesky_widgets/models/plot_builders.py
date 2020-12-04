@@ -195,7 +195,7 @@ class RecentLines:
     needs_streams : FronzenSet[string]
         Read-only access to stream names needed
     namespace : Dict
-        Read-only access to namespace
+        Read-only access to user-provided namespace
 
     Examples
     --------
@@ -594,25 +594,11 @@ class Image:
     ----------
 
     field : string
-        Field name ("data key") for this image
-    stream_name : string, optional
-        Stream where fields x and y are found. Default is "primary".
-    func : callable, optional
-        Expected signature::
-
-            func(run: BlueskyRun, stream_name: str, x: str, y: str) -> x: Array, y: Array
-
-        Default::
-
-            def func(run, field):
-                ds = run[stream_name].to_dask()
-                data = ds[field].data
-                # Reduce the data until it is 2D by repeatedly averaging over
-                # the leading axis until there only two axes.
-                while data.ndim > 2:
-                    data = data.mean(0)
-                return data
-
+        Field name or expression
+    needs_streams : List[String], optional
+        Streams referred to by field. Default is ``["primary"]``
+    namespace : Dict, optional
+        Inject additional tokens to be used in expressions for x and y
     axes : AxesSpec, optional
         If None, an axes and figure are created with default labels and titles
         derived from the ``x`` and ``y`` parameters.
@@ -622,14 +608,13 @@ class Image:
     run : BlueskyRun
         The currently-viewed Run
     figure : FigureSpec
-    func : callable
     axes : AxesSpec
-    x : string
-        Read-only access to x field name
-    y : string
-        Read-only access to y field name
-    stream_name : string
-        Read-only access to stream name
+    field : String
+        Read-only access to field or expression
+    needs_streams : List[String], optional
+        Read-only access to streams referred to by field.
+    namespace : Dict, optional
+        Read-only access to user-provided namespace
 
     Examples
     --------
@@ -640,24 +625,13 @@ class Image:
     >>> model.add_run(another_run, pinned=True)
     """
 
-    def __init__(self, field, stream_name="primary", func=None, axes=None):
+    def __init__(self, field, *, needs_streams=("primary",), namespace=None, axes=None):
         super().__init__()
-
-        if func is None:
-
-            def func(run, field):
-                ds = run[stream_name].to_dask()
-                data = ds[field].data
-                # Reduce the data until it is 2D by repeatedly averaging over
-                # the leading axis until there only two axes.
-                while data.ndim > 2:
-                    data = data.mean(0)
-                return data
 
         # Stash these and expose them as read-only properties.
         self._field = field
-        self._stream_name = stream_name
-        self._func = func
+        self._needs_streams = needs_streams
+        self._namespace = namespace
 
         self._run = None
 
@@ -683,18 +657,28 @@ class Image:
     def _add_image(self):
         md = self.run.metadata["start"]
         title = f"Scan ID {md['scan_id']}   UID {md['uid'][:8]}"
-        func = functools.partial(self.func, field=self.field)
+        func = functools.partial(self._transform, field=self.field)
         image = ImageSpec(func, self.run, label=self.field)
         self.axes.images.append(image)
         self.axes.title = title
         # TODO Set axes x, y from xarray dims
 
-    @property
-    def func(self):
-        return self._func
+    def _transform(self, run, field):
+        ns = construct_namespace(run)
+        ns.update(self.namespace)
+        data = numpy.asarray(eval(field, ns))
+        # Reduce the data until it is 2D by repeatedly averaging over
+        # the leading axis until there only two axes.
+        while data.ndim > 2:
+            data = data.mean(0)
+        return data
 
-    def stream_name(self):
-        return self._stream_name
+    def needs_streams(self):
+        return self._needs_streams
+
+    @property
+    def namespace(self):
+        return DictView(self._namespace or {})
 
     @property
     def field(self):
