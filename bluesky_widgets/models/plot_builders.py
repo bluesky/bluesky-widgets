@@ -582,7 +582,7 @@ class Image:
 
     Examples
     --------
-    >>> model = RecentLines(3, "motor", "det")
+    >>> model = Images("ccd")
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.add_run(run)
