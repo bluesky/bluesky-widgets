@@ -4,9 +4,7 @@ from bluesky_live.run_builder import build_simple_run
 
 # Make some runs to use.
 runs = [
-    build_simple_run(
-        {"motor": [1, 2], "det": [10, 20]}, metadata={"scan_id": 1 + i}
-    )
+    build_simple_run({"motor": [1, 2], "det": [10, 20]}, metadata={"scan_id": 1 + i})
     for i in range(10)
 ]
 MAX_RUNS = 3
@@ -42,18 +40,20 @@ def test_pinned():
 
 def test_properties():
     "Touch various accessors"
-    model = RecentLines(MAX_RUNS, "motor", ["det"], namespace={'c': 3})
+    model = RecentLines(MAX_RUNS, "c * motor", ["det"], namespace={"c": 3})
+    model.run = runs[0]
+    assert model.run is runs[0]
     assert model.max_runs == MAX_RUNS
-    assert model.x == "motor"
+    assert model.x == "c * motor"
     assert model.ys == ("det",)
-    assert dict(model.namespace) == {'c': 3}
+    assert dict(model.namespace) == {"c": 3}
     assert model.needs_streams == frozenset({"primary"})
 
 
 def test_decrease_max_runs():
     "Decreasing max_runs should remove the runs and their associated lines."
     INITIAL_MAX_RUNS = 5
-    model = RecentLines(5, "motor", ["det"], namespace={'c': 3})
+    model = RecentLines(5, "motor", ["det"], namespace={"c": 3})
     for run in runs[:5]:
         model.add_run(run)
     assert len(model.runs) == INITIAL_MAX_RUNS

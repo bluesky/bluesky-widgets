@@ -9,7 +9,7 @@ def test_namespace():
     "Test the contents of a namespace for eval-ing expressions with a run."
     run = build_simple_run({"motor": [1, 2], "det": [10, 20]})
     namespace = construct_namespace(run)
-    
+
     # Test entities from run....
     # the run itself
     assert eval("run", namespace) is run
@@ -32,7 +32,8 @@ def test_shadowing_of_run():
     namespace = construct_namespace(run)
     assert eval("run", namespace) is run
 
-def test_shadowing_of_run():
+
+def test_shadowing_of_stream():
     "If there is a field named 'primary', the stream should take precedence."
     run = build_simple_run({"primary": [1, 2], "det": [10, 20]})
     namespace = construct_namespace(run)
