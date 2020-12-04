@@ -11,7 +11,7 @@ def test_pinning():
         for i in range(10)
     ]
     MAX_RUNS = 3
-    model = RecentLines(MAX_RUNS, "motor", "det")
+    model = RecentLines(MAX_RUNS, "motor", ["det"])
 
     # Add MAX_RUNS and then some more and check that they do get bumped off.
     for run in runs[:5]:
