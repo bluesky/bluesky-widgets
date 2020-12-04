@@ -14,7 +14,7 @@ from .plot_specs import (
     FigureSpecList,
 )
 from ._heuristics import infer_lines_to_plot
-from .utils import RunList, run_is_live_and_not_completed
+from .utils import RunList, run_is_live_and_not_completed, construct_namespace
 from ..utils.list import EventedList
 from ..utils.dict_view import DictView
 
@@ -281,9 +281,7 @@ class RecentLines:
         self._ys = tuple(ys)
         self._label_maker = label_maker
         self._needs_streams = frozenset(needs_streams)
-        # Make numpy functions accessible as (for example) log, np.log, and numpy.log.
-        self._namespace = {"numpy": numpy, "np": numpy}
-        self._namespace.update({name: getattr(numpy, name) for name in numpy.__all__})
+        self._namespace = namespace
 
         self.runs = RunList()
         self._pinned = set()
@@ -307,13 +305,8 @@ class RecentLines:
         self.axes = axes
         self.figure = figure
 
-    def transform(self, run, x, y):
-        ns = dict(self.namespace)  # shallow copy
-        if "primary" in run:
-            ds = run["primary"].to_dask()
-            ns.update({column: ds[column] for column in ds})
-        ns.update({stream_name: run[stream_name].to_dask() for stream_name in run})
-        ns.update({"run": run})
+    def _transform(self, run, x, y):
+        ns = construct_namespace(run)
         ns.update(self.namespace)
         return eval(x, ns), eval(y, ns)
 
@@ -366,7 +359,7 @@ class RecentLines:
                 style.update(linestyle="dashed")
                 label += " (pinned)"
 
-            func = functools.partial(self.transform, x=self.x, y=y)
+            func = functools.partial(self._transform, x=self.x, y=y)
             line = LineSpec(func, run, label, style)
             run_uid = run.metadata["start"]["uid"]
             self._runs_to_lines[run_uid] = line
