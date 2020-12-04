@@ -167,8 +167,8 @@ class RecentLines:
     runs : RunList[BlueskyRun]
         As runs are appended entries will be removed from the beginning of the
         last (first in, first out) so that there are at most ``max_runs``.
-    pinned_runs : RunList[BlueskyRun]
-        These runs will not be automatically removed.
+    pinned : Frozenset[String]
+        Run uids of pinned runs.
     figure : FigureSpec
     func : callable
     axes : AxesSpec
@@ -206,7 +206,7 @@ class RecentLines:
         self._func = func
 
         self.runs = RunList()
-        self.pinned_runs = RunList()
+        self._pinned = set()
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
         # Maps Run (uid) to LineSpec
@@ -214,8 +214,6 @@ class RecentLines:
 
         self.runs.events.added.connect(self._on_run_added)
         self.runs.events.removed.connect(self._on_run_removed)
-        self.pinned_runs.events.added.connect(self._on_run_added)
-        self.pinned_runs.events.removed.connect(self._on_run_removed)
 
         if axes is None:
             axes = AxesSpec(x_label=self.x, y_label=self.y)
@@ -236,9 +234,8 @@ class RecentLines:
             If True, retain this Run until it is removed by the user.
         """
         if pinned:
-            self.pinned_runs.append(run)
-        else:
-            self.runs.append(run)
+            self._pinned.add(run.metadata["start"]["uid"])
+        self.runs.append(run)
 
     def discard_run(self, run):
         """
@@ -251,8 +248,6 @@ class RecentLines:
         run : BlueskyRun
         """
         if run in self.runs:
-            self.runs.remove(run)
-        if run in self.pinned_runs:
             self.runs.remove(run)
 
     def _add_line(self, run):
@@ -272,7 +267,7 @@ class RecentLines:
         style = {"color": color}
 
         # Style pinned runs differently.
-        if run in self.pinned_runs:
+        if run.metadata["start"]["uid"] in self._pinned:
             style.update(linestyle="dashed")
             label += " (pinned)"
 
@@ -286,8 +281,11 @@ class RecentLines:
 
     def _cull_runs(self):
         "Remove Runs from the beginning of self.runs to keep the length <= max_runs."
-        while len(self.runs) > self.max_runs:
-            self.runs.pop(0)
+        i = 0
+        while len(self.runs) > self.max_runs + len(self._pinned):
+            while self.runs[i].metadata["start"]["uid"] in self._pinned:
+                i += 1
+            self.runs.pop(i)
 
     def _on_run_added(self, event):
         "When a new Run is added, draw a line or schedule it to be drawn."
@@ -302,6 +300,7 @@ class RecentLines:
     def _on_run_removed(self, event):
         "Remove the line if its corresponding Run is removed."
         run_uid = event.item.metadata["start"]["uid"]
+        self._pinned.discard(run_uid)
         try:
             line = self._runs_to_lines.pop(run_uid)
         except KeyError:
@@ -356,6 +355,10 @@ class RecentLines:
     @property
     def func(self):
         return self._func
+
+    @property
+    def pinned(self):
+        return frozenset(self._pinned)
 
 
 class AutoRecentLines:
@@ -456,10 +459,7 @@ class AutoRecentLines:
         run : BlueskyRun
         """
         for instance in self._key_to_instance.values():
-            if run in instance.runs:
-                instance.runs.remove(run)
-            if run in instance.pinned_runs:
-                instance.runs.remove(run)
+            instance.discard_run(run)
 
     def _handle_stream(self, run, stream_name, pinned):
         "This examines a stream and adds this run to RecentLines instances."
@@ -468,10 +468,7 @@ class AutoRecentLines:
                 instance = self._key_to_instance[key]
             except KeyError:
                 instance = self.new_instance_for_key(key)
-            if pinned:
-                instance.pinned_runs.append(run)
-            else:
-                instance.runs.append(run)
+            instance.add_run(run, pinned=pinned)
 
     def _on_figure_removed(self, event):
         """
