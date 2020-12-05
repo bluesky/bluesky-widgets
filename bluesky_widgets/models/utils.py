@@ -70,3 +70,71 @@ def construct_namespace(run):
     namespace.update({stream_name: run[stream_name].to_dask() for stream_name in run})
     namespace.update({"run": run})
     return namespace
+
+
+class BadExpression(Exception):
+    pass
+
+
+def call_or_eval(items, run, namespace=None):
+    """
+    Given a mix of callables and string expressions, do call or eval them.
+
+    Parameters
+    ----------
+    items : List[String | Callable]
+    run : BlueskyRun
+    namespace : Dict, optional
+
+    Returns
+    -------
+    results : List[Any]
+
+    Raises
+    ------
+    ValueError
+        If input is not String or Callable
+    BadExpression
+        If input is String and eval(...) raises an error
+    """
+    namespace_ = construct_namespace(run)
+    # Overlay user-provided namespace.
+    namespace_.update(namespace or {})
+    results = []
+    for item in items:
+        if callable(item):
+            results.append(item(run))
+        elif isinstance(item, str):
+            try:
+                results.append(eval(item, namespace_))
+            except Exception as err:
+                raise BadExpression(f"could not evaluate {item!r}") from err
+        else:
+            raise ValueError(
+                "expected callable or string, received {item!r} of "
+                "type {type(item).__name__}"
+            )
+    return results
+
+
+def auto_label(callable_or_expr):
+    """
+    Given a callable or a string, extract a name for labeling axes.
+
+    Parameters
+    ----------
+    callable_or_expr : String | Callable
+
+    Returns
+    -------
+    label : String
+    """
+    if callable(callable_or_expr):
+        return getattr(callable_or_expr, "__name__", repr(callable_or_expr))
+    elif isinstance(callable_or_expr, str):
+        return callable_or_expr
+    else:
+        raise ValueError(
+            "expected callable or string, received {callable_or_expr!r} of "
+            "type {type(callable_or_expr).__name__}"
+        )

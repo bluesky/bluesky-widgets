@@ -13,7 +13,7 @@ from .plot_specs import (
     FigureSpecList,
 )
 from ._heuristics import infer_lines_to_plot
-from .utils import RunList, run_is_live_and_not_completed, construct_namespace
+from .utils import auto_label, call_or_eval, RunList, run_is_live_and_not_completed
 from ..utils.list import EventedList
 from ..utils.dict_view import DictView
 
@@ -156,10 +156,18 @@ class RecentLines:
     ----------
     max_runs : Integer
         Number of lines to show at once
-    x : String
-        Field name or expression
-    ys : List[String]
-        Field names or expression
+    x : String | Callable
+        Field name (e.g. "theta") or expression (e.g. "- deg2rad(theta) / 2")
+        or callable with expected signature::
+
+            f(run: BlueskyRun) -> x: Array
+
+    ys : List[String | Callable]
+        Field name (e.g. "theta") or expression (e.g. "- deg2rad(theta) / 2")
+        or callable with expected signature::
+
+            f(run: BlueskyRun) -> y: Array
+
     label_maker : Callable, optional
         Expected signature::
 
@@ -185,12 +193,11 @@ class RecentLines:
     pinned : Frozenset[String]
         Run uids of pinned runs.
     figure : FigureSpec
-    func : callable
     axes : AxesSpec
-    x : String
-        Read-only access to x field name
-    ys : Tuple[String]
-        Read-only access to y field names
+    x : String | Callable
+        Read-only access to x
+    ys : Tuple[String | Callable]
+        Read-only access to ys
     needs_streams : FronzenSet[string]
         Read-only access to stream names needed
     namespace : Dict
@@ -265,7 +272,10 @@ class RecentLines:
             if len(ys) > 1:
 
                 def label_maker(run, y):
-                    return f"Scan {run.metadata['start'].get('scan_id', '?')} {y}"
+                    return (
+                        f"Scan {run.metadata['start'].get('scan_id', '?')} "
+                        f"{auto_label(y)}"
+                    )
 
             else:
 
@@ -286,29 +296,25 @@ class RecentLines:
         self._pinned = set()
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
-        # Maps Run (uid) to LineSpec
-        self._runs_to_lines = weakref.WeakValueDictionary()
+        # Maps Run (uid) to set of LineSpec UUIDs.
+        self._runs_to_lines = defaultdict(set)
 
         self.runs.events.added.connect(self._on_run_added)
         self.runs.events.removed.connect(self._on_run_removed)
 
         if axes is None:
-            if len(self.ys) == 1:
-                (y_label,) = self.ys
-            else:
-                y_label = repr(self.ys)
-            axes = AxesSpec(x_label=self.x, y_label=y_label)
-            figure = FigureSpec((axes,), title=f"{y_label} v {self.x}")
+            axes = AxesSpec(
+                x_label=auto_label(self.x),
+                y_label=", ".join(auto_label(y) for y in self.ys),
+            )
+            figure = FigureSpec((axes,), title=f"{axes.y_label} v {axes.x_label}")
         else:
             figure = axes.figure
         self.axes = axes
         self.figure = figure
 
     def _transform(self, run, x, y):
-        ns = construct_namespace(run)
-        # Apply any user-provided terms.
-        ns.update(self.namespace)
-        return eval(x, ns), eval(y, ns)
+        return call_or_eval((x, y), run, self.namespace)
 
     def add_run(self, run, pinned=False):
         """
@@ -651,7 +657,8 @@ class Image:
             def label_maker(run, field):
                 md = self.run.metadata["start"]
                 return (
-                    f"Scan ID {md.get('scan_id', '?')}   UID {md['uid'][:8]}   {field}"
+                    f"Scan ID {md.get('scan_id', '?')}   UID {md['uid'][:8]}   "
+                    f"{auto_label(field)}"
                 )
 
         self._label_maker = label_maker
@@ -690,10 +697,7 @@ class Image:
         # TODO Set axes x, y from xarray dims
 
     def _transform(self, run, field):
-        ns = construct_namespace(run)
-        # Apply any user-provided terms.
-        ns.update(self.namespace)
-        data = numpy.asarray(eval(field, ns))
+        (data,) = numpy.asarray(call_or_eval((field,), run, self.namespace))
         # Reduce the data until it is 2D by repeatedly averaging over
         # the leading axis until there only two axes.
         while data.ndim > 2:
