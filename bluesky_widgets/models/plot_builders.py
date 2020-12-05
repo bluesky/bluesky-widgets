@@ -2,7 +2,6 @@ from collections import defaultdict
 import collections.abc
 import functools
 import itertools
-import weakref
 
 import numpy
 
@@ -363,7 +362,7 @@ class RecentLines:
             func = functools.partial(self._transform, x=self.x, y=y)
             line = LineSpec(func, run, label, style)
             run_uid = run.metadata["start"]["uid"]
-            self._runs_to_lines[run_uid] = line
+            self._runs_to_lines[run_uid].add(line.uuid)
             self.axes.lines.append(line)
 
     def _cull_runs(self):
@@ -388,16 +387,14 @@ class RecentLines:
         "Remove the line if its corresponding Run is removed."
         run_uid = event.item.metadata["start"]["uid"]
         self._pinned.discard(run_uid)
-        try:
-            line = self._runs_to_lines.pop(run_uid)
-        except KeyError:
-            # The line has been removed before the Run was.
-            return
-        try:
+        line_uuids = self._runs_to_lines.pop(run_uid)
+        for line_uuid in line_uuids:
+            try:
+                line = self.axes.by_uuid[line_uuid]
+            except KeyError:
+                # The LineSpec was externally removed from the AxesSpec.
+                continue
             self.axes.lines.remove(line)
-        except ValueError:
-            # The line has been removed before the Run was.
-            pass
 
     def _on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."
@@ -409,11 +406,17 @@ class RecentLines:
         "When a run completes, update the color from back to a color."
         run_uid = event.run.metadata["start"]["uid"]
         try:
-            line = self._runs_to_lines[run_uid]
+            line_uuids = self._runs_to_lines[run_uid]
         except KeyError:
-            # The line has been removed before the Run completed.
+            # The Run has been removed before the Run completed.
             return
-        line.style.update({"color": next(self._color_cycle)})
+        for line_uuid in line_uuids:
+            try:
+                line = self.axes.by_uuid[line_uuid]
+            except KeyError:
+                # The LineSpec was externally removed from the AxesSpec.
+                continue
+            line.style.update({"color": next(self._color_cycle)})
 
     @property
     def max_runs(self):
