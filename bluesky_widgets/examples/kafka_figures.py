@@ -10,10 +10,7 @@ import os
 
 import msgpack
 import msgpack_numpy as mpn
-from bluesky import RunEngine
 from bluesky_kafka import BlueskyConsumer
-from bluesky.plans import scan
-from ophyd.sim import motor, det
 
 from bluesky_widgets.utils.streaming import stream_documents_into_runs
 from bluesky_widgets.models.plot_builders import AutoRecentLines
