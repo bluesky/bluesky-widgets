@@ -8,7 +8,7 @@ from ..utils import construct_namespace
 def test_namespace():
     "Test the contents of a namespace for eval-ing expressions with a run."
     run = build_simple_run({"motor": [1, 2], "det": [10, 20]})
-    namespace = construct_namespace(run)
+    namespace = construct_namespace(run, ["primary"])
 
     # Test entities from run....
     # the run itself
@@ -24,18 +24,47 @@ def test_namespace():
     assert numpy.array_equal(eval("3 + numpy.log(motor)", namespace), expected)
 
 
-def test_shadowing_of_run():
+def test_collision_with_the_name_run():
     "AHHH everything is named 'run'! The BlueskyRun should take precedence."
     with RunBuilder() as builder:
         builder.add_stream("run", data={"run": [1, 2]})
     run = builder.get_run()
-    namespace = construct_namespace(run)
+    namespace = construct_namespace(run, ["run"])
     assert eval("run", namespace) is run
 
 
-def test_shadowing_of_stream():
+def test_collision_of_stream_name_and_field_name():
     "If there is a field named 'primary', the stream should take precedence."
     run = build_simple_run({"primary": [1, 2], "det": [10, 20]})
-    namespace = construct_namespace(run)
+    namespace = construct_namespace(run, ["primary"])
     assert isinstance(eval("primary", namespace), xarray.Dataset)
     assert isinstance(eval("det", namespace), xarray.DataArray)
+
+
+def test_collision_of_fields_across_streams():
+    "The field in the stream listed first in needs_streams should take precedence."
+    with RunBuilder() as builder:
+        # Two streams, each with a field named "a".
+        builder.add_stream("primary", data={"a": [1, 2, 3, 2, 1]})
+        builder.add_stream("baseline", data={"a": [1, 1]})
+    run = builder.get_run()
+    namespace1 = construct_namespace(run, ["primary", "baseline"])
+    # We should get run.primary.read()["a"] here.
+    assert len(eval("a", namespace1)) == 5
+    namespace2 = construct_namespace(run, ["baseline", "primary"])
+    # We should get run.secondary.read()["a"] here.
+    assert len(eval("a", namespace2)) == 2
+
+
+def test_stream_omitted():
+    "A stream not in `needs_stream` should have it and its fields omitted."
+    with RunBuilder() as builder:
+        # Two streams, each with a field named "a".
+        builder.add_stream("primary", data={"a": [1, 2, 3, 2, 1]})
+        builder.add_stream("baseline", data={"b": [1, 1]})
+    run = builder.get_run()
+    namespace = construct_namespace(run, ["baseline"])
+    assert "a" not in namespace
+    assert "primary" not in namespace
+    assert "baseline" in namespace
+    assert "b" in namespace

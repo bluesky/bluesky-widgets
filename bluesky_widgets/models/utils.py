@@ -1,3 +1,5 @@
+import contextlib
+
 import numpy
 
 from ..utils.list import EventedList
@@ -24,9 +26,29 @@ def run_is_completed(run):
     return run.metadata["stop"] is not None
 
 
+def run_is_live(run):
+    "True if Run is 'live' (observable) based on a streaming source, not at rest."
+    return hasattr(run, "events")
+
+
 def run_is_live_and_not_completed(run):
     "True if Run is 'live' (observable) and not yet complete."
-    return hasattr(run, "events") and (not run_is_completed(run))
+    return run_is_live(run) and (not run_is_completed(run))
+
+
+@contextlib.contextmanager
+def lock_if_live(run):
+    """
+    Lock to prevent new data from being added, if this is a 'live' BlueskyRun.
+
+    If it is a BlueskyRun backed by data at rest (i.e. from databroker) do
+    nothing.
+    """
+    if run_is_live(run):
+        with run.write_lock:
+            yield
+    else:
+        yield
 
 
 # Make numpy functions accessible as (for example) log, np.log, and numpy.log.
@@ -34,7 +56,7 @@ _base_namespace = {"numpy": numpy, "np": numpy}
 _base_namespace.update({name: getattr(numpy, name) for name in numpy.__all__})
 
 
-def construct_namespace(run):
+def construct_namespace(run, stream_names):
     """
     Put the contents of a run into a namespace to ``eval`` expressions in.
 
@@ -44,30 +66,39 @@ def construct_namespace(run):
 
     The words available in these expressions include:
 
-    * All functions in numpy. They can be spelled as ``log``, ``np.log``, or
-      ``numpy.log``
-    * The columns in the "primary" stream of data, as in ``"I0"``
-    * All the streams, with the data accessible as items in a dict, as in
-      ``"primary['It']"`` or ``"baseline['motor']"``
     * The ``BlueskyRun`` itself, as ``"run"``, from which any data or metadata
       can be obtained
+    * All the streams, with the data accessible as items in a dict, as in
+      ``"primary['It']"`` or ``"baseline['motor']"``
+    * The columns in the streams given by stream_names, as in ``"I0"``. If a
+      column name appears in multiple streams, the streams earlier in the list
+      get precedence.
+    * All functions in numpy. They can be spelled as ``log``, ``np.log``, or
+      ``numpy.log``
 
-    In the event of name collisions, items lower in the list above will get
+    In the event of name collisions, items higher in the list above will get
     precedence.
 
     Parameters
     ----------
     run : BlueskyRun
+    stream_names : List[String]
 
     Returns
     -------
     namespace : Dict
     """
     namespace = dict(_base_namespace)  # shallow copy
-    if "primary" in run:
-        ds = run["primary"].to_dask()
-        namespace.update({column: ds[column] for column in ds})
-    namespace.update({stream_name: run[stream_name].to_dask() for stream_name in run})
+    with lock_if_live(run):
+        # Add columns from streams in stream_names. Earlier entries will get
+        # precedence.
+        for stream_name in reversed(stream_names):
+            print("stream_name", stream_name)
+            ds = run[stream_name].to_dask()
+            namespace.update({column: ds[column] for column in ds})
+        namespace.update(
+            {stream_name: run[stream_name].to_dask() for stream_name in stream_names}
+        )
     namespace.update({"run": run})
     return namespace
 
@@ -76,7 +107,7 @@ class BadExpression(Exception):
     pass
 
 
-def call_or_eval(items, run, namespace=None):
+def call_or_eval(items, run, stream_names, namespace=None):
     """
     Given a mix of callables and string expressions, do call or eval them.
 
@@ -84,6 +115,7 @@ def call_or_eval(items, run, namespace=None):
     ----------
     items : List[String | Callable]
     run : BlueskyRun
+    stream_names : List[String]
     namespace : Dict, optional
 
     Returns
@@ -97,23 +129,24 @@ def call_or_eval(items, run, namespace=None):
     BadExpression
         If input is String and eval(...) raises an error
     """
-    namespace_ = construct_namespace(run)
-    # Overlay user-provided namespace.
-    namespace_.update(namespace or {})
-    results = []
-    for item in items:
-        if callable(item):
-            results.append(item(run))
-        elif isinstance(item, str):
-            try:
-                results.append(eval(item, namespace_))
-            except Exception as err:
-                raise BadExpression(f"could not evaluate {item!r}") from err
-        else:
-            raise ValueError(
-                "expected callable or string, received {item!r} of "
-                "type {type(item).__name__}"
-            )
+    with lock_if_live(run):
+        namespace_ = construct_namespace(run, stream_names)
+        # Overlay user-provided namespace.
+        namespace_.update(namespace or {})
+        results = []
+        for item in items:
+            if callable(item):
+                results.append(item(run))
+            elif isinstance(item, str):
+                try:
+                    results.append(eval(item, namespace_))
+                except Exception as err:
+                    raise BadExpression(f"could not evaluate {item!r}") from err
+            else:
+                raise ValueError(
+                    "expected callable or string, received {item!r} of "
+                    "type {type(item).__name__}"
+                )
     return results
 
 

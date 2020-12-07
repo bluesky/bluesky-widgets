@@ -136,21 +136,9 @@ class RecentLines:
 
     This supports plotting columns like ``"I0"`` but also Python
     expressions like ``"5 * log(I0/It)"`` and even
-    ``"my_custom_function(I0)"``. See examples below.
-
-    The words available in these expressions include:
-
-    * All functions in numpy. They can be spelled as ``log``, ``np.log``, or
-      ``numpy.log``
-    * The columns in the "primary" stream of data, as in ``"I0"``
-    * All the streams, with the data accessible as items in a dict, as in
-      ``"primary['It']"`` or ``"baseline['motor']"``
-    * The ``BlueskyRun`` itself, as ``"run"``, from which any data or metadata
-      can be obtained
-    * Any user-provided words, specified in the ``namespace`` parameter.
-
-    In the event of name collisions, items lower in the list above will get
-    precedence.
+    ``"my_custom_function(I0)"``. See examples below. Consult
+    :func:``bluesky_widgets.models.utils.construct_namespace` for details
+    about the available variables.
 
     Parameters
     ----------
@@ -198,7 +186,7 @@ class RecentLines:
         Read-only access to x
     ys : Tuple[String | Callable]
         Read-only access to ys
-    needs_streams : FronzenSet[string]
+    needs_streams : Tuple[String]
         Read-only access to stream names needed
     namespace : Dict
         Read-only access to user-provided namespace
@@ -289,7 +277,7 @@ class RecentLines:
             raise ValueError("`ys` must be a list of strings, not a string")
         self._ys = tuple(ys)
         self._label_maker = label_maker
-        self._needs_streams = frozenset(needs_streams)
+        self._needs_streams = tuple(needs_streams)
         self._namespace = namespace
 
         self.runs = RunList()
@@ -314,7 +302,7 @@ class RecentLines:
         self.figure = figure
 
     def _transform(self, run, x, y):
-        return call_or_eval((x, y), run, self.namespace)
+        return call_or_eval((x, y), run, self.needs_streams, self.namespace)
 
     def add_run(self, run, pinned=False):
         """
@@ -383,7 +371,7 @@ class RecentLines:
         "When a new Run is added, draw a line or schedule it to be drawn."
         run = event.item
         # If the stream of interest is defined already, plot now.
-        if self.needs_streams.issubset(set(list(run))):
+        if set(self.needs_streams).issubset(set(list(run))):
             self._add_lines(run)
         else:
             # Otherwise, connect a callback to run when the stream of interest arrives.
@@ -404,7 +392,7 @@ class RecentLines:
 
     def _on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."
-        if self.needs_streams.issubset(set(list(event.run))):
+        if set(self.needs_streams).issubset(set(list(event.run))):
             self._add_lines(event.run)
             event.run.events.new_stream.disconnect(self._on_new_stream)
 
@@ -697,7 +685,9 @@ class Image:
         # TODO Set axes x, y from xarray dims
 
     def _transform(self, run, field):
-        (data,) = numpy.asarray(call_or_eval((field,), run, self.namespace))
+        (data,) = numpy.asarray(
+            call_or_eval((field,), run, self.needs_streams, self.namespace)
+        )
         # Reduce the data until it is 2D by repeatedly averaging over
         # the leading axis until there only two axes.
         while data.ndim > 2:

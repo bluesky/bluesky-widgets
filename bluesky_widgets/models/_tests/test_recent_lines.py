@@ -52,7 +52,7 @@ def test_properties():
     assert model.x == "c * motor"
     assert model.ys == ("det",)
     assert dict(model.namespace) == {"c": 3}
-    assert model.needs_streams == frozenset({"primary"})
+    assert model.needs_streams == ("primary",)
 
 
 def test_decrease_max_runs():
