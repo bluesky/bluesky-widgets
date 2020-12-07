@@ -21,6 +21,7 @@ from ..utils.dict_view import DictView
 def _initialize_matplotlib():
     "Set backend to Qt5Agg and import pyplot."
     import matplotlib
+
     matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
     import matplotlib.pyplot  # noqa
 

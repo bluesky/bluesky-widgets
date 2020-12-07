@@ -10,6 +10,7 @@ from ..utils.dict_view import DictView
 def _initialize_mpl():
     "Set backend to ipympl and import pyplot."
     import matplotlib
+
     matplotlib.use(
         "module://ipympl.backend_nbagg"
     )  # must set before importing matplotlib.pyplot
@@ -106,9 +107,7 @@ class JupyterFigure(widgets.HBox):
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = MatplotlibAxes(
-                model=axes_spec, axes=axes
-            )
+            self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
