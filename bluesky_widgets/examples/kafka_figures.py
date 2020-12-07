@@ -10,8 +10,30 @@ import os
 
 import msgpack
 import msgpack_numpy as mpn
-
+from bluesky import RunEngine
 from bluesky_kafka import BlueskyConsumer
+from bluesky.plans import scan
+from ophyd.sim import motor, det
+
+from bluesky_widgets.utils.streaming import stream_documents_into_runs
+from bluesky_widgets.models.plot_builders import AutoRecentLines
+from bluesky_widgets.headless.figures import HeadlessFigures
+from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+
+class ThumbnailGenerator:
+    def __init__(self):
+        self.model = AutoRecentLines(3)
+        self.view = HeadlessFigures(model.figures)
+
+    def __call__(self, topic, name, doc):
+
+    def finish_run(self):
+        stream_documents_into_runs(self.model.add_run))
+        directory = tempfile.mkdtemp()
+        filenames = view.export_all(directory)
+        print("\n".join(f'"{filename}"' for filename in filenames))
+
+thumbnail_generator = ThumbnailGenerator()
 
 bootstrap_servers = "127.0.0.1:9092"
 kafka_deserializer = partial(msgpack.loads, object_hook=mpn.decode)
@@ -22,12 +44,12 @@ consumer_config = {
                 "auto.commit.interval.ms": 100,
             }
 
- bluesky_consumer = BlueskyConsumer(
+bluesky_consumer = BlueskyConsumer(
                 topics=topics,
                 bootstrap_servers=kafka_bootstrap_servers,
                 group_id="widgets_test",
                 consumer_config=consumer_config,
-                process_document=put_document_in_queue,
+                process_document=thumbnail_generator,
             )
 
 bluesky_consumer.start()
