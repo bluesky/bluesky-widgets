@@ -1,31 +1,21 @@
 import collections.abc
 
 from ipywidgets import widgets
-import matplotlib
 
 from ..models.plot_specs import FigureSpec, FigureSpecList
 from .._matplotlib_axes import MatplotlibAxes
 from ..utils.dict_view import DictView
 
 
-class _PatchedMatplotlibAxes(MatplotlibAxes):
-    """
-    Workaround an issue in ipympl we do not yet fully understand.
-
-    During the execution of the cell that first creates the figure, draw_idle()
-    does not display updates, but draw() does. Thereafter, draw_idle() is
-    sufficient, which suggests that there is a better, less aggressive fix for
-    this.
-
-    Progress toward removal of this workaround is tracked at
-    https://github.com/bluesky/bluesky-widgets/pull/54
-    """
-
-    def draw_idle(self):
-        # HACK! Use draw instead of draw_idle(). This changes the behavior by
-        # drawing *every* update, not just updates the the UI is ready to
-        # receive.
-        self.axes.figure.canvas.draw()
+def _initialize_mpl():
+    "Set backend to ipympl and import pyplot."
+    import matplotlib
+    matplotlib.use(
+        "module://ipympl.backend_nbagg"
+    )  # must set before importing matplotlib.pyplot
+    # must import matplotlib.pyplot here because bluesky.utils.during_task
+    # expects it to be imported
+    import matplotlib.pyplot as plt  # noqa
 
 
 class JupyterFigures(widgets.Tab):
@@ -34,6 +24,7 @@ class JupyterFigures(widgets.Tab):
     """
 
     def __init__(self, model: FigureSpecList, *args, **kwargs):
+        _initialize_mpl()
         super().__init__(*args, **kwargs)
         self.model = model
         # Map Figure UUID to widget with JupyterFigureTab
@@ -108,13 +99,14 @@ class JupyterFigure(widgets.HBox):
     """
 
     def __init__(self, model: FigureSpec):
+        _initialize_mpl()
         super().__init__()
         self.model = model
         self.figure, self.axes_list = _make_figure(model)
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = _PatchedMatplotlibAxes(
+            self._axes[axes_spec.uuid] = MatplotlibAxes(
                 model=axes_spec, axes=axes
             )
         self.children = (self.figure.canvas,)
@@ -128,7 +120,7 @@ class JupyterFigure(widgets.HBox):
         # matplotlib) is not displayed until cell execution completes.
         _, _, width, height = self.figure.bbox.bounds
         self.figure.canvas.manager.resize(width, height)
-        self.figure.canvas.draw()
+        self.figure.canvas.draw_idle()
 
         # The FigureSpec model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
@@ -144,7 +136,7 @@ class JupyterFigure(widgets.HBox):
 
     def _redraw(self):
         "Redraw the canvas."
-        self.figure.canvas.draw()
+        self.figure.canvas.draw_idle()
 
     def close_figure(self):
         self.figure.canvas.close()
@@ -182,10 +174,10 @@ class _JupyterFigureTab(widgets.HBox):
 
 def _make_figure(figure_spec):
     "Create a Figure and Axes."
-    matplotlib.use(
-        "module://ipympl.backend_nbagg"
-    )  # must set before importing matplotlib.pyplot
-    import matplotlib.pyplot as plt  # noqa
+    # This import must be deferred until after the matplotlib backend is set,
+    # which happens when a JupyterFigure or JupyterFigures is instantiated
+    # for the first time.
+    import matplotlib.pyplot as plt
 
     # By default, with interactive mode on, each fig.show() will be called
     # automatically, and we'll get duplicates littering the output area. We
