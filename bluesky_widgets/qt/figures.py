@@ -197,7 +197,7 @@ def _make_figure(figure_spec):
     # but verify that number of axes created matches the number of axes
     # specified.
     fig, axes = plt.subplots(len(figure_spec.axes))
-    # Handl return type instability in plt.subplots.
+    # Handle return type instability in plt.subplots.
     if not isinstance(axes, collections.abc.Iterable):
         axes = [axes]
     return fig, axes
