@@ -99,3 +99,37 @@ def test_call_or_eval_with_user_namespace():
     thing = object()
     (result,) = call_or_eval(("thing",), run, [], namespace={"thing": thing})
     assert result is thing
+
+
+def test_call_or_eval_magical_signature_inspection():
+    "Test magical signature inspection."
+    run = build_simple_run({"motor": [1, 2], "det": [10, 20]})
+
+    def func1(motor, det):
+        "Access fields by name."
+        return motor + det
+
+    (result,) = call_or_eval((func1,), run, ["primary"])
+    assert numpy.array_equal(result, [11, 22])
+
+    def func2(primary):
+        "Access a stream by name."
+        return primary["motor"]
+
+    (result,) = call_or_eval((func2,), run, ["primary"])
+    assert numpy.array_equal(result, [1, 2])
+
+    def func3(does_not_exist):
+        "Test a missing variable."
+        return primary["motor"]
+
+    with pytest.raises(ValueError, match="Cannot find match for.*"):
+        call_or_eval((func3,), run, ["primary"])
+
+    def func4(thing):
+        "Test an item in the user-provided namespace."
+        return thing
+
+    thing = object()
+    (result,) = call_or_eval((func4,), run, [], namespace={"thing": thing})
+    assert result is thing

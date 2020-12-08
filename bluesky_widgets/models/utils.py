@@ -1,5 +1,6 @@
 import ast
 import contextlib
+import inspect
 
 import numpy
 
@@ -111,13 +112,15 @@ class BadExpression(Exception):
 
 def call_or_eval(items, run, stream_names, namespace=None):
     """
-    Given a mix of callables and string expressions, do call or eval them.
+    Given a mix of callables and string expressions, call or eval them.
 
     Parameters
     ----------
     items : List[String | Callable]
-        Each item must be a stream name, field name, or valid Python
-        expression.
+        Each item must be a stream name, field name, a valid Python
+        expression, or a callable. The signature of the callable may include
+        any valid Python identifiers provideed by :func:`construct_namespace`
+        or the user-provided namespace parmeter below. See examples.
     run : BlueskyRun
     stream_names : List[String]
     namespace : Dict, optional
@@ -132,17 +135,53 @@ def call_or_eval(items, run, stream_names, namespace=None):
         If input is not String or Callable
     BadExpression
         If input is String and eval(...) raises an error
+
+    Examples
+    --------
+
+    A function can have access to the whole BlueskyRun.
+
+    >>> def f(run):
+    ...     ds = run.primary.read()
+    ...     return (ds["a"] - ds["b"]) / (ds["a"] + ds["b"])
+    ...
+    >>> call_or_eval([f], run, ["primary"])
+
+    But, it also provides a more "magical" option in support of brevity.
+    The signature may include parameters with the names streams or fields. The
+    names in the signature are significant and will determine what parameters
+    the function is called with.
+
+    >>> def f(a, b):
+    ...     return (a - b) / (a + b)
+    ...
+    >>> call_or_eval([f], run, ["primary"])
+
+    Equivalently, as a lambda function:
+    >>> call_or_eval([lambda a, b: (a - b) / (a + b)], run, ["primary"])
     """
     with lock_if_live(run):
         namespace_ = construct_namespace(run, stream_names)
         # Overlay user-provided namespace.
         namespace_.update(namespace or {})
-        del namespace  # Avoid conflating namespace and _namespace below.
+        del namespace  # Avoid conflating namespace and namespace_ below.
         results = []
         for item in items:
             # If it is a callable, call it.
             if callable(item):
-                results.append(item(run))
+                # Inspect the callable's signature. For each parameter, find an
+                # item in our namespace with a matching name. This is similar
+                # to the "magic" of pytest fixtures.
+                parameters = inspect.signature(item).parameters
+                kwargs = {}
+                for name, parameter in parameters.items():
+                    try:
+                        kwargs[name] = namespace_[name]
+                    except KeyError:
+                        if parameter.default is parameter.empty:
+                            raise ValueError(f"Cannot find match for parameter {name}")
+                        # Otherwise, it's an optional parameter, so skip it.
+                results.append(item(**kwargs))
             elif isinstance(item, str):
                 # If it is a key in our namespace, look it up.
                 try:

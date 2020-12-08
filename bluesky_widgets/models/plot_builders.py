@@ -203,7 +203,7 @@ class RecentLines:
     >>> model.add_run(another_run, pinned=True)
 
     Plot a mathematical transformation of the columns using any object in
-    numpy.
+    numpy. This can be given as a string expression:
 
     >>> model = RecentLines(3, "abs(motor)", ["-log(det)"])
     >>> model = RecentLines(3, "abs(motor)", ["pi * det"])
@@ -230,14 +230,19 @@ class RecentLines:
     >>> model = RecentLines(3, "motor", ["savgol(intensity, 5, 2)"],
     ...                     namespace=namespace)
 
-    Custom, user-defined objects may be added in the same way.
+    Or you may pass in a function. It will be passed parameters according to
+    their names.
 
-    >>> def f(data):
-    ...     ...
-    ...
-    >>> namespace = {"my_custom_function": f}
-    >>> model = RecentLines(3, "motor", ["my_custom_function(intensity)"],
-    ...                     namespace=namespace)
+    >>> model = RecentLines(3, "motor", [lambda intensity: savgol(intensity, 5, 2)])
+
+    More examples of this function-based usage:
+
+    >>> model = RecentLines(3, "abs(motor)", [lambda det: -log(det)])
+    >>> model = RecentLines(3, "abs(motor)", [lambda det, pi: pi * det])
+    >>> model = RecentLines(3, "abs(motor)", [lambda det, np: np.sqrt(det)])
+
+    Custom, user-defined objects may be added in the same way, either by adding
+    names to the namespace or providing the functions directly.
     """
 
     def __init__(
