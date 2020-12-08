@@ -46,6 +46,8 @@ def test_pinned():
     assert len(model.figure.axes[0].lines) == num_ys * MAX_RUNS
     assert pinned_run not in model.runs
 
+    view.close()
+
 
 def test_properties():
     "Touch various accessors"
@@ -58,6 +60,8 @@ def test_properties():
     assert model.ys == ("det",)
     assert dict(model.namespace) == {"c": 3}
     assert model.needs_streams == ("primary",)
+
+    view.close()
 
 
 def test_decrease_max_runs():
@@ -74,15 +78,19 @@ def test_decrease_max_runs():
     assert len(model.runs) == MAX_RUNS
     assert len(model.figure.axes[0].lines) == MAX_RUNS
 
+    view.close()
+
 
 @pytest.mark.parametrize("expr", ["det / det2", "-log(det)", "np.sqrt(det)"])
 def test_expressions(expr):
     "Test RecentLines with 'pinned' and un-pinned runs."
     ys = [expr]
-    num_ys = len(ys)
     model = RecentLines(MAX_RUNS, "motor", ys)
     view = HeadlessFigure(model.figure)
     model.add_run(runs[0])
+    assert len(model.figure.axes[0].lines) == 1
+
+    view.close()
 
 
 @pytest.mark.parametrize(
@@ -96,7 +104,9 @@ def test_expressions(expr):
 def test_functions(func):
     "Test RecentLines with 'pinned' and un-pinned runs."
     ys = [func]
-    num_ys = len(ys)
     model = RecentLines(MAX_RUNS, "motor", ys)
     view = HeadlessFigure(model.figure)
     model.add_run(runs[0])
+    assert len(model.figure.axes[0].lines) == 1
+
+    view.close()
