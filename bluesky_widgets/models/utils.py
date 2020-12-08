@@ -1,3 +1,4 @@
+import ast
 import contextlib
 
 import numpy
@@ -58,7 +59,7 @@ _base_namespace.update({name: getattr(numpy, name) for name in numpy.__all__})
 
 def construct_namespace(run, stream_names):
     """
-    Put the contents of a run into a namespace to ``eval`` expressions in.
+    Put the contents of a run into a namespace to lookup in or ``eval`` expressions in.
 
     This is used by the plot builders to support usages like
 
@@ -115,6 +116,8 @@ def call_or_eval(items, run, stream_names, namespace=None):
     Parameters
     ----------
     items : List[String | Callable]
+        Each item must be a stream name, field name, or valid Python
+        expression.
     run : BlueskyRun
     stream_names : List[String]
     namespace : Dict, optional
@@ -137,23 +140,37 @@ def call_or_eval(items, run, stream_names, namespace=None):
         del namespace  # Avoid conflating namespace and _namespace below.
         results = []
         for item in items:
+            # If it is a callable, call it.
             if callable(item):
                 results.append(item(run))
             elif isinstance(item, str):
+                # If it is a key in our namespace, look it up.
                 try:
-                    # This is handle field or streamnames with spaces in them.
+                    # This handles field or stream names that are not valid
+                    # Python identifiers (e.g. ones with spaces in them).
                     results.append(namespace_[item])
                     continue
                 except KeyError:
                     pass
+                # Check whether it is valid Python syntax.
+                try:
+                    ast.parse(item)
+                except SyntaxError as err:
+                    raise ValueError(
+                        f"Could find {item!r} in namespace or parse it as "
+                        "a Python expression."
+                    ) from err
+                # Try to evaluate it as a Python expression in the namespace.
                 try:
                     results.append(eval(item, namespace_))
                 except Exception as err:
-                    raise BadExpression(f"could not evaluate {item!r}") from err
+                    raise ValueError(
+                        f"Could find {item!r} in namespace or evaluate it."
+                    ) from err
             else:
                 raise ValueError(
-                    "expected callable or string, received {item!r} of "
-                    "type {type(item).__name__}"
+                    f"expected callable or string, received {item!r} of "
+                    f"type {type(item).__name__}"
                 )
     return results
 

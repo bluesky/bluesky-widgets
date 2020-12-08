@@ -1,8 +1,9 @@
 from bluesky_live.run_builder import build_simple_run, RunBuilder
 import numpy
 import xarray
+import pytest
 
-from ..utils import construct_namespace
+from ..utils import call_or_eval, construct_namespace
 
 
 def test_namespace():
@@ -79,3 +80,22 @@ def test_names_with_spaces():
     namespace = construct_namespace(run, ["some stream"])
     assert "some stream" in namespace
     assert "some field" in namespace
+
+
+def test_call_or_eval_errors():
+    "Test that various failrue modes raise expected errors."
+    run = build_simple_run({"motor": [1, 2], "det": [10, 20]})
+    with pytest.raises(ValueError, match=".*callable or string.*"):
+        call_or_eval((1,), run, ["primary"])
+    with pytest.raises(ValueError, match=".*parse.*"):
+        call_or_eval(("invalid***syntax",), run, ["primary"])
+    with pytest.raises(ValueError, match=".*evaluate.*"):
+        call_or_eval(("missing_key",), run, ["primary"])
+
+
+def test_call_or_eval_with_user_namespace():
+    "Test that user-injected items in the namespace are found."
+    run = build_simple_run({"motor": [1, 2], "det": [10, 20]})
+    thing = object()
+    (result,) = call_or_eval(("thing",), run, [], namespace={"thing": thing})
+    assert result is thing
