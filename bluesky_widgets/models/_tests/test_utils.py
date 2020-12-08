@@ -121,7 +121,7 @@ def test_call_or_eval_magical_signature_inspection():
 
     def func3(does_not_exist):
         "Test a missing variable."
-        return primary["motor"]
+        ...
 
     with pytest.raises(ValueError, match="Cannot find match for.*"):
         call_or_eval((func3,), run, ["primary"])
