@@ -134,6 +134,7 @@ def call_or_eval(items, run, stream_names, namespace=None):
         namespace_ = construct_namespace(run, stream_names)
         # Overlay user-provided namespace.
         namespace_.update(namespace or {})
+        del namespace  # Avoid conflating namespace and _namespace below.
         results = []
         for item in items:
             if callable(item):
@@ -141,7 +142,8 @@ def call_or_eval(items, run, stream_names, namespace=None):
             elif isinstance(item, str):
                 try:
                     # This is handle field or streamnames with spaces in them.
-                    results.append(namespace[item])
+                    results.append(namespace_[item])
+                    continue
                 except KeyError:
                     pass
                 try:
