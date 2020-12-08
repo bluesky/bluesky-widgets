@@ -3,7 +3,8 @@ Run like:
 
 python -m bluesky_widgets.examples.utils.stream_data_kafka
 
-It will publish a run to kafka running on localhost:9092
+It will publish Bluesky documents to kafka running on localhost:9092
+until stopped.
 """
 import asyncio
 import logging

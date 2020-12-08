@@ -1,9 +1,9 @@
 """
 Run like:
 
-python -m bluesky_widgets.examples.headless_figures
+python -m bluesky_widgets.examples.kafka_figures
 
-and it will print to stdout the names of the figures that it creates, one per line
+It will save a png file to ~/bluesky_widgets_test/{run_uid} for each run.
 """
 from pathlib import Path
 from functools import partial
