@@ -1,5 +1,8 @@
-from ..plot_builders import RecentLines
 from bluesky_live.run_builder import build_simple_run
+import pytest
+
+from ..plot_builders import RecentLines
+from ...headless.figures import HeadlessFigure
 
 
 # Make some runs to use.
@@ -18,6 +21,7 @@ def test_pinned():
     ys = ["det", "det2"]
     num_ys = len(ys)
     model = RecentLines(MAX_RUNS, "motor", ys)
+    view = HeadlessFigure(model.figure)
 
     # Add MAX_RUNS and then some more and check that they do get bumped off.
     for run in runs[:5]:
@@ -46,6 +50,7 @@ def test_pinned():
 def test_properties():
     "Touch various accessors"
     model = RecentLines(MAX_RUNS, "c * motor", ["det"], namespace={"c": 3})
+    view = HeadlessFigure(model.figure)
     model.run = runs[0]
     assert model.run is runs[0]
     assert model.max_runs == MAX_RUNS
@@ -59,6 +64,7 @@ def test_decrease_max_runs():
     "Decreasing max_runs should remove the runs and their associated lines."
     INITIAL_MAX_RUNS = 5
     model = RecentLines(5, "motor", ["det"], namespace={"c": 3})
+    view = HeadlessFigure(model.figure)
     for run in runs[:5]:
         model.add_run(run)
     assert len(model.runs) == INITIAL_MAX_RUNS
