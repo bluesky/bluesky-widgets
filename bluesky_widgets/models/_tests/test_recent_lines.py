@@ -73,3 +73,30 @@ def test_decrease_max_runs():
     model.max_runs = MAX_RUNS
     assert len(model.runs) == MAX_RUNS
     assert len(model.figure.axes[0].lines) == MAX_RUNS
+
+
+@pytest.mark.parametrize("expr", ["det / det2", "-log(det)", "np.sqrt(det)"])
+def test_expressions(expr):
+    "Test RecentLines with 'pinned' and un-pinned runs."
+    ys = [expr]
+    num_ys = len(ys)
+    model = RecentLines(MAX_RUNS, "motor", ys)
+    view = HeadlessFigure(model.figure)
+    model.add_run(runs[0])
+
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        lambda det, det2: det / det2,
+        lambda det, log: -log(det),
+        lambda det, np: np.sqrt(det),
+    ],
+)
+def test_functions(func):
+    "Test RecentLines with 'pinned' and un-pinned runs."
+    ys = [func]
+    num_ys = len(ys)
+    model = RecentLines(MAX_RUNS, "motor", ys)
+    view = HeadlessFigure(model.figure)
+    model.add_run(runs[0])
