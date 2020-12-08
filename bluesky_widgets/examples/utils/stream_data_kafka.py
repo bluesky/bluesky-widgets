@@ -33,10 +33,6 @@ def stream_example_data(quiet=False):
                 bootstrap_servers=bootstrap_servers,
                 producer_config=producer_config,
             )
-            log.info(
-            f"Writing example data into directory {data_path!s}. "
-            "It will be deleted when this process is stopped."
-        )
 
     motor.delay = 0.22
     det.kind = "hinted"
