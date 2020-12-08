@@ -50,5 +50,5 @@ if __name__ == "__main__":
                     consumer_config=consumer_config,
                 )
 
-    dispatcher.subscribe(dispathcher.subscribe(export_thumbnails_when_complete))
+    dispatcher.subscribe(dispatcher.subscribe(export_thumbnails_when_complete))
     dispatcher.start()
