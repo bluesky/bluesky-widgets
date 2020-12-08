@@ -96,6 +96,7 @@ def construct_namespace(run, stream_names):
             print("stream_name", stream_name)
             ds = run[stream_name].to_dask()
             namespace.update({column: ds[column] for column in ds})
+            namespace.update({column: ds[column] for column in ds.coords})
         namespace.update(
             {stream_name: run[stream_name].to_dask() for stream_name in stream_names}
         )
