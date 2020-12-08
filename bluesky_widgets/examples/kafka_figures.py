@@ -16,7 +16,7 @@ from bluesky_widgets.utils.streaming import stream_documents_into_runs
 from bluesky_widgets.models.plot_builders import AutoRecentLines
 from bluesky_widgets.headless.figures import HeadlessFigures
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
-
+from bluesky_widgets.models.utils import run_is_live_and_not_completed
 
 def export_thumbnails_when_complete(run):
     "Given a BlueskyRun, export thumbnail(s) to a directory when it completes."
