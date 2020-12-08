@@ -5,6 +5,7 @@ python -m bluesky_widgets.examples.headless_figures
 
 and it will print to stdout the names of the figures that it creates, one per line
 """
+from pathlib import Path
 from functools import partial
 import os
 
@@ -24,7 +25,10 @@ def export_thumbnails_when_complete(run):
     model.add_run(run)
     view = HeadlessFigures(model.figures)
 
-    directory = "the uid or something"
+    home = str(Path.home())
+    directory = os.path.join(home, "bluesky_widgets_test")
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
   # If the Run is already done by the time we got it, export now.
     # Otherwise, schedule it to export whenever it finishes.
