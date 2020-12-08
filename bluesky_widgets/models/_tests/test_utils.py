@@ -68,3 +68,14 @@ def test_stream_omitted():
     assert "primary" not in namespace
     assert "baseline" in namespace
     assert "b" in namespace
+
+
+def test_names_with_spaces():
+    "Names with spaces cannot be eval-ed, but they can be looked up."
+    with RunBuilder() as builder:
+        # Two streams, each with a field named "a".
+        builder.add_stream("some stream", data={"some field": [1, 2, 3, 2, 1]})
+    run = builder.get_run()
+    namespace = construct_namespace(run, ["some stream"])
+    assert "some stream" in namespace
+    assert "some field" in namespace

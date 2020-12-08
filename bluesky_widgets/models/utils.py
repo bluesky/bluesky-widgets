@@ -140,6 +140,11 @@ def call_or_eval(items, run, stream_names, namespace=None):
                 results.append(item(run))
             elif isinstance(item, str):
                 try:
+                    # This is handle field or streamnames with spaces in them.
+                    results.append(namespace[item])
+                except KeyError:
+                    pass
+                try:
                     results.append(eval(item, namespace_))
                 except Exception as err:
                     raise BadExpression(f"could not evaluate {item!r}") from err
