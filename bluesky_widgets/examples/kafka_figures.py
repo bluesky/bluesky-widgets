@@ -26,7 +26,9 @@ def export_thumbnails_when_complete(run):
     view = HeadlessFigures(model.figures)
 
     home = str(Path.home())
-    directory = os.path.join(home, "bluesky_widgets_test")
+    base_directory = os.path.join(home, "bluesky_widgets_test")
+    uid = run.metadata['start']['uid']
+    directory = os.path.join(base_directory, uid)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -49,10 +51,10 @@ if __name__ == "__main__":
 
     dispatcher = RemoteDispatcher(
                     topics=topics,
-                    bootstrap_servers=kafka_bootstrap_servers,
+                    bootstrap_servers=bootstrap_servers,
                     group_id="widgets_test",
                     consumer_config=consumer_config,
                 )
 
-    dispatcher.subscribe(dispatcher.subscribe(export_thumbnails_when_complete))
+    dispatcher.subscribe(stream_documents_into_runs(export_thumbnails_when_complete))
     dispatcher.start()
