@@ -27,6 +27,8 @@ def export_thumbnails_when_complete(run):
 
     home = str(Path.home())
     base_directory = os.path.join(home, "bluesky_widgets_test")
+    if not os.path.exists(base_directory):
+        os.makedirs(base_directory)
     uid = run.metadata['start']['uid']
     directory = os.path.join(base_directory, uid)
     if not os.path.exists(directory):
