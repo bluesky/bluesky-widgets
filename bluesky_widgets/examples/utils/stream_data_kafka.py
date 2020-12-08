@@ -61,7 +61,6 @@ def stream_example_data(quiet=False):
 
 
 if __name__ == "__main__":
-    import logging
     import sys
 
     quiet = (len(sys.argv) > 1) and (sys.argv[1] in ("--quiet", "-q"))
