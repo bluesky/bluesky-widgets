@@ -1,8 +1,8 @@
 import tempfile
 from suitcase.msgpack import Serializer
 from bluesky import RunEngine
-from bluesky.plans import count, scan
-from ophyd.sim import det, motor, SynSignal
+from bluesky.plans import count, scan, grid_scan
+from ophyd.sim import det, motor, SynSignal, det4, motor1, motor2
 import numpy as np
 
 from databroker._drivers.msgpack import BlueskyMsgpackCatalog
@@ -20,6 +20,10 @@ def get_catalog():
             RE(scan([det], motor, -1, 1, 5 * i), serializer)
     with Serializer(directory) as serializer:
         RE(count([random_img], 3), serializer)
+    with Serializer(directory) as serializer:
+        RE(grid_scan([det4],
+                     motor1, -1, 1, 3,
+                     motor2, -1, 1, 5), serializer)
 
     catalog = BlueskyMsgpackCatalog(f"{directory}/*.msgpack")
     return catalog
