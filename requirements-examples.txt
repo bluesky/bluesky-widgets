@@ -1,0 +1,6 @@
+# These are required for running most of the examples.
+bluesky
+databroker
+ophyd>=1.5.3
+pyzmq
+suitcase-msgpack
