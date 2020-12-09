@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>bluesky_widgets.qt.figures &mdash; bluesky-widgets 0.0.5b1.post10+gd46dcdf documentation</title>
+  <title>bluesky_widgets.qt.figures &mdash; bluesky-widgets 0.0.5b1.post52+ga4cf447 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.0.5b1.post10+gd46dcdf
+                0.0.5b1.post52+ga4cf447
               </div>
             
           
@@ -172,12 +172,19 @@
     <span class="n">FigureCanvasQTAgg</span> <span class="k">as</span> <span class="n">FigureCanvas</span><span class="p">,</span>
     <span class="n">NavigationToolbar2QT</span> <span class="k">as</span> <span class="n">NavigationToolbar</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span>
 
 <span class="kn">from</span> <span class="nn">..models.plot_specs</span> <span class="kn">import</span> <span class="n">FigureSpec</span><span class="p">,</span> <span class="n">FigureSpecList</span>
 <span class="kn">from</span> <span class="nn">.._matplotlib_axes</span> <span class="kn">import</span> <span class="n">MatplotlibAxes</span>
 <span class="kn">from</span> <span class="nn">..utils.event</span> <span class="kn">import</span> <span class="n">Event</span>
 <span class="kn">from</span> <span class="nn">..utils.dict_view</span> <span class="kn">import</span> <span class="n">DictView</span>
+
+
+<span class="k">def</span> <span class="nf">_initialize_matplotlib</span><span class="p">():</span>
+    <span class="s2">&quot;Set backend to Qt5Agg and import pyplot.&quot;</span>
+    <span class="kn">import</span> <span class="nn">matplotlib</span>
+
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Qt5Agg&quot;</span><span class="p">)</span>  <span class="c1"># must set before importing matplotlib.pyplot</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span>  <span class="c1"># noqa</span>
 
 
 <span class="k">class</span> <span class="nc">ThreadsafeMatplotlibAxes</span><span class="p">(</span><span class="n">QObject</span><span class="p">,</span> <span class="n">MatplotlibAxes</span><span class="p">):</span>
@@ -209,6 +216,7 @@
     <span class="n">__callback_event</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">Event</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">FigureSpecList</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">_initialize_matplotlib</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setTabsClosable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tabCloseRequested</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_close_tab_requested</span><span class="p">)</span>
@@ -307,6 +315,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">FigureSpec</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">_initialize_matplotlib</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes_list</span> <span class="o">=</span> <span class="n">_make_figure</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -351,14 +360,16 @@
 
 <span class="k">def</span> <span class="nf">_make_figure</span><span class="p">(</span><span class="n">figure_spec</span><span class="p">):</span>
     <span class="s2">&quot;Create a Figure and Axes.&quot;</span>
-    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Qt5Agg&quot;</span><span class="p">)</span>  <span class="c1"># must set before importing matplotlib.pyplot</span>
-    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>  <span class="c1"># noqa</span>
+    <span class="c1"># This import must be deferred until after the matplotlib backend is set,</span>
+    <span class="c1"># which happens when a QtFigure or QtFigures is instantiated</span>
+    <span class="c1"># for the first time.</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
     <span class="c1"># TODO Let FigureSpec give different options to subplots here,</span>
     <span class="c1"># but verify that number of axes created matches the number of axes</span>
     <span class="c1"># specified.</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">figure_spec</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
-    <span class="c1"># Handl return type instability in plt.subplots.</span>
+    <span class="c1"># Handle return type instability in plt.subplots.</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
         <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">axes</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span>

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>bluesky_widgets.models.plot_builders &mdash; bluesky-widgets 0.0.5b1.post10+gd46dcdf documentation</title>
+  <title>bluesky_widgets.models.plot_builders &mdash; bluesky-widgets 0.0.5b1.post52+ga4cf447 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.0.5b1.post10+gd46dcdf
+                0.0.5b1.post52+ga4cf447
               </div>
             
           
@@ -328,8 +328,8 @@
 <span class="sd">    runs : RunList[BlueskyRun]</span>
 <span class="sd">        As runs are appended entries will be removed from the beginning of the</span>
 <span class="sd">        last (first in, first out) so that there are at most ``max_runs``.</span>
-<span class="sd">    pinned_runs : RunList[BlueskyRun]</span>
-<span class="sd">        These runs will not be automatically removed.</span>
+<span class="sd">    pinned : Frozenset[String]</span>
+<span class="sd">        Run uids of pinned runs.</span>
 <span class="sd">    figure : FigureSpec</span>
 <span class="sd">    func : callable</span>
 <span class="sd">    axes : AxesSpec</span>
@@ -367,7 +367,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_func</span> <span class="o">=</span> <span class="n">func</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">runs</span> <span class="o">=</span> <span class="n">RunList</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span> <span class="o">=</span> <span class="n">RunList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pinned</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_color_cycle</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
         <span class="c1"># Maps Run (uid) to LineSpec</span>
@@ -375,8 +375,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_added</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_removed</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">added</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_added</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_run_removed</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSpec</span><span class="p">(</span><span class="n">x_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
@@ -397,9 +395,8 @@
 <span class="sd">            If True, retain this Run until it is removed by the user.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">pinned</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pinned</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="RecentLines.discard_run"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.RecentLines.discard_run">[docs]</a>    <span class="k">def</span> <span class="nf">discard_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -412,8 +409,6 @@
 <span class="sd">        run : BlueskyRun</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_add_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">):</span>
@@ -433,7 +428,7 @@
         <span class="n">style</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">color</span><span class="p">}</span>
 
         <span class="c1"># Style pinned runs differently.</span>
-        <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinned_runs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pinned</span><span class="p">:</span>
             <span class="n">style</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;dashed&quot;</span><span class="p">)</span>
             <span class="n">label</span> <span class="o">+=</span> <span class="s2">&quot; (pinned)&quot;</span>
 
@@ -447,8 +442,11 @@
 
     <span class="k">def</span> <span class="nf">_cull_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Remove Runs from the beginning of self.runs to keep the length &lt;= max_runs.&quot;</span>
-        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_runs</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_runs</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pinned</span><span class="p">):</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pinned</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_on_run_added</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
         <span class="s2">&quot;When a new Run is added, draw a line or schedule it to be drawn.&quot;</span>
@@ -463,6 +461,7 @@
     <span class="k">def</span> <span class="nf">_on_run_removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
         <span class="s2">&quot;Remove the line if its corresponding Run is removed.&quot;</span>
         <span class="n">run_uid</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">][</span><span class="s2">&quot;uid&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pinned</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">run_uid</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runs_to_lines</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">run_uid</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
@@ -516,7 +515,11 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pinned</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pinned</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AutoRecentLines"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.models.plot_builders.AutoRecentLines">[docs]</a><span class="k">class</span> <span class="nc">AutoRecentLines</span><span class="p">:</span>
@@ -617,10 +620,7 @@
 <span class="sd">        run : BlueskyRun</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="p">:</span>
-                <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">pinned_runs</span><span class="p">:</span>
-                <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
+            <span class="n">instance</span><span class="o">.</span><span class="n">discard_run</span><span class="p">(</span><span class="n">run</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_handle_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">pinned</span><span class="p">):</span>
         <span class="s2">&quot;This examines a stream and adds this run to RecentLines instances.&quot;</span>
@@ -629,10 +629,7 @@
                 <span class="n">instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key_to_instance</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
             <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                 <span class="n">instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_instance_for_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">pinned</span><span class="p">:</span>
-                <span class="n">instance</span><span class="o">.</span><span class="n">pinned_runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">instance</span><span class="o">.</span><span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">pinned</span><span class="o">=</span><span class="n">pinned</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_on_figure_removed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Reference &mdash; bluesky-widgets 0.0.5b1.post10+gd46dcdf documentation</title>
+  <title>API Reference &mdash; bluesky-widgets 0.0.5b1.post52+ga4cf447 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.0.5b1.post10+gd46dcdf
+                0.0.5b1.post52+ga4cf447
               </div>
             
           
@@ -111,6 +111,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#id2">Views</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#id3">Qt</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#jupyter">Jupyter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#headless">Headless</a></li>
 </ul>
 </li>
 </ul>
@@ -220,17 +221,18 @@
 <ul>
 <li><p><a class="reference internal" href="#id3" id="id14">Qt</a></p></li>
 <li><p><a class="reference internal" href="#jupyter" id="id15">Jupyter</a></p></li>
+<li><p><a class="reference internal" href="#headless" id="id16">Headless</a></p></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#plot-builders" id="id16">Plot Builders</a></p>
+<li><p><a class="reference internal" href="#plot-builders" id="id17">Plot Builders</a></p>
 <ul>
-<li><p><a class="reference internal" href="#builders-with-a-single-figure" id="id17">Builders with a Single Figure</a></p></li>
-<li><p><a class="reference internal" href="#builders-with-a-list-of-figures" id="id18">Builders with a List of Figures</a></p></li>
+<li><p><a class="reference internal" href="#builders-with-a-single-figure" id="id18">Builders with a Single Figure</a></p></li>
+<li><p><a class="reference internal" href="#builders-with-a-list-of-figures" id="id19">Builders with a List of Figures</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#streaming-utilities" id="id19">Streaming Utilities</a></p></li>
+<li><p><a class="reference internal" href="#streaming-utilities" id="id20">Streaming Utilities</a></p></li>
 </ul>
 </li>
 </ul>
@@ -599,10 +601,97 @@ used internally to track it.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="headless">
+<h4><a class="toc-backref" href="#id16">Headless</a><a class="headerlink" href="#headless" title="Permalink to this headline">¶</a></h4>
+<dl class="py class">
+<dt id="bluesky_widgets.headless.figures.HeadlessFigure">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.headless.figures.</code><code class="sig-name descname">HeadlessFigure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#bluesky_widgets.models.plot_specs.FigureSpec" title="bluesky_widgets.models.plot_specs.FigureSpec">bluesky_widgets.models.plot_specs.FigureSpec</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/headless/figures.html#HeadlessFigure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.headless.figures.HeadlessFigure" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Headless “view” for a FigureSpec model. This always contains one Figure.</p>
+<p class="rubric">Examples</p>
+<p>Export the figure.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">headless</span> <span class="o">=</span> <span class="n">HeadlessFigure</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">headless</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;my-figure.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="bluesky_widgets.headless.figures.HeadlessFigure.axes">
+<em class="property">property </em><code class="sig-name descname">axes</code><a class="headerlink" href="#bluesky_widgets.headless.figures.HeadlessFigure.axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read-only access to the mapping AxesSpec UUID -&gt; MatplotlibAxes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.headless.figures.HeadlessFigure.export">
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">format</span><span class="o">=</span><span class="default_value">'png'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/headless/figures.html#HeadlessFigure.export"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.headless.figures.HeadlessFigure.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export figure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>filename</strong><span class="classifier">str | Path</span></dt><dd></dd>
+<dt><strong>format</strong><span class="classifier">str, optional</span></dt><dd><p>Default is “png”.</p>
+</dd>
+<dt><strong>**kwargs :</strong></dt><dd><p>Passed through to matplotlib.figure.Figure.savefig</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="bluesky_widgets.headless.figures.HeadlessFigures">
+<em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.headless.figures.</code><code class="sig-name descname">HeadlessFigures</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">bluesky_widgets.models.plot_specs.FigureSpecList</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/headless/figures.html#HeadlessFigures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.headless.figures.HeadlessFigures" title="Permalink to this definition">¶</a></dt>
+<dd><p>A headless “view” for a FigureSpecList model.</p>
+<p>It does not produce a graphical user interface. Instead, it provides
+methods for exporting figures as images.</p>
+<p class="rubric">Examples</p>
+<p>Export all the figures to a directory. They will be named by their title.
+If there are duplciate titles, a counting number will appended like
+x-1.png, x-2.png.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">headless</span> <span class="o">=</span> <span class="n">HeadlessFigures</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">headless</span><span class="o">.</span><span class="n">export_all</span><span class="p">(</span><span class="s2">&quot;path/to/directory/&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Control the format.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">headless</span><span class="o">.</span><span class="n">export_all</span><span class="p">(</span><span class="s2">&quot;path/to/directory/&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">headless</span><span class="o">.</span><span class="n">export_all</span><span class="p">(</span><span class="s2">&quot;path/to/directory/&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;jpg&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="bluesky_widgets.headless.figures.HeadlessFigures.export_all">
+<code class="sig-name descname">export_all</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">directory</span></em>, <em class="sig-param"><span class="n">format</span><span class="o">=</span><span class="default_value">'png'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/headless/figures.html#HeadlessFigures.export_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.headless.figures.HeadlessFigures.export_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export all figures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>directory</strong><span class="classifier">str | Path</span></dt><dd></dd>
+<dt><strong>format</strong><span class="classifier">str, optional</span></dt><dd><p>Default is “png”.</p>
+</dd>
+<dt><strong>**kwargs :</strong></dt><dd><p>Passed through to matplotlib.figure.Figure.savefig</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>filenames</strong><span class="classifier">List[String]</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="bluesky_widgets.headless.figures.HeadlessFigures.figures">
+<em class="property">property </em><code class="sig-name descname">figures</code><a class="headerlink" href="#bluesky_widgets.headless.figures.HeadlessFigures.figures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read-only access to the mapping FigureSpec UUID -&gt; HeadlessFigure</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 </div>
 </div>
 <div class="section" id="plot-builders">
-<h2><a class="toc-backref" href="#id16">Plot Builders</a><a class="headerlink" href="#plot-builders" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id17">Plot Builders</a><a class="headerlink" href="#plot-builders" title="Permalink to this headline">¶</a></h2>
 <p>These are models which build a <code class="xref py py-class docutils literal notranslate"><span class="pre">models.plot_specs.FigureSpec</span></code> or a list
 of them. This is an example of a builder that creates one Figure:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bluesky_widgets.models.plot_builders</span> <span class="kn">import</span> <span class="n">RecentLines</span>
@@ -625,7 +714,7 @@ of them. This is an example of a builder that creates one Figure:</p>
 </pre></div>
 </div>
 <div class="section" id="builders-with-a-single-figure">
-<h3><a class="toc-backref" href="#id17">Builders with a Single Figure</a><a class="headerlink" href="#builders-with-a-single-figure" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">Builders with a Single Figure</a><a class="headerlink" href="#builders-with-a-single-figure" title="Permalink to this headline">¶</a></h3>
 <dl class="py class">
 <dt id="bluesky_widgets.models.plot_builders.RecentLines">
 <em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_builders.</code><code class="sig-name descname">RecentLines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_runs</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">stream_name</span><span class="o">=</span><span class="default_value">'primary'</span></em>, <em class="sig-param"><span class="n">func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">axes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#RecentLines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.RecentLines" title="Permalink to this definition">¶</a></dt>
@@ -676,7 +765,7 @@ removed, but it will allow more new Runs to be added.)</p>
 <dt><strong>runs</strong><span class="classifier">RunList[BlueskyRun]</span></dt><dd><p>As runs are appended entries will be removed from the beginning of the
 last (first in, first out) so that there are at most <code class="docutils literal notranslate"><span class="pre">max_runs</span></code>.</p>
 </dd>
-<dt><strong>pinned_runs</strong><span class="classifier">RunList[BlueskyRun]</span></dt><dd><p>These runs will not be automatically removed.</p>
+<dt><strong>pinned</strong><span class="classifier">Frozenset[String]</span></dt><dd><p>Run uids of pinned runs.</p>
 </dd>
 <dt><strong>figure</strong><span class="classifier">FigureSpec</span></dt><dd></dd>
 <dt><strong>func</strong><span class="classifier">callable</span></dt><dd></dd>
@@ -785,7 +874,7 @@ derived from the <code class="docutils literal notranslate"><span class="pre">x<
 
 </div>
 <div class="section" id="builders-with-a-list-of-figures">
-<h3><a class="toc-backref" href="#id18">Builders with a List of Figures</a><a class="headerlink" href="#builders-with-a-list-of-figures" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">Builders with a List of Figures</a><a class="headerlink" href="#builders-with-a-list-of-figures" title="Permalink to this headline">¶</a></h3>
 <dl class="py class">
 <dt id="bluesky_widgets.models.plot_builders.AutoRecentLines">
 <em class="property">class </em><code class="sig-prename descclassname">bluesky_widgets.models.plot_builders.</code><code class="sig-name descname">AutoRecentLines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">max_runs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/models/plot_builders.html#AutoRecentLines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.models.plot_builders.AutoRecentLines" title="Permalink to this definition">¶</a></dt>
@@ -928,7 +1017,7 @@ instance and figure, created here.</p>
 </div>
 </div>
 <div class="section" id="streaming-utilities">
-<h2><a class="toc-backref" href="#id19">Streaming Utilities</a><a class="headerlink" href="#streaming-utilities" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id20">Streaming Utilities</a><a class="headerlink" href="#streaming-utilities" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
 <dt id="bluesky_widgets.utils.streaming.stream_documents_into_runs">
 <code class="sig-prename descclassname">bluesky_widgets.utils.streaming.</code><code class="sig-name descname">stream_documents_into_runs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">add_run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bluesky_widgets/utils/streaming.html#stream_documents_into_runs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bluesky_widgets.utils.streaming.stream_documents_into_runs" title="Permalink to this definition">¶</a></dt>

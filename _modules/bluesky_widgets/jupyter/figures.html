@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>bluesky_widgets.jupyter.figures &mdash; bluesky-widgets 0.0.5b1.post10+gd46dcdf documentation</title>
+  <title>bluesky_widgets.jupyter.figures &mdash; bluesky-widgets 0.0.5b1.post52+ga4cf447 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.0.5b1.post10+gd46dcdf
+                0.0.5b1.post52+ga4cf447
               </div>
             
           
@@ -162,31 +162,22 @@
 <span></span><span class="kn">import</span> <span class="nn">collections.abc</span>
 
 <span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">widgets</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span>
 
 <span class="kn">from</span> <span class="nn">..models.plot_specs</span> <span class="kn">import</span> <span class="n">FigureSpec</span><span class="p">,</span> <span class="n">FigureSpecList</span>
 <span class="kn">from</span> <span class="nn">.._matplotlib_axes</span> <span class="kn">import</span> <span class="n">MatplotlibAxes</span>
 <span class="kn">from</span> <span class="nn">..utils.dict_view</span> <span class="kn">import</span> <span class="n">DictView</span>
 
 
-<span class="k">class</span> <span class="nc">_PatchedMatplotlibAxes</span><span class="p">(</span><span class="n">MatplotlibAxes</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Workaround an issue in ipympl we do not yet fully understand.</span>
+<span class="k">def</span> <span class="nf">_initialize_mpl</span><span class="p">():</span>
+    <span class="s2">&quot;Set backend to ipympl and import pyplot.&quot;</span>
+    <span class="kn">import</span> <span class="nn">matplotlib</span>
 
-<span class="sd">    During the execution of the cell that first creates the figure, draw_idle()</span>
-<span class="sd">    does not display updates, but draw() does. Thereafter, draw_idle() is</span>
-<span class="sd">    sufficient, which suggests that there is a better, less aggressive fix for</span>
-<span class="sd">    this.</span>
-
-<span class="sd">    Progress toward removal of this workaround is tracked at</span>
-<span class="sd">    https://github.com/bluesky/bluesky-widgets/pull/54</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">draw_idle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># HACK! Use draw instead of draw_idle(). This changes the behavior by</span>
-        <span class="c1"># drawing *every* update, not just updates the the UI is ready to</span>
-        <span class="c1"># receive.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span>
+        <span class="s2">&quot;module://ipympl.backend_nbagg&quot;</span>
+    <span class="p">)</span>  <span class="c1"># must set before importing matplotlib.pyplot</span>
+    <span class="c1"># must import matplotlib.pyplot here because bluesky.utils.during_task</span>
+    <span class="c1"># expects it to be imported</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>  <span class="c1"># noqa</span>
 
 
 <div class="viewcode-block" id="JupyterFigures"><a class="viewcode-back" href="../../../reference.html#bluesky_widgets.jupyter.figures.JupyterFigures">[docs]</a><span class="k">class</span> <span class="nc">JupyterFigures</span><span class="p">(</span><span class="n">widgets</span><span class="o">.</span><span class="n">Tab</span><span class="p">):</span>
@@ -195,6 +186,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">FigureSpecList</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">_initialize_mpl</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="c1"># Map Figure UUID to widget with JupyterFigureTab</span>
@@ -269,15 +261,14 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">FigureSpec</span><span class="p">):</span>
+        <span class="n">_initialize_mpl</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes_list</span> <span class="o">=</span> <span class="n">_make_figure</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">axes_spec</span><span class="p">,</span> <span class="n">axes</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes_list</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">[</span><span class="n">axes_spec</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">_PatchedMatplotlibAxes</span><span class="p">(</span>
-                <span class="n">model</span><span class="o">=</span><span class="n">axes_spec</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axes</span>
-            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">[</span><span class="n">axes_spec</span><span class="o">.</span><span class="n">uuid</span><span class="p">]</span> <span class="o">=</span> <span class="n">MatplotlibAxes</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">axes_spec</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="p">,)</span>
 
         <span class="n">model</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_title_changed</span><span class="p">)</span>
@@ -289,7 +280,7 @@
         <span class="c1"># matplotlib) is not displayed until cell execution completes.</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">bbox</span><span class="o">.</span><span class="n">bounds</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
 
         <span class="c1"># The FigureSpec model does not currently allow axes to be added or</span>
         <span class="c1"># removed, so we do not need to handle changes in model.axes.</span>
@@ -305,7 +296,7 @@
 
     <span class="k">def</span> <span class="nf">_redraw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Redraw the canvas.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">close_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
@@ -343,10 +334,10 @@
 
 <span class="k">def</span> <span class="nf">_make_figure</span><span class="p">(</span><span class="n">figure_spec</span><span class="p">):</span>
     <span class="s2">&quot;Create a Figure and Axes.&quot;</span>
-    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span>
-        <span class="s2">&quot;module://ipympl.backend_nbagg&quot;</span>
-    <span class="p">)</span>  <span class="c1"># must set before importing matplotlib.pyplot</span>
-    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>  <span class="c1"># noqa</span>
+    <span class="c1"># This import must be deferred until after the matplotlib backend is set,</span>
+    <span class="c1"># which happens when a JupyterFigure or JupyterFigures is instantiated</span>
+    <span class="c1"># for the first time.</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
     <span class="c1"># By default, with interactive mode on, each fig.show() will be called</span>
     <span class="c1"># automatically, and we&#39;ll get duplicates littering the output area. We</span>
@@ -357,7 +348,6 @@
     <span class="c1"># but verify that number of axes created matches the number of axes</span>
     <span class="c1"># specified.</span>
     <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">figure_spec</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
-    <span class="n">figure</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
     <span class="c1"># Handle return type instability in plt.subplots.</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
         <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">axes</span><span class="p">]</span>
