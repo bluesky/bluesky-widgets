@@ -8,6 +8,10 @@ until stopped.
 """
 import asyncio
 import logging
+from functools import partial
+
+import msgpack
+import msgpack_numpy as mpn
 
 from bluesky import RunEngine
 from bluesky_kafka import Publisher
@@ -33,6 +37,7 @@ def stream_example_data(quiet=False):
                 key="widgets_test",
                 bootstrap_servers=bootstrap_servers,
                 producer_config=producer_config,
+                serializer=partial(msgpack.dumps, default=mpn.encode)
             )
 
     motor.delay = 0.22
