@@ -131,7 +131,9 @@ class HeadlessFigure:
         self.figure.suptitle(event.value)
 
     def close_figure(self):
-        self.figure.canvas.close()
+        _close_figure(self.figure)
+
+    close = close_figure
 
     def export(self, filename, format="png", **kwargs):
         """
@@ -161,3 +163,24 @@ def _make_figure(figure_spec):
     if not isinstance(axes, collections.abc.Iterable):
         axes = [axes]
     return fig, axes
+
+
+def _close_figure(figure):
+    """
+    Workaround for matplotlib regression relating to closing figures in Agg
+
+    See https://github.com/matplotlib/matplotlib/pull/18184/
+    """
+    # TODO It would be better to switch the approach based on matplotlib
+    # versions known to have this problem, rather than blindly trying. Update
+    # this once a fixed has been released and we know the earliest version of
+    # matplotlib that does not have this bug.
+    try:
+        figure.canvas.close()
+    except AttributeError:
+        from matplotlib._pylab_helpers import Gcf
+
+        num = next((manager.num for manager in Gcf.figs.values()
+                if manager.canvas.figure == figure), None)
+        if num is not None:
+            Gcf.destroy(num)
