@@ -95,7 +95,6 @@ def construct_namespace(run, stream_names):
         # Add columns from streams in stream_names. Earlier entries will get
         # precedence.
         for stream_name in reversed(stream_names):
-            print("stream_name", stream_name)
             ds = run[stream_name].to_dask()
             namespace.update({column: ds[column] for column in ds})
             namespace.update({column: ds[column] for column in ds.coords})
