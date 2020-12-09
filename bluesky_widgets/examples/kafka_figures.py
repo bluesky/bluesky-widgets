@@ -3,7 +3,8 @@ Run like:
 
 python -m bluesky_widgets.examples.kafka_figures
 
-It will save a png file to ~/bluesky_widgets_test/{run_uid} for each run.
+For each Run, it will generate thumbnails and save them to a temporary
+directory. The filepaths will be printed to the stdout, one per line.
 """
 from pathlib import Path
 from functools import partial
