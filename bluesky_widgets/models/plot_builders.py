@@ -150,11 +150,22 @@ class RecentLines:
 
             f(run: BlueskyRun) -> x: Array
 
+        Other signatures are also supported to allow for a somewhat "magical"
+        usage. See examples below, and also see
+        :func:`bluesky_widgets.models.utils.call_or_eval` for details and more
+        examples.
+
     ys : List[String | Callable]
         Field name (e.g. "theta") or expression (e.g. "- deg2rad(theta) / 2")
         or callable with expected signature::
 
             f(run: BlueskyRun) -> y: Array
+
+        Other signatures are also supported to allow for a somewhat "magical"
+        usage. See examples below, and also see
+        :func:`bluesky_widgets.models.utils.call_or_eval` for details and more
+        examples.
+
 
     label_maker : Callable, optional
         Expected signature::
