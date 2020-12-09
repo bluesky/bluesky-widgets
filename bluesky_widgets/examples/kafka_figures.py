@@ -8,6 +8,7 @@ It will save a png file to ~/bluesky_widgets_test/{run_uid} for each run.
 from pathlib import Path
 from functools import partial
 import os
+import tempfile
 
 import msgpack
 import msgpack_numpy as mpn
@@ -26,27 +27,21 @@ def export_thumbnails_when_complete(run):
     model.add_run(run)
     view = HeadlessFigures(model.figures)
 
-    home = str(Path.home())
-    base_directory = os.path.join(home, "bluesky_widgets_test")
-    if not os.path.exists(base_directory):
-        os.makedirs(base_directory)
     uid = run.metadata['start']['uid']
-    directory = os.path.join(base_directory, uid)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    directory = os.path.join(tempfile.gettempdir(), "bluesky_widgets_example", uid)
+    os.makedirs(directory, exist_ok=True)
 
     # If the Run is already done by the time we got it, export now.
     # Otherwise, schedule it to export whenever it finishes.
-    def export(event):
-        view.export_all(directory)
+    def export(*args):
+        filenames = view.export_all(directory)
+        print("\n".join(f'"{filename}"' for filename in filenames))
         view.close()
 
     if run_is_live_and_not_completed(run):
         run.events.completed.connect(export)
     else:
-        view.export_all(directory)
-        view.close()
-
+        export()
 
 if __name__ == "__main__":
     bootstrap_servers = "127.0.0.1:9092"

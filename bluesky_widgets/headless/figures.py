@@ -64,7 +64,7 @@ class HeadlessFigures:
 
     def close_figures(self):
         for figure in self._figures.values():
-            _close_figure(figure)
+            figure.close_figure()
 
     close = close_figures
 
