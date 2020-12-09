@@ -6,7 +6,6 @@ python -m bluesky_widgets.examples.kafka_figures
 For each Run, it will generate thumbnails and save them to a temporary
 directory. The filepaths will be printed to the stdout, one per line.
 """
-from pathlib import Path
 from functools import partial
 import os
 import tempfile
@@ -18,7 +17,6 @@ from bluesky_kafka import RemoteDispatcher
 from bluesky_widgets.utils.streaming import stream_documents_into_runs
 from bluesky_widgets.models.plot_builders import AutoRecentLines
 from bluesky_widgets.headless.figures import HeadlessFigures
-from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.models.utils import run_is_live_and_not_completed
 
 
@@ -28,7 +26,7 @@ def export_thumbnails_when_complete(run):
     model.add_run(run)
     view = HeadlessFigures(model.figures)
 
-    uid = run.metadata['start']['uid']
+    uid = run.metadata["start"]["uid"]
     directory = os.path.join(tempfile.gettempdir(), "bluesky_widgets_example", uid)
     os.makedirs(directory, exist_ok=True)
 
@@ -44,21 +42,19 @@ def export_thumbnails_when_complete(run):
     else:
         export()
 
+
 if __name__ == "__main__":
     bootstrap_servers = "127.0.0.1:9092"
     kafka_deserializer = partial(msgpack.loads, object_hook=mpn.decode)
     topics = ["widgets_test.bluesky.documents"]
-    consumer_config = {
-                    "auto.commit.interval.ms": 100,
-                    "auto.offset.reset": "latest"
-                }
+    consumer_config = {"auto.commit.interval.ms": 100, "auto.offset.reset": "latest"}
 
     dispatcher = RemoteDispatcher(
-                    topics=topics,
-                    bootstrap_servers=bootstrap_servers,
-                    group_id="widgets_test",
-                    consumer_config=consumer_config,
-                )
+        topics=topics,
+        bootstrap_servers=bootstrap_servers,
+        group_id="widgets_test",
+        consumer_config=consumer_config,
+    )
 
     dispatcher.subscribe(stream_documents_into_runs(export_thumbnails_when_complete))
     dispatcher.start()

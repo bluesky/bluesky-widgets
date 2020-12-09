@@ -17,28 +17,28 @@ from bluesky import RunEngine
 from bluesky_kafka import Publisher
 from bluesky.plans import scan
 from bluesky.plan_stubs import sleep
-from bluesky.preprocessors import SupplementalData
-from ophyd.sim import motor, motor1, motor2,  det
+from ophyd.sim import motor, det
 
 log = logging.getLogger(__name__)
+
 
 def stream_example_data(quiet=False):
 
     bootstrap_servers = "127.0.0.1:9092"
 
     producer_config = {
-                "acks": 1,
-                "enable.idempotence": False,
-                "request.timeout.ms": 1000,
-            }
+        "acks": 1,
+        "enable.idempotence": False,
+        "request.timeout.ms": 1000,
+    }
 
     kafka_publisher = Publisher(
-                topic="widgets_test.bluesky.documents",
-                key="widgets_test",
-                bootstrap_servers=bootstrap_servers,
-                producer_config=producer_config,
-                serializer=partial(msgpack.dumps, default=mpn.encode)
-            )
+        topic="widgets_test.bluesky.documents",
+        key="widgets_test",
+        bootstrap_servers=bootstrap_servers,
+        producer_config=producer_config,
+        serializer=partial(msgpack.dumps, default=mpn.encode),
+    )
 
     motor.delay = 0.22
     det.kind = "hinted"
@@ -48,7 +48,6 @@ def stream_example_data(quiet=False):
             for i in range(1, 5):
                 yield from sleep(2)
                 yield from scan([det], motor, -1, 1, 5 * i)
-
 
     RE = RunEngine(loop=asyncio.new_event_loop())
     RE.subscribe(kafka_publisher)
@@ -73,4 +72,4 @@ if __name__ == "__main__":
     log.addHandler(handler)
     stream_example_data(quiet)
 
-    #clear kafka topic?
+    # clear kafka topic?
