@@ -12,7 +12,7 @@ Connect a consumer to localhost:XXXXX
 
 python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
 """
-from bluesky_widgets.models.plot_builders import AutoRecentLines
+from bluesky_widgets.models.auto_plot_builders import AutoRecentLines
 from bluesky_widgets.jupyter.figures import JupyterFigures
 
 

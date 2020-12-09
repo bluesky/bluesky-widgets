@@ -27,7 +27,7 @@ def infer_lines_to_plot(run, stream):
     A "suggestion" looks like this.
 
     >>> infer_lines(run1)
-    [(("motor", "det"), "primary")]
+    [{"x": "motor", "ys": ["det"], needs_streams=["primary"]}]
 
     Sometimes there are no suggestions.
 
@@ -125,7 +125,7 @@ def infer_lines_to_plot(run, stream):
     ndims = len(dim_fields)
     if not 0 < ndims < 3:
         # we need 1 or 2 dims to do anything, do not make empty figures
-        return
+        return []
 
     # if self._fig_factory:
     #     fig = self._fig_factory(fig_name)
@@ -159,7 +159,7 @@ def infer_lines_to_plot(run, stream):
 
     if ndims == 1:
         (x_key,) = dim_fields
-        stuff = []
+        suggestions = []
         for y_key in columns:
             dtype = descriptor["data_keys"][y_key]["dtype"]
             if dtype not in ("number", "integer"):
@@ -167,8 +167,10 @@ def infer_lines_to_plot(run, stream):
                     "Omitting {} from plot because dtype is {}" "".format(y_key, dtype)
                 )
                 continue
-            stuff.append(((x_key, y_key), stream_name))
-        return stuff
+            suggestions.append(
+                {"x": x_key, "ys": (y_key,), "needs_streams": (stream_name,)}
+            )
+        return suggestions
 
     elif ndims == 2:
         return []

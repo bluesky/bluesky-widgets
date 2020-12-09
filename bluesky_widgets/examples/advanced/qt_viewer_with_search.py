@@ -15,7 +15,7 @@ python -m bluesky_widgets.examples.advanced.qt_viewer_with_search localhost:XXXX
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.models.search import SearchList, Search
-from bluesky_widgets.models.plot_builders import AutoRecentLines
+from bluesky_widgets.models.auto_plot_builders import AutoRecentLines
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.qt.figures import QtFigures
 from bluesky_widgets.utils.event import Event
