@@ -319,7 +319,7 @@ class RecentLines:
     def _transform(self, run, x, y):
         return call_or_eval((x, y), run, self.needs_streams, self.namespace)
 
-    def add_run(self, run, pinned=False):
+    def add_run(self, run, *, pinned=False):
         """
         Add a Run.
 
