@@ -180,7 +180,13 @@ def _close_figure(figure):
     except AttributeError:
         from matplotlib._pylab_helpers import Gcf
 
-        num = next((manager.num for manager in Gcf.figs.values()
-                if manager.canvas.figure == figure), None)
+        num = next(
+            (
+                manager.num
+                for manager in Gcf.figs.values()
+                if manager.canvas.figure == figure
+            ),
+            None,
+        )
         if num is not None:
             Gcf.destroy(num)
