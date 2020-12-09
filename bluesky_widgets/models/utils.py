@@ -232,6 +232,6 @@ def auto_label(callable_or_expr):
         return callable_or_expr
     else:
         raise ValueError(
-            "expected callable or string, received {callable_or_expr!r} of "
-            "type {type(callable_or_expr).__name__}"
+            f"expected callable or string, received {callable_or_expr!r} of "
+            f"type {type(callable_or_expr).__name__}"
         )
