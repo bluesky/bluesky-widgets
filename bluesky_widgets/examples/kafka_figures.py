@@ -35,12 +35,17 @@ def export_thumbnails_when_complete(run):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-  # If the Run is already done by the time we got it, export now.
+    # If the Run is already done by the time we got it, export now.
     # Otherwise, schedule it to export whenever it finishes.
+    def export(event):
+        view.export_all(directory)
+        view.close()
+
     if run_is_live_and_not_completed(run):
-        run.events.completed.connect(lambda event: view.export_all(directory))
+        run.events.completed.connect(export)
     else:
         view.export_all(directory)
+        view.close()
 
 
 if __name__ == "__main__":

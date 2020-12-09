@@ -62,6 +62,12 @@ class HeadlessFigures:
         figure.close_figure()
         del self._figures[figure_spec.uuid]
 
+    def close_figures(self):
+        for figure in self._figures:
+            _close_figure(figure)
+
+    close = close_figures
+
     def export_all(self, directory, format="png", **kwargs):
         """
         Export all figures.
