@@ -62,6 +62,12 @@ class HeadlessFigures:
         figure.close_figure()
         del self._figures[figure_spec.uuid]
 
+    def close_figures(self):
+        for figure in self._figures.values():
+            figure.close_figure()
+
+    close = close_figures
+
     def export_all(self, directory, format="png", **kwargs):
         """
         Export all figures.
@@ -180,7 +186,13 @@ def _close_figure(figure):
     except AttributeError:
         from matplotlib._pylab_helpers import Gcf
 
-        num = next((manager.num for manager in Gcf.figs.values()
-                if manager.canvas.figure == figure), None)
+        num = next(
+            (
+                manager.num
+                for manager in Gcf.figs.values()
+                if manager.canvas.figure == figure
+            ),
+            None,
+        )
         if num is not None:
             Gcf.destroy(num)
