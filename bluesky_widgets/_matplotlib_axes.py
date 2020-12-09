@@ -191,7 +191,7 @@ class MatplotlibAxes:
 
     def _update_and_draw(self):
         "Update the legend and redraw the canvas."
-        self.axes.legend(loc="best")  # Update the legend.
+        self.axes.legend(loc=1)  # Update the legend.
         self.draw_idle()  # Ask matplotlib to redraw the figure.
 
 

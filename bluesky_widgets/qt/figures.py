@@ -11,12 +11,19 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar,
 )
-import matplotlib
 
 from ..models.plot_specs import FigureSpec, FigureSpecList
 from .._matplotlib_axes import MatplotlibAxes
 from ..utils.event import Event
 from ..utils.dict_view import DictView
+
+
+def _initialize_matplotlib():
+    "Set backend to Qt5Agg and import pyplot."
+    import matplotlib
+
+    matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
+    import matplotlib.pyplot  # noqa
 
 
 class ThreadsafeMatplotlibAxes(QObject, MatplotlibAxes):
@@ -48,6 +55,7 @@ class QtFigures(QTabWidget):
     __callback_event = Signal(object, Event)
 
     def __init__(self, model: FigureSpecList, parent=None):
+        _initialize_matplotlib()
         super().__init__(parent)
         self.setTabsClosable(True)
         self.tabCloseRequested.connect(self._on_close_tab_requested)
@@ -146,6 +154,7 @@ class QtFigure(QWidget):
     """
 
     def __init__(self, model: FigureSpec, parent=None):
+        _initialize_matplotlib()
         super().__init__(parent)
         self.model = model
         self.figure, self.axes_list = _make_figure(model)
@@ -190,14 +199,16 @@ class QtFigure(QWidget):
 
 def _make_figure(figure_spec):
     "Create a Figure and Axes."
-    matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
-    import matplotlib.pyplot as plt  # noqa
+    # This import must be deferred until after the matplotlib backend is set,
+    # which happens when a QtFigure or QtFigures is instantiated
+    # for the first time.
+    import matplotlib.pyplot as plt
 
     # TODO Let FigureSpec give different options to subplots here,
     # but verify that number of axes created matches the number of axes
     # specified.
     fig, axes = plt.subplots(len(figure_spec.axes))
-    # Handl return type instability in plt.subplots.
+    # Handle return type instability in plt.subplots.
     if not isinstance(axes, collections.abc.Iterable):
         axes = [axes]
     return fig, axes
