@@ -367,6 +367,8 @@ class SearchInput:
 
     @text.setter
     def text(self, text):
+        if text and not self.text_search_supported:
+            raise RuntimeError("This catalog does not support text search.")
         self._text = text
         self.events.text(text=text)
 
@@ -544,12 +546,15 @@ class RunSearch:
     def __init__(self, catalog, columns):
         self.catalog = catalog
         # TODO Choose a gentler way to do this check.
+        # The issue here is that only real MongoDB supports $text queries, not
+        # the mongoquery library used by JSONL and msgpack databroker drivers
+        # or any other "mock" in-memory MongoDB imitators that we know of.
         try:
             catalog.search({"$text": ""})
         except NotImplementedError:
-            text_search_supported=False
+            text_search_supported = False
         else:
-            text_search_supported=True
+            text_search_supported = True
         self.search_input = SearchInput(text_search_supported=text_search_supported)
         self.search_results = SearchResults(columns)
         self.search_input.events.query.connect(self._on_query)
