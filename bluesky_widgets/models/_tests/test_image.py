@@ -30,4 +30,4 @@ def test_properties():
     assert model.run is run
     assert model.field == "c * ccd"
     assert dict(model.namespace) == {"c": 3}
-    assert model.needs_streams == frozenset({"primary"})
+    assert model.needs_streams == ("primary",)
