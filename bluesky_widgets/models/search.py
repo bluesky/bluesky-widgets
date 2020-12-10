@@ -65,6 +65,27 @@ class Query(collections.abc.Mapping):
         )
 
 
+class TextQuery(Query):
+    def __init__(self, text_search):
+        self._text_search = text_search
+
+    @property
+    def kwargs(self):
+        return {
+            "text_search": self._text_search,
+        }
+
+    @property
+    def query(self):
+        return {
+            "$text": {"$search": self._text_search},
+        }
+
+
+
+
+
+
 """
 Vendored from databroker.queries
 """
@@ -256,6 +277,7 @@ class SearchInput:
     def __init__(self):
         self._since = None
         self._until = None
+        self._text = None
         self._query = {}
         self.events = EmitterGroup(
             source=self,
@@ -264,6 +286,7 @@ class SearchInput:
             since=Event,
             until=Event,
             reload=Event,
+            text=Event,
         )
         self._time_validator = None
 
@@ -333,6 +356,28 @@ class SearchInput:
                 until = until.replace(tzinfo=LOCAL_TIMEZONE)
         self._until = until
         self.events.until(date=until)
+
+    @property
+    def text(self):
+        """
+        Text search
+        """
+        return self._text
+
+    @text.setter
+    def text(self, text):
+        self._text = text
+        self.events.text(text=text)
+
+    def on_text(self, event):
+        if event.text == "":
+            self._query.pop("$text", None)
+        else:
+            self._query.update(TextQuery(event.text))
+        self.events.query(query=self._query)
+
+
+
 
     def on_since(self, event):
         try:
