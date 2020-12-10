@@ -82,10 +82,6 @@ class TextQuery(Query):
         }
 
 
-
-
-
-
 """
 Vendored from databroker.queries
 """
@@ -375,9 +371,6 @@ class SearchInput:
         else:
             self._query.update(TextQuery(event.text))
         self.events.query(query=self._query)
-
-
-
 
     def on_since(self, event):
         try:
