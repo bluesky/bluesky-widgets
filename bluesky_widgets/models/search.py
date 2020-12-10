@@ -65,6 +65,23 @@ class Query(collections.abc.Mapping):
         )
 
 
+class TextQuery(Query):
+    def __init__(self, text_search):
+        self._text_search = text_search
+
+    @property
+    def kwargs(self):
+        return {
+            "text_search": self._text_search,
+        }
+
+    @property
+    def query(self):
+        return {
+            "$text": {"$search": self._text_search},
+        }
+
+
 """
 Vendored from databroker.queries
 """
@@ -253,9 +270,10 @@ def ensure_abs(*abs_or_rel_times):
 
 
 class SearchInput:
-    def __init__(self):
+    def __init__(self, *, text_search_supported=False):
         self._since = None
         self._until = None
+        self._text = None
         self._query = {}
         self.events = EmitterGroup(
             source=self,
@@ -264,8 +282,10 @@ class SearchInput:
             since=Event,
             until=Event,
             reload=Event,
+            text=Event,
         )
         self._time_validator = None
+        self._text_search_supported = text_search_supported
 
     @property
     def time_validator(self):
@@ -274,6 +294,10 @@ class SearchInput:
     @time_validator.setter
     def time_validator(self, validator):
         self._time_validator = validator
+
+    @property
+    def text_search_supported(self):
+        return self._text_search_supported
 
     def __repr__(self):
         return f"<SearchInput {self._query!r}>"
@@ -333,6 +357,27 @@ class SearchInput:
                 until = until.replace(tzinfo=LOCAL_TIMEZONE)
         self._until = until
         self.events.until(date=until)
+
+    @property
+    def text(self):
+        """
+        Text search
+        """
+        return self._text
+
+    @text.setter
+    def text(self, text):
+        if text and not self.text_search_supported:
+            raise RuntimeError("This catalog does not support text search.")
+        self._text = text
+        self.events.text(text=text)
+
+    def on_text(self, event):
+        if not event.text:
+            self._query.pop("$text", None)
+        else:
+            self._query.update(TextQuery(event.text))
+        self.events.query(query=self._query)
 
     def on_since(self, event):
         try:
@@ -500,7 +545,17 @@ class RunSearch:
 
     def __init__(self, catalog, columns):
         self.catalog = catalog
-        self.search_input = SearchInput()
+        # TODO Choose a gentler way to do this check.
+        # The issue here is that only real MongoDB supports $text queries, not
+        # the mongoquery library used by JSONL and msgpack databroker drivers
+        # or any other "mock" in-memory MongoDB imitators that we know of.
+        try:
+            catalog.search({"$text": ""})
+        except NotImplementedError:
+            text_search_supported = False
+        else:
+            text_search_supported = True
+        self.search_input = SearchInput(text_search_supported=text_search_supported)
         self.search_results = SearchResults(columns)
         self.search_input.events.query.connect(self._on_query)
         self.search_input.events.reload.connect(self._on_reload)

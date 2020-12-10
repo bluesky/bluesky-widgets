@@ -9,6 +9,7 @@ from qtpy.QtWidgets import (
     QFormLayout,
     QRadioButton,
     QGridLayout,
+    QLineEdit,
 )
 from ..models.search import LOCAL_TIMEZONE, secs_since_epoch
 
@@ -99,6 +100,13 @@ class QtSearchInput(QWidget):
         self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.layout().addRow("Until:", self.until_widget)
 
+        # Text Search
+        if model.text_search_supported:
+            self.text_search_input = QLineEdit("")
+            self.text_search_input.textChanged.connect(self.on_text_view_changed)
+            self.model.events.text.connect(self.on_text_model_changed)
+            self.layout().addRow("Full Text Search:", self.text_search_input)
+
         # Refresh Button
         self.refresh_button = QPushButton("Refresh")
         self.layout().addWidget(self.refresh_button)
@@ -123,6 +131,12 @@ class QtSearchInput(QWidget):
         self.all_widget.toggled.connect(self.on_toggle_all)
 
         self.all_widget.setChecked(True)
+
+    def on_text_view_changed(self, event):
+        self.model.text = self.text_search_input.text()
+
+    def on_text_model_changed(self, event):
+        self.text_search_input.setText(event.text)
 
     def on_reload(self, event):
         now = datetime.now(LOCAL_TIMEZONE)
