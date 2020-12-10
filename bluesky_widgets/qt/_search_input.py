@@ -101,9 +101,10 @@ class QtSearchInput(QWidget):
         self.layout().addRow("Until:", self.until_widget)
 
         # Text Search
-        self.text_search_input = QLineEdit("")
-        self.text_search_input.textChanged.connect(self.on_text_changed)
-        self.layout().addWidget(self.text_search_input)
+        if model.text_search_supported:
+            self.text_search_input = QLineEdit("")
+            self.text_search_input.textChanged.connect(self.on_text_changed)
+            self.layout().addWidget(self.text_search_input)
 
         # Refresh Button
         self.refresh_button = QPushButton("Refresh")

@@ -270,7 +270,7 @@ def ensure_abs(*abs_or_rel_times):
 
 
 class SearchInput:
-    def __init__(self):
+    def __init__(self, *, text_search_supported=False):
         self._since = None
         self._until = None
         self._text = None
@@ -285,6 +285,7 @@ class SearchInput:
             text=Event,
         )
         self._time_validator = None
+        self._text_search_supported = text_search_supported
 
     @property
     def time_validator(self):
@@ -293,6 +294,10 @@ class SearchInput:
     @time_validator.setter
     def time_validator(self, validator):
         self._time_validator = validator
+
+    @property
+    def text_search_supported(self):
+        return self._text_search_supported
 
     def __repr__(self):
         return f"<SearchInput {self._query!r}>"
@@ -538,7 +543,14 @@ class RunSearch:
 
     def __init__(self, catalog, columns):
         self.catalog = catalog
-        self.search_input = SearchInput()
+        # TODO Choose a gentler way to do this check.
+        try:
+            catalog.search({"$text": ""})
+        except NotImplementedError:
+            text_search_supported=False
+        else:
+            text_search_supported=True
+        self.search_input = SearchInput(text_search_supported=text_search_supported)
         self.search_results = SearchResults(columns)
         self.search_input.events.query.connect(self._on_query)
         self.search_input.events.reload.connect(self._on_reload)
