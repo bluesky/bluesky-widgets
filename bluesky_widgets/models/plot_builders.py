@@ -2,7 +2,8 @@ from collections import defaultdict
 import collections.abc
 import functools
 import itertools
-import weakref
+
+import numpy
 
 from .plot_specs import (
     FigureSpec,
@@ -12,7 +13,7 @@ from .plot_specs import (
     FigureSpecList,
 )
 from ._heuristics import infer_lines_to_plot
-from .utils import RunList, run_is_live_and_not_completed
+from .utils import auto_label, call_or_eval, RunList, run_is_live_and_not_completed
 from ..utils.list import EventedList
 from ..utils.dict_view import DictView
 
@@ -133,27 +134,48 @@ class RecentLines:
     """
     Plot y vs x for the last N runs.
 
+    This supports plotting columns like ``"I0"`` but also Python
+    expressions like ``"5 * log(I0/It)"`` and even
+    ``"my_custom_function(I0)"``. See examples below. Consult
+    :func:``bluesky_widgets.models.utils.construct_namespace` for details
+    about the available variables.
+
     Parameters
     ----------
-    max_runs : int
+    max_runs : Integer
         Number of lines to show at once
-    x : string
-        Field name
-    y : string
-        Field name
-    stream_name : string, optional
-        Stream where fields x and y are found. Default is "primary".
-    func : callable, optional
+    x : String | Callable
+        Field name (e.g. "theta") or expression (e.g. "- deg2rad(theta) / 2")
+        or callable with expected signature::
+
+            f(run: BlueskyRun) -> x: Array
+
+        Other signatures are also supported to allow for a somewhat "magical"
+        usage. See examples below, and also see
+        :func:`bluesky_widgets.models.utils.call_or_eval` for details and more
+        examples.
+
+    ys : List[String | Callable]
+        Field name (e.g. "theta") or expression (e.g. "- deg2rad(theta) / 2")
+        or callable with expected signature::
+
+            f(run: BlueskyRun) -> y: Array
+
+        Other signatures are also supported to allow for a somewhat "magical"
+        usage. See examples below, and also see
+        :func:`bluesky_widgets.models.utils.call_or_eval` for details and more
+        examples.
+
+
+    label_maker : Callable, optional
         Expected signature::
 
-            func(run: BlueskyRun, stream_name: str, x: str, y: str) -> x: Array, y: Array
+            f(run: BlueskyRun, y: String) -> label: String
 
-        Default::
-
-            def func(run, stream_name, x, y):
-                ds = run[stream_name].to_dask()
-                return ds[x], ds[y]
-
+    needs_streams : List[String], optional
+        Streams referred to by x and y. Default is ``["primary"]``
+    namespace : Dict, optional
+        Inject additional tokens to be used in expressions for x and y
     axes : AxesSpec, optional
         If None, an axes and figure are created with default labels and titles
         derived from the ``x`` and ``y`` parameters.
@@ -170,58 +192,133 @@ class RecentLines:
     pinned : Frozenset[String]
         Run uids of pinned runs.
     figure : FigureSpec
-    func : callable
     axes : AxesSpec
-    x : string
-        Read-only access to x field name
-    y : string
-        Read-only access to y field name
-    stream_name : string
-        Read-only access to stream name
+    x : String | Callable
+        Read-only access to x
+    ys : Tuple[String | Callable]
+        Read-only access to ys
+    needs_streams : Tuple[String]
+        Read-only access to stream names needed
+    namespace : Dict
+        Read-only access to user-provided namespace
 
     Examples
     --------
-    >>> model = RecentLines(3, "motor", "det")
+
+    Plot "det" vs "motor" and view it.
+
+    >>> model = RecentLines(3, "motor", ["det"])
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.add_run(run)
     >>> model.add_run(another_run, pinned=True)
 
+    Plot a mathematical transformation of the columns using any object in
+    numpy. This can be given as a string expression:
+
+    >>> model = RecentLines(3, "abs(motor)", ["-log(det)"])
+    >>> model = RecentLines(3, "abs(motor)", ["pi * det"])
+    >>> model = RecentLines(3, "abs(motor)", ["sqrt(det)"])
+
+    Plot multiple lines.
+
+    >>> model = RecentLines(3, "motor", ["log(I0/It)", "log(I0)", "log(It)"])
+
+    Plot every tenth point.
+
+    >>> model = RecentLines(3, "motor", ["intesnity[::10]"])
+
+    Access data outside the "primary" stream, such as a stream name "baseline".
+
+    >>> model = RecentLines(3, "motor", ["intensity/baseline['intensity'][0]"])
+
+    As shown, objects from numpy can be used in expressions. You may define
+    additional words, such as "savlog" for a Savitzky-Golay smoothing filter,
+    by passing it a dict mapping the new word to the new object.
+
+    >>> import scipy.signal
+    >>> namespace = {"savgol": scipy.signal.savgol_filter}
+    >>> model = RecentLines(3, "motor", ["savgol(intensity, 5, 2)"],
+    ...                     namespace=namespace)
+
+    Or you may pass in a function. It will be passed parameters according to
+    their names.
+
+    >>> model = RecentLines(3, "motor", [lambda intensity: savgol(intensity, 5, 2)])
+
+    More examples of this function-based usage:
+
+    >>> model = RecentLines(3, "abs(motor)", [lambda det: -log(det)])
+    >>> model = RecentLines(3, "abs(motor)", [lambda det, pi: pi * det])
+    >>> model = RecentLines(3, "abs(motor)", [lambda det, np: np.sqrt(det)])
+
+    Custom, user-defined objects may be added in the same way, either by adding
+    names to the namespace or providing the functions directly.
     """
 
-    def __init__(self, max_runs, x, y, stream_name="primary", func=None, axes=None):
+    def __init__(
+        self,
+        max_runs,
+        x,
+        ys,
+        *,
+        label_maker=None,
+        needs_streams=("primary",),
+        namespace=None,
+        axes=None,
+    ):
         super().__init__()
 
-        if func is None:
+        if label_maker is None:
+            # scan_id is always generated by RunEngine but not stricter required by
+            # the schema, so we fail gracefully if it is missing.
 
-            def func(run, stream_name, x, y):
-                ds = run[stream_name].to_dask()
-                return ds[x], ds[y]
+            if len(ys) > 1:
+
+                def label_maker(run, y):
+                    return (
+                        f"Scan {run.metadata['start'].get('scan_id', '?')} "
+                        f"{auto_label(y)}"
+                    )
+
+            else:
+
+                def label_maker(run, y):
+                    return f"Scan {run.metadata['start'].get('scan_id', '?')}"
 
         # Stash these and expose them as read-only properties.
         self._max_runs = int(max_runs)
         self._x = x
-        self._y = y
-        self._stream_name = stream_name
-        self._func = func
+        if isinstance(ys, str):
+            raise ValueError("`ys` must be a list of strings, not a string")
+        self._ys = tuple(ys)
+        self._label_maker = label_maker
+        self._needs_streams = tuple(needs_streams)
+        self._namespace = namespace
 
         self.runs = RunList()
         self._pinned = set()
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
-        # Maps Run (uid) to LineSpec
-        self._runs_to_lines = weakref.WeakValueDictionary()
+        # Maps Run (uid) to set of LineSpec UUIDs.
+        self._runs_to_lines = defaultdict(set)
 
         self.runs.events.added.connect(self._on_run_added)
         self.runs.events.removed.connect(self._on_run_removed)
 
         if axes is None:
-            axes = AxesSpec(x_label=self.x, y_label=self.y)
-            figure = FigureSpec((axes,), title=f"{self.y} v {self.x}")
+            axes = AxesSpec(
+                x_label=auto_label(self.x),
+                y_label=", ".join(auto_label(y) for y in self.ys),
+            )
+            figure = FigureSpec((axes,), title=f"{axes.y_label} v {axes.x_label}")
         else:
             figure = axes.figure
         self.axes = axes
         self.figure = figure
+
+    def _transform(self, run, x, y):
+        return call_or_eval((x, y), run, self.needs_streams, self.namespace)
 
     def add_run(self, run, pinned=False):
         """
@@ -250,34 +347,33 @@ class RecentLines:
         if run in self.runs:
             self.runs.remove(run)
 
-    def _add_line(self, run):
+    def _add_lines(self, run):
         "Add a line."
         # Create a plot if we do not have one.
         # If necessary, removes runs to make room for the new one.
         self._cull_runs()
 
-        label = f"Scan {run.metadata['start']['scan_id']}"
-        # If run is in progress, give it a special color so it stands out.
-        if run_is_live_and_not_completed(run):
-            color = "black"
-            # Later, when it completes, flip the color to one from the cycle.
-            run.events.completed.connect(self._on_run_complete)
-        else:
-            color = next(self._color_cycle)
-        style = {"color": color}
+        for y in self.ys:
+            label = self._label_maker(run, y)
+            # If run is in progress, give it a special color so it stands out.
+            if run_is_live_and_not_completed(run):
+                color = "black"
+                # Later, when it completes, flip the color to one from the cycle.
+                run.events.completed.connect(self._on_run_complete)
+            else:
+                color = next(self._color_cycle)
+            style = {"color": color}
 
-        # Style pinned runs differently.
-        if run.metadata["start"]["uid"] in self._pinned:
-            style.update(linestyle="dashed")
-            label += " (pinned)"
+            # Style pinned runs differently.
+            if run.metadata["start"]["uid"] in self._pinned:
+                style.update(linestyle="dashed")
+                label += " (pinned)"
 
-        func = functools.partial(
-            self.func, stream_name=self.stream_name, x=self.x, y=self.y
-        )
-        line = LineSpec(func, run, label, style)
-        run_uid = run.metadata["start"]["uid"]
-        self._runs_to_lines[run_uid] = line
-        self.axes.lines.append(line)
+            func = functools.partial(self._transform, x=self.x, y=y)
+            line = LineSpec(func, run, label, style)
+            run_uid = run.metadata["start"]["uid"]
+            self._runs_to_lines[run_uid].add(line.uuid)
+            self.axes.lines.append(line)
 
     def _cull_runs(self):
         "Remove Runs from the beginning of self.runs to keep the length <= max_runs."
@@ -291,8 +387,8 @@ class RecentLines:
         "When a new Run is added, draw a line or schedule it to be drawn."
         run = event.item
         # If the stream of interest is defined already, plot now.
-        if self.stream_name in run:
-            self._add_line(run)
+        if set(self.needs_streams).issubset(set(list(run))):
+            self._add_lines(run)
         else:
             # Otherwise, connect a callback to run when the stream of interest arrives.
             run.events.new_stream.connect(self._on_new_stream)
@@ -301,32 +397,36 @@ class RecentLines:
         "Remove the line if its corresponding Run is removed."
         run_uid = event.item.metadata["start"]["uid"]
         self._pinned.discard(run_uid)
-        try:
-            line = self._runs_to_lines.pop(run_uid)
-        except KeyError:
-            # The line has been removed before the Run was.
-            return
-        try:
+        line_uuids = self._runs_to_lines.pop(run_uid)
+        for line_uuid in line_uuids:
+            try:
+                line = self.axes.by_uuid[line_uuid]
+            except KeyError:
+                # The LineSpec was externally removed from the AxesSpec.
+                continue
             self.axes.lines.remove(line)
-        except ValueError:
-            # The line has been removed before the Run was.
-            pass
 
     def _on_new_stream(self, event):
         "This callback runs whenever BlueskyRun has a new stream."
-        if event.name == self.stream_name:
-            self._add_line(event.run)
+        if set(self.needs_streams).issubset(set(list(event.run))):
+            self._add_lines(event.run)
             event.run.events.new_stream.disconnect(self._on_new_stream)
 
     def _on_run_complete(self, event):
         "When a run completes, update the color from back to a color."
         run_uid = event.run.metadata["start"]["uid"]
         try:
-            line = self._runs_to_lines[run_uid]
+            line_uuids = self._runs_to_lines[run_uid]
         except KeyError:
-            # The line has been removed before the Run completed.
+            # The Run has been removed before the Run completed.
             return
-        line.style.update({"color": next(self._color_cycle)})
+        for line_uuid in line_uuids:
+            try:
+                line = self.axes.by_uuid[line_uuid]
+            except KeyError:
+                # The LineSpec was externally removed from the AxesSpec.
+                continue
+            line.style.update({"color": next(self._color_cycle)})
 
     @property
     def max_runs(self):
@@ -345,16 +445,16 @@ class RecentLines:
         return self._x
 
     @property
-    def y(self):
-        return self._y
+    def ys(self):
+        return self._ys
 
     @property
-    def stream_name(self):
-        return self._stream_name
+    def needs_streams(self):
+        return self._needs_streams
 
     @property
-    def func(self):
-        return self._func
+    def namespace(self):
+        return DictView(self._namespace or {})
 
     @property
     def pinned(self):
@@ -421,7 +521,7 @@ class AutoRecentLines:
         if old_instance is not None:
             self._inactive_instances[key][old_instance.figure.uuid] = old_instance
         instance = RecentLines(
-            max_runs=self.max_runs, x=x, y=y, stream_name=stream_name
+            max_runs=self.max_runs, x=x, ys=[y], needs_streams=[stream_name]
         )
         self._key_to_instance[key] = instance
         self._figure_to_key[instance.figure.uuid] = key
@@ -508,25 +608,16 @@ class Image:
     ----------
 
     field : string
-        Field name ("data key") for this image
-    stream_name : string, optional
-        Stream where fields x and y are found. Default is "primary".
-    func : callable, optional
+        Field name or expression
+    label_maker : Callable, optional
         Expected signature::
 
-            func(run: BlueskyRun, stream_name: str, x: str, y: str) -> x: Array, y: Array
+            f(run: BlueskyRun, y: String) -> label: String
 
-        Default::
-
-            def func(run, field):
-                ds = run[stream_name].to_dask()
-                data = ds[field].data
-                # Reduce the data until it is 2D by repeatedly averaging over
-                # the leading axis until there only two axes.
-                while data.ndim > 2:
-                    data = data.mean(0)
-                return data
-
+    needs_streams : List[String], optional
+        Streams referred to by field. Default is ``["primary"]``
+    namespace : Dict, optional
+        Inject additional tokens to be used in expressions for x and y
     axes : AxesSpec, optional
         If None, an axes and figure are created with default labels and titles
         derived from the ``x`` and ``y`` parameters.
@@ -536,42 +627,50 @@ class Image:
     run : BlueskyRun
         The currently-viewed Run
     figure : FigureSpec
-    func : callable
     axes : AxesSpec
-    x : string
-        Read-only access to x field name
-    y : string
-        Read-only access to y field name
-    stream_name : string
-        Read-only access to stream name
+    field : String
+        Read-only access to field or expression
+    needs_streams : List[String], optional
+        Read-only access to streams referred to by field.
+    namespace : Dict, optional
+        Read-only access to user-provided namespace
 
     Examples
     --------
-    >>> model = RecentLines(3, "motor", "det")
+    >>> model = Images("ccd")
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
-    >>> model.add_run(run)
-    >>> model.add_run(another_run, pinned=True)
+    >>> model.run = run
     """
 
-    def __init__(self, field, stream_name="primary", func=None, axes=None):
+    def __init__(
+        self,
+        field,
+        *,
+        label_maker=None,
+        needs_streams=("primary",),
+        namespace=None,
+        axes=None,
+    ):
         super().__init__()
 
-        if func is None:
+        if label_maker is None:
+            # scan_id is always generated by RunEngine but not stricter required by
+            # the schema, so we fail gracefully if it is missing.
 
-            def func(run, field):
-                ds = run[stream_name].to_dask()
-                data = ds[field].data
-                # Reduce the data until it is 2D by repeatedly averaging over
-                # the leading axis until there only two axes.
-                while data.ndim > 2:
-                    data = data.mean(0)
-                return data
+            def label_maker(run, field):
+                md = self.run.metadata["start"]
+                return (
+                    f"Scan ID {md.get('scan_id', '?')}   UID {md['uid'][:8]}   "
+                    f"{auto_label(field)}"
+                )
+
+        self._label_maker = label_maker
 
         # Stash these and expose them as read-only properties.
         self._field = field
-        self._stream_name = stream_name
-        self._func = func
+        self._needs_streams = frozenset(needs_streams)
+        self._namespace = namespace
 
         self._run = None
 
@@ -595,20 +694,29 @@ class Image:
             self._add_image()
 
     def _add_image(self):
-        md = self.run.metadata["start"]
-        title = f"Scan ID {md['scan_id']}   UID {md['uid'][:8]}"
-        func = functools.partial(self.func, field=self.field)
+        func = functools.partial(self._transform, field=self.field)
         image = ImageSpec(func, self.run, label=self.field)
         self.axes.images.append(image)
-        self.axes.title = title
+        self.axes.title = self._label_maker(self.run, self.field)
         # TODO Set axes x, y from xarray dims
 
-    @property
-    def func(self):
-        return self._func
+    def _transform(self, run, field):
+        (data,) = numpy.asarray(
+            call_or_eval((field,), run, self.needs_streams, self.namespace)
+        )
+        # Reduce the data until it is 2D by repeatedly averaging over
+        # the leading axis until there only two axes.
+        while data.ndim > 2:
+            data = data.mean(0)
+        return data
 
-    def stream_name(self):
-        return self._stream_name
+    @property
+    def needs_streams(self):
+        return self._needs_streams
+
+    @property
+    def namespace(self):
+        return DictView(self._namespace or {})
 
     @property
     def field(self):

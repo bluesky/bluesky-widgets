@@ -88,7 +88,7 @@ of them. This is an example of a builder that creates one Figure:
 .. code:: python
 
     from bluesky_widgets.models.plot_builders import RecentLines
-    model = RecentLines(3, "motor", "det")
+    model = RecentLines(3, "motor", ["det"])
     model.runs  # append Runs to this list
 
     # Build a view by passing model.figure to any Figure view, e.g.

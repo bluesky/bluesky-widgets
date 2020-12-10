@@ -38,6 +38,12 @@ with open(path.join(here, "requirements.txt")) as requirements_file:
     ]
 
 extras_require = {"pyside2": ["PySide2", "qtpy"], "pyqt5": ["PyQt5", "qtpy"]}
+with open(path.join(here, "requirements-examples.txt")) as requirements_file:
+    extras_require["examples"] = [
+        line
+        for line in requirements_file.read().splitlines()
+        if not line.startswith("#")
+    ]
 
 setup(
     name="bluesky-widgets",

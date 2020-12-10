@@ -132,6 +132,7 @@ class MatplotlibAxes:
 
         # Initialize artist with currently-available data.
         artist = self.axes.imshow(array, label=image_spec.label, **image_spec.style)
+        self.axes.figure.colorbar(artist)
 
         # If this is connected to a streaming data source and is not yet
         # complete, listen for updates.
