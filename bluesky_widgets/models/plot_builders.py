@@ -579,10 +579,11 @@ class Image:
         (data,) = numpy.asarray(
             call_or_eval((field,), run, self.needs_streams, self.namespace)
         )
-        # Reduce the data until it is 2D by repeatedly averaging over
-        # the leading axis until there only two axes.
+        # If the data is more than 2D, take the middle slice from the leading
+        # axis until there are only two axes.
         while data.ndim > 2:
-            data = data.mean(0)
+            middle = data.shape[0] // 2
+            data = data[middle]
         return data
 
     @property
