@@ -366,7 +366,7 @@ class SearchInput:
         self.events.text(text=text)
 
     def on_text(self, event):
-        if event.text == "":
+        if not event.text:
             self._query.pop("$text", None)
         else:
             self._query.update(TextQuery(event.text))
