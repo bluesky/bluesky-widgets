@@ -103,7 +103,8 @@ class QtSearchInput(QWidget):
         # Text Search
         if model.text_search_supported:
             self.text_search_input = QLineEdit("")
-            self.text_search_input.textChanged.connect(self.on_text_changed)
+            self.text_search_input.textChanged.connect(self.on_text_view_changed)
+            self.model.events.text.connect(self.on_text_model_changed)
             self.layout().addRow("Full Text Search:", self.text_search_input)
 
         # Refresh Button
@@ -131,8 +132,11 @@ class QtSearchInput(QWidget):
 
         self.all_widget.setChecked(True)
 
-    def on_text_changed(self, event):
+    def on_text_view_changed(self, event):
         self.model.text = self.text_search_input.text()
+
+    def on_text_model_changed(self, event):
+        self.text_search_input.setText(event.text)
 
     def on_reload(self, event):
         now = datetime.now(LOCAL_TIMEZONE)

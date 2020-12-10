@@ -6,7 +6,7 @@ or visualization.
 from bluesky_widgets.qt import Window, gui_qt
 from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.qt.search import QtSearches
-from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.examples.utils.generate_mongo_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
 from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
 
