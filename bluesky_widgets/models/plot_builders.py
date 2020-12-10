@@ -669,7 +669,7 @@ class Image:
 
         # Stash these and expose them as read-only properties.
         self._field = field
-        self._needs_streams = frozenset(needs_streams)
+        self._needs_streams = needs_streams
         self._namespace = namespace
 
         self._run = None
