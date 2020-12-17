@@ -830,6 +830,7 @@ class RasteredImage:
 
     @cmap.setter
     def cmap(self, value):
+        self._cmap = value
         for i in self.axes.images:
             i.style.update({'cmap': value})
 
@@ -839,6 +840,7 @@ class RasteredImage:
 
     @clim.setter
     def clim(self, value):
+        self._clim = value
         for i in self.axes.images:
             i.style.update({'clim': value})
 
@@ -848,6 +850,7 @@ class RasteredImage:
 
     @extent.setter
     def extent(self, value):
+        self._extent = value
         for i in self.axes.images:
             i.style.update({'extent': value})
 
