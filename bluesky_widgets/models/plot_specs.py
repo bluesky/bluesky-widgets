@@ -110,6 +110,8 @@ class AxesSpec(BaseSpec):
         Text label for x axis
     y_label: String, optional
         Text label for y axis
+    aspect : String or Float
+        Passed through to :meth:`matplotlib.axes.Axes.imshow`
     uuid : UUID, optional
         Automatically assigned to provide a unique identifier for this Figure,
         used internally to track it.
@@ -156,6 +158,7 @@ class AxesSpec(BaseSpec):
         "_title",
         "_x_label",
         "_y_label",
+        "_aspect",
     )
 
     def __init__(
@@ -166,6 +169,7 @@ class AxesSpec(BaseSpec):
         title=None,
         x_label=None,
         y_label=None,
+        aspect='equal',
         uuid=None,
     ):
         self._figure = None
@@ -176,8 +180,9 @@ class AxesSpec(BaseSpec):
         self._title = title
         self._x_label = x_label
         self._y_label = y_label
+        self._aspect = aspect
         self.events = EmitterGroup(
-            source=self, title=Event, x_label=Event, y_label=Event
+            source=self, title=Event, x_label=Event, y_label=Event, aspect=Event
         )
         super().__init__(uuid)
         for line in self._lines:
@@ -281,6 +286,16 @@ class AxesSpec(BaseSpec):
     def y_label(self, value):
         self._y_label = value
         self.events.y_label(value=value)
+
+    @property
+    def aspect(self):
+        "String or Float for aspect. Settable"
+        return self._aspect
+
+    @aspect.setter
+    def aspect(self, value):
+        self._aspect = value
+        self.events.aspect(value=value)
 
     def _on_artist_added(self, event):
         artist = event.item
@@ -451,7 +466,7 @@ class LineSpec(ArtistSpec):
 
 
 class ImageSpec(ArtistSpec):
-    "Describes an image stack (both data and style)"
+    "Describes an image (both data and style)"
 
 
 # EventedLists for each type of spec. We plan to add type-checking to these,

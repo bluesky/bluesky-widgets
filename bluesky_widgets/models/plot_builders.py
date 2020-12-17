@@ -723,9 +723,9 @@ class Image:
         return self._field
 
 
-class Grid:
+class RasteredImage:
     """
-    Plot a grid from a Run.
+    Plot a rastered image from a Run.
 
     Parameters
     ----------
@@ -746,6 +746,14 @@ class Grid:
     axes : AxesSpec, optional
         If None, an axes and figure are created with default labels and titles
         derived from the ``x`` and ``y`` parameters.
+    clim : Tuple, optional
+        The color limits
+    cmap : String or Colormap, optional
+        The color map to use
+    extent : scalars (left, right, bottom, top), optional
+        Passed through to :meth:`matplotlib.axes.Axes.imshow`
+    aspect : String or Float
+        Passed through to :meth:`matplotlib.axes.Axes.imshow`
 
     Attributes
     ----------
@@ -777,6 +785,10 @@ class Grid:
         needs_streams=("primary",),
         namespace=None,
         axes=None,
+        clim=None,
+        cmap='viridis',
+        extent=None,
+        aspect='equal',
     ):
         super().__init__()
 
@@ -795,7 +807,7 @@ class Grid:
         # Stash these and expose them as read-only properties.
         self._field = field
         self._shape = shape
-        self._needs_streams = frozenset(needs_streams)
+        self._needs_streams = needs_streams
         self._namespace = namespace
 
         self._run = None
@@ -806,7 +818,46 @@ class Grid:
         else:
             figure = axes.figure
         self.axes = axes
+        self._clim = clim
+        self._cmap = cmap
+        self._extent = extent
+        self._aspect = aspect
         self.figure = figure
+
+    @property
+    def cmap(self):
+        return self._cmap
+
+    @cmap.setter
+    def cmap(self, value):
+        for i in self.axes.images:
+            i.style.update({'cmap': value})
+
+    @property
+    def clim(self):
+        return self._clim
+
+    @clim.setter
+    def clim(self, value):
+        for i in self.axes.images:
+            i.style.update({'clim': value})
+
+    @property
+    def extent(self):
+        return self._extent
+
+    @extent.setter
+    def extent(self, value):
+        for i in self.axes.images:
+            i.style.update({'extent': value})
+
+    @property
+    def aspect(self):
+        return self._aspect
+
+    @aspect.setter
+    def aspect(self, value):
+        self.axes.aspect = value
 
     @property
     def run(self):
@@ -821,19 +872,19 @@ class Grid:
 
     def _add_image(self):
         func = functools.partial(self._transform, field=self.field)
-        image = ImageSpec(func, self.run, label=self.field)
+        style = {'cmap': self._cmap, 'clim': self._clim, 'extent': self._extent}
+        image = ImageSpec(func, self.run, label=self.field, style=style)
         self.axes.images.append(image)
         self.axes.title = self._label_maker(self.run, self.field)
-        # TODO Set axes x, y from xarray dims
         self.axes.x_label = self.run.metadata["start"]["motors"][1]
         self.axes.y_label = self.run.metadata["start"]["motors"][0]
+        self.axes.aspect = self._aspect
 
     def _transform(self, run, field):
         i_data = numpy.ones(self._shape) * numpy.nan
-        ns = construct_namespace(run)
-        # Apply any user-provided terms.
-        ns.update(self.namespace)
-        data = numpy.asarray(eval(field, ns))
+        (data,) = numpy.asarray(
+            call_or_eval((field,), run, self.needs_streams, self.namespace)
+        )
         for i in range(len(data)):
             pos = list(numpy.unravel_index(i, self._shape))
             pos = tuple(pos)
