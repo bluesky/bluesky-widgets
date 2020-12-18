@@ -752,8 +752,6 @@ class RasteredImage:
         The color map to use
     extent : scalars (left, right, bottom, top), optional
         Passed through to :meth:`matplotlib.axes.Axes.imshow`
-    aspect : String or Float
-        Passed through to :meth:`matplotlib.axes.Axes.imshow`
 
     Attributes
     ----------
@@ -788,7 +786,6 @@ class RasteredImage:
         clim=None,
         cmap='viridis',
         extent=None,
-        aspect='equal',
     ):
         super().__init__()
 
@@ -813,7 +810,7 @@ class RasteredImage:
         self._run = None
 
         if axes is None:
-            axes = AxesSpec()
+            axes = AxesSpec(aspect="equal")
             figure = FigureSpec((axes,), title="")
         else:
             figure = axes.figure
@@ -821,7 +818,6 @@ class RasteredImage:
         self._clim = clim
         self._cmap = cmap
         self._extent = extent
-        self._aspect = aspect
         self.figure = figure
 
     @property
@@ -855,14 +851,6 @@ class RasteredImage:
             i.style.update({'extent': value})
 
     @property
-    def aspect(self):
-        return self._aspect
-
-    @aspect.setter
-    def aspect(self, value):
-        self.axes.aspect = value
-
-    @property
     def run(self):
         return self._run
 
@@ -881,7 +869,6 @@ class RasteredImage:
         self.axes.title = self._label_maker(self.run, self.field)
         self.axes.x_label = self.run.metadata["start"]["motors"][1]
         self.axes.y_label = self.run.metadata["start"]["motors"][0]
-        self.axes.aspect = self._aspect
 
     def _transform(self, run, field):
         i_data = numpy.ones(self._shape) * numpy.nan
