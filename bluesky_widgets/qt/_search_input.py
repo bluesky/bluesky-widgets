@@ -10,6 +10,8 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QGridLayout,
     QLineEdit,
+    QHBoxLayout,
+    QLabel,
 )
 from ..models.search import LOCAL_TIMEZONE, secs_since_epoch
 
@@ -88,17 +90,22 @@ class QtSearchInput(QWidget):
         # s = SearchInput()
         # s.time_validator = time_validator
 
+        self.date_selection_row = QHBoxLayout(self)
+        self.layout().addRow(self.date_selection_row)
+
         # "Since: <datetime picker>"
         self.since_widget = QDateTimeEdit()
         self.since_widget.setCalendarPopup(True)
         self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.layout().addRow("Since:", self.since_widget)
+        self.date_selection_row.addWidget(QLabel("Since:", self))
+        self.date_selection_row.addWidget(self.since_widget)
 
         # "Until: <datetime picker>"
         self.until_widget = QDateTimeEdit()
         self.until_widget.setCalendarPopup(True)
         self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.layout().addRow("Until:", self.until_widget)
+        self.date_selection_row.addWidget(QLabel("Until:", self))
+        self.date_selection_row.addWidget(self.until_widget)
 
         # Text Search
         if model.text_search_supported:
