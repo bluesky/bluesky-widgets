@@ -54,10 +54,10 @@ class QtSearchInput(QWidget):
         default_period_layout.setVerticalSpacing(10)
         default_period_layout.addWidget(self.all_widget, 0, 0, 1, 2)
         default_period_layout.addWidget(self.year_widget, 1, 0, 1, 2)
-        default_period_layout.addWidget(self.month_widget, 2, 0, 1, 2)
-        default_period_layout.addWidget(self.week_widget, 0, 1, 1, 2)
-        default_period_layout.addWidget(self.today_widget, 1, 1, 1, 2)
-        default_period_layout.addWidget(self.hour_widget, 2, 1, 1, 2)
+        default_period_layout.addWidget(self.month_widget, 0, 1, 1, 2)
+        default_period_layout.addWidget(self.week_widget, 1, 1, 1, 2)
+        default_period_layout.addWidget(self.today_widget, 0, 2, 1, 2)
+        default_period_layout.addWidget(self.hour_widget, 1, 2, 1, 2)
         self.layout().addRow("When:", default_period_layout)
 
         # TODO: rethink if restriction to acceptable timedelta values is required
