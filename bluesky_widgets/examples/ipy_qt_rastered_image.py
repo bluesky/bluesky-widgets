@@ -14,7 +14,7 @@ grid_scans = catalog.search({"plan_name": "grid_scan"})
 run = grid_scans[-1]
 
 
-model = RasteredImage("det4", (3, 5))
+model = RasteredImage("det4", (5, 7))
 
 model.run = run
 view = QtFigure(model.figure)

@@ -22,8 +22,8 @@ def get_catalog():
         RE(count([random_img], 3), serializer)
     with Serializer(directory) as serializer:
         RE(grid_scan([det4],
-                     motor1, -1, 1, 3,
-                     motor2, -1, 1, 5), serializer)
+                     motor1, -1, 2, 5,
+                     motor2, -1, 2, 7), serializer)
 
     catalog = BlueskyMsgpackCatalog(f"{directory}/*.msgpack")
     return catalog

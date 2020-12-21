@@ -865,10 +865,15 @@ class RasteredImage:
         func = functools.partial(self._transform, field=self.field)
         style = {'cmap': self._cmap, 'clim': self._clim, 'extent': self._extent}
         image = ImageSpec(func, self.run, label=self.field, style=style)
+        md = self.run.metadata["start"]
         self.axes.images.append(image)
         self.axes.title = self._label_maker(self.run, self.field)
-        self.axes.x_label = self.run.metadata["start"]["motors"][1]
-        self.axes.y_label = self.run.metadata["start"]["motors"][0]
+        self.axes.x_label = md["motors"][1]
+        self.axes.y_label = md["motors"][0]
+        if self.axes.x_limits is None:
+            self.axes.x_limits = (-0.5, md["shape"][1]-0.5)
+        if self.axes.y_limits is None:
+            self.axes.y_limits = (-0.5, md["shape"][0]-0.5)
 
     def _transform(self, run, field):
         i_data = numpy.ones(self._shape) * numpy.nan
