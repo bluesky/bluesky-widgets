@@ -947,8 +947,11 @@ class RasteredImage:
         (data,) = numpy.asarray(
             call_or_eval((field,), run, self.needs_streams, self.namespace)
         )
+        snaking = self.run.metadata["start"]["snaking"]
         for i in range(len(data)):
             pos = list(numpy.unravel_index(i, self._shape))
+            if snaking[1] and (pos[0] % 2):
+                pos[1] = self._shape[1] - pos[1] - 1
             pos = tuple(pos)
             i_data[pos] = data[i]
 
