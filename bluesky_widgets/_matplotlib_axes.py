@@ -149,7 +149,7 @@ class MatplotlibAxes:
         array = image_spec.func(run)
 
         # Initialize artist with currently-available data.
-        artist = self.axes.imshow(array, label=image_spec.label, **image_spec.style, origin='lower')
+        artist = self.axes.imshow(array, label=image_spec.label, origin='lower', **image_spec.style)
         self.axes.set_aspect(self.model.aspect)
         self.axes.set_xlim(self.model.x_limits)
         self.axes.set_ylim(self.model.y_limits)

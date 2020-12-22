@@ -643,6 +643,8 @@ class Image:
     >>> model.run = run
     """
 
+    # TODO: fix x and y limits here
+
     def __init__(
         self,
         field,
@@ -752,6 +754,12 @@ class RasteredImage:
         The color map to use
     extent : scalars (left, right, bottom, top), optional
         Passed through to :meth:`matplotlib.axes.Axes.imshow`
+    x_positive : String, optional
+        Defines the positive direction of the x axis, takes the values 'right'
+        (default) or 'left'.
+    y_positive : String, optional
+        Defines the positive direction of the y axis, takes the values 'up'
+        (default) or 'down'.
 
     Attributes
     ----------
@@ -786,6 +794,8 @@ class RasteredImage:
         clim=None,
         cmap='viridis',
         extent=None,
+        x_positive='right',
+        y_positive='up',
     ):
         super().__init__()
 
@@ -818,6 +828,8 @@ class RasteredImage:
         self._clim = clim
         self._cmap = cmap
         self._extent = extent
+        self._x_positive = x_positive
+        self._y_positive = y_positive
         self.figure = figure
 
     @property
@@ -851,6 +863,52 @@ class RasteredImage:
             i.style.update({'extent': value})
 
     @property
+    def x_positive(self):
+        xmin, xmax = self.axes.x_limits
+        if xmin > xmax:
+            self._x_positive = 'left'
+        else:
+            self._x_positive = 'right'
+        return self._x_positive
+
+    @x_positive.setter
+    def x_positive(self, value):
+        if value not in ['right', 'left']:
+            raise ValueError('x_positive must be "right" or "left"')
+        self._x_positive = value
+        xmin, xmax = self.axes.x_limits
+        if ((xmin > xmax and self._x_positive == 'right') or
+                (xmax > xmin and self._x_positive == 'left')):
+            self.axes.x_limits = (xmax, xmin)
+        elif ((xmax >= xmin and self._x_positive == 'right') or
+                (xmin >= xmax and self._x_positive == 'left')):
+            self.axes.x_limits = (xmin, xmax)
+            self._x_positive = value
+
+    @property
+    def y_positive(self):
+        ymin, ymax = self.axes.y_limits
+        if ymin > ymax:
+            self._y_positive = 'down'
+        else:
+            self._y_positive = 'up'
+        return self._y_positive
+
+    @y_positive.setter
+    def y_positive(self, value):
+        if value not in ['up', 'down']:
+            raise ValueError('y_positive must be "up" or "down"')
+        self._y_positive = value
+        ymin, ymax = self.axes.y_limits
+        if ((ymin > ymax and self._y_positive == 'up') or
+                (ymax > ymin and self._y_positive == 'down')):
+            self.axes.y_limits = (ymax, ymin)
+        elif ((ymax >= ymin and self._y_positive == 'up') or
+                (ymin >= ymax and self._y_positive == 'down')):
+            self.axes.y_limits = (ymin, ymax)
+            self._y_positive = value
+
+    @property
     def run(self):
         return self._run
 
@@ -870,10 +928,19 @@ class RasteredImage:
         self.axes.title = self._label_maker(self.run, self.field)
         self.axes.x_label = md["motors"][1]
         self.axes.y_label = md["motors"][0]
-        if self.axes.x_limits is None:
+        # By default, pixels center on integer coordinates ranging from 0 to
+        # columns-1 horizontally and 0 to rows-1 vertically.
+        # In order to see entire pixels, we set lower limits to -0.5
+        # and upper limits to columns-0.5 horizontally and rows-0.5 vertically
+        # if limits aren't specifically set.
+        if self.axes.x_limits is None and self._x_positive == 'right':
             self.axes.x_limits = (-0.5, md["shape"][1]-0.5)
-        if self.axes.y_limits is None:
+        elif self.axes.x_limits is None and self._x_positive == 'left':
+            self.axes.x_limits = (md["shape"][1]-0.5, -0.5)
+        if self.axes.y_limits is None and self._y_positive == 'up':
             self.axes.y_limits = (-0.5, md["shape"][0]-0.5)
+        elif self.axes.y_limits is None and self._y_positive == 'down':
+            self.axes.y_limits = (md["shape"][0]-0.5, -0.5)
 
     def _transform(self, run, field):
         i_data = numpy.ones(self._shape) * numpy.nan
