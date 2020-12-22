@@ -38,7 +38,7 @@ def export_thumbnails_when_complete(run):
         view.close()
 
     if run_is_live_and_not_completed(run):
-        run.events.completed.connect(export)
+        run.events.new_data.connect(export)
     else:
         export()
 
