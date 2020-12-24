@@ -151,8 +151,19 @@ class MatplotlibAxes:
         # Initialize artist with currently-available data.
         artist = self.axes.imshow(array, label=image_spec.label, origin='lower', **image_spec.style)
         self.axes.set_aspect(self.model.aspect)
-        self.axes.set_xlim(self.model.x_limits)
-        self.axes.set_ylim(self.model.y_limits)
+        # Set x and y limits to defaults if they aren't defined
+        # This is needed for Image to have proper limits
+        if self.model.x_limits is None:
+            self.axes.set_xlim(-0.5, array.shape[1]-0.5)
+            self.model.x_limits = self.axes.get_xlim()
+            print(f'!!! {self.axes.get_xlim()}, {self.model.x_limits}')
+        else:
+            self.axes.set_xlim(self.model.x_limits)
+        if self.model.y_limits is None:
+            self.axes.set_ylim(-0.5, array.shape[0]-0.5)
+            self.model.y_limits = self.axes.get_ylim()
+        else:
+            self.axes.set_ylim(self.model.y_limits)
         self.axes.figure.colorbar(artist)
 
         # If this is connected to a streaming data source and is not yet
