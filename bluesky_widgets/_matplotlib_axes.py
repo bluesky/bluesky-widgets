@@ -156,7 +156,6 @@ class MatplotlibAxes:
         if self.model.x_limits is None:
             self.axes.set_xlim(-0.5, array.shape[1]-0.5)
             self.model.x_limits = self.axes.get_xlim()
-            print(f'!!! {self.axes.get_xlim()}, {self.model.x_limits}')
         else:
             self.axes.set_xlim(self.model.x_limits)
         if self.model.y_limits is None:
