@@ -10,6 +10,8 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QGridLayout,
     QLineEdit,
+    QHBoxLayout,
+    QLabel,
 )
 from ..models.search import LOCAL_TIMEZONE, secs_since_epoch
 
@@ -40,7 +42,7 @@ class QtSearchInput(QWidget):
         self.year_widget = QRadioButton("1 Year")
         self.month_widget = QRadioButton("30 Days")
         self.week_widget = QRadioButton("1 Week")
-        self.today_widget = QRadioButton("24h")
+        self.today_widget = QRadioButton("24 Hours")
         self.hour_widget = QRadioButton("1 Hour")
         self.radio_button_group = QButtonGroup()
         self.radio_button_group.addButton(self.all_widget)
@@ -54,10 +56,10 @@ class QtSearchInput(QWidget):
         default_period_layout.setVerticalSpacing(10)
         default_period_layout.addWidget(self.all_widget, 0, 0, 1, 2)
         default_period_layout.addWidget(self.year_widget, 1, 0, 1, 2)
-        default_period_layout.addWidget(self.month_widget, 2, 0, 1, 2)
-        default_period_layout.addWidget(self.week_widget, 0, 1, 1, 2)
-        default_period_layout.addWidget(self.today_widget, 1, 1, 1, 2)
-        default_period_layout.addWidget(self.hour_widget, 2, 1, 1, 2)
+        default_period_layout.addWidget(self.month_widget, 0, 1, 1, 2)
+        default_period_layout.addWidget(self.week_widget, 1, 1, 1, 2)
+        default_period_layout.addWidget(self.today_widget, 0, 2, 1, 2)
+        default_period_layout.addWidget(self.hour_widget, 1, 2, 1, 2)
         self.layout().addRow("When:", default_period_layout)
 
         # TODO: rethink if restriction to acceptable timedelta values is required
@@ -88,17 +90,22 @@ class QtSearchInput(QWidget):
         # s = SearchInput()
         # s.time_validator = time_validator
 
+        self.date_selection_row = QHBoxLayout(self)
+        self.layout().addRow(self.date_selection_row)
+
         # "Since: <datetime picker>"
         self.since_widget = QDateTimeEdit()
         self.since_widget.setCalendarPopup(True)
         self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.layout().addRow("Since:", self.since_widget)
+        self.date_selection_row.addWidget(QLabel("Date range:", self), 0)
+        self.date_selection_row.addWidget(self.since_widget, 1)
 
         # "Until: <datetime picker>"
         self.until_widget = QDateTimeEdit()
         self.until_widget.setCalendarPopup(True)
         self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.layout().addRow("Until:", self.until_widget)
+        self.date_selection_row.addWidget(QLabel(" \u2013 ", self), 0)
+        self.date_selection_row.addWidget(self.until_widget, 1)
 
         # Text Search
         if model.text_search_supported:
