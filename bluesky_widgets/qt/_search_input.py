@@ -42,7 +42,7 @@ class QtSearchInput(QWidget):
         self.year_widget = QRadioButton("1 Year")
         self.month_widget = QRadioButton("30 Days")
         self.week_widget = QRadioButton("1 Week")
-        self.today_widget = QRadioButton("24h")
+        self.today_widget = QRadioButton("24 Hours")
         self.hour_widget = QRadioButton("1 Hour")
         self.radio_button_group = QButtonGroup()
         self.radio_button_group.addButton(self.all_widget)
