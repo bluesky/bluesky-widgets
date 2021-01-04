@@ -97,14 +97,14 @@ class QtSearchInput(QWidget):
         self.since_widget = QDateTimeEdit()
         self.since_widget.setCalendarPopup(True)
         self.since_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.date_selection_row.addWidget(QLabel("Since:", self), 0)
+        self.date_selection_row.addWidget(QLabel("Date range:", self), 0)
         self.date_selection_row.addWidget(self.since_widget, 1)
 
         # "Until: <datetime picker>"
         self.until_widget = QDateTimeEdit()
         self.until_widget.setCalendarPopup(True)
         self.until_widget.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.date_selection_row.addWidget(QLabel("Until:", self), 0)
+        self.date_selection_row.addWidget(QLabel(" \u2013 ", self), 0)
         self.date_selection_row.addWidget(self.until_widget, 1)
 
         # Text Search
