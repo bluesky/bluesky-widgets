@@ -33,8 +33,10 @@ class MatplotlibAxes:
         axes.set_xlabel(model.x_label)
         axes.set_ylabel(model.y_label)
         axes.set_aspect(model.aspect)
-        axes.set_xlim(model.x_limits)
-        axes.set_ylim(model.y_limits)
+        if model.x_limits is not None:
+            axes.set_xlim(model.x_limits)
+        if model.y_limits is not None:
+            axes.set_ylim(model.y_limits)
 
         # Use matplotlib's user-configurable ID so that we can look up the
         # AxesSpec from the axes if we need to.
