@@ -32,6 +32,9 @@ class MatplotlibAxes:
         axes.set_title(model.title)
         axes.set_xlabel(model.x_label)
         axes.set_ylabel(model.y_label)
+        axes.set_aspect(model.aspect)
+        axes.set_xlim(model.x_limits)
+        axes.set_ylim(model.y_limits)
 
         # Use matplotlib's user-configurable ID so that we can look up the
         # AxesSpec from the axes if we need to.
@@ -55,6 +58,9 @@ class MatplotlibAxes:
         self.connect(model.events.title, self._on_title_changed)
         self.connect(model.events.x_label, self._on_x_label_changed)
         self.connect(model.events.y_label, self._on_y_label_changed)
+        self.connect(model.events.aspect, self._on_aspect_changed)
+        self.connect(model.events.x_limits, self._on_x_limits_changed)
+        self.connect(model.events.y_limits, self._on_y_limits_changed)
 
         for image_spec in model.images:
             self._add_image(image_spec)
@@ -90,6 +96,18 @@ class MatplotlibAxes:
 
     def _on_y_label_changed(self, event):
         self.axes.set_ylabel(event.value)
+        self._update_and_draw()
+
+    def _on_aspect_changed(self, event):
+        self.axes.set_aspect(event.value)
+        self._update_and_draw()
+
+    def _on_x_limits_changed(self, event):
+        self.axes.set_xlim(event.value)
+        self._update_and_draw()
+
+    def _on_y_limits_changed(self, event):
+        self.axes.set_ylim(event.value)
         self._update_and_draw()
 
     def _on_line_added(self, event):
@@ -131,7 +149,8 @@ class MatplotlibAxes:
         array = image_spec.func(run)
 
         # Initialize artist with currently-available data.
-        artist = self.axes.imshow(array, label=image_spec.label, **image_spec.style)
+        artist = self.axes.imshow(array, label=image_spec.label, origin='lower', **image_spec.style)
+        self.axes.set_aspect(self.model.aspect)
         self.axes.figure.colorbar(artist)
 
         # If this is connected to a streaming data source and is not yet

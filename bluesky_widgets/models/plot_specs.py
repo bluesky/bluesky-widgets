@@ -106,10 +106,16 @@ class AxesSpec(BaseSpec):
     images : List[ImageSpec], optional
     title: String, optional
         Axes title text
-    x_label: String, optional
+    x_label : String, optional
         Text label for x axis
-    y_label: String, optional
+    y_label : String, optional
         Text label for y axis
+    aspect : String or Float
+        Passed through to :meth:`matplotlib.axes.Axes.imshow`
+    x_limits : Tuple[Float]
+        Limits of x axis
+    y_limits : Tuple[Float]
+        Limits of y axis
     uuid : UUID, optional
         Automatically assigned to provide a unique identifier for this Figure,
         used internally to track it.
@@ -156,6 +162,9 @@ class AxesSpec(BaseSpec):
         "_title",
         "_x_label",
         "_y_label",
+        "_aspect",
+        "_x_limits",
+        "_y_limits",
     )
 
     def __init__(
@@ -166,6 +175,9 @@ class AxesSpec(BaseSpec):
         title=None,
         x_label=None,
         y_label=None,
+        aspect='equal',
+        x_limits=None,
+        y_limits=None,
         uuid=None,
     ):
         self._figure = None
@@ -176,8 +188,12 @@ class AxesSpec(BaseSpec):
         self._title = title
         self._x_label = x_label
         self._y_label = y_label
+        self._aspect = aspect
+        self._x_limits = x_limits
+        self._y_limits = y_limits
         self.events = EmitterGroup(
-            source=self, title=Event, x_label=Event, y_label=Event
+            source=self, title=Event, x_label=Event, y_label=Event, aspect=Event,
+            x_limits=Event, y_limits=Event
         )
         super().__init__(uuid)
         for line in self._lines:
@@ -282,6 +298,36 @@ class AxesSpec(BaseSpec):
         self._y_label = value
         self.events.y_label(value=value)
 
+    @property
+    def aspect(self):
+        "String or Float for aspect. Settable"
+        return self._aspect
+
+    @aspect.setter
+    def aspect(self, value):
+        self._aspect = value
+        self.events.aspect(value=value)
+
+    @property
+    def x_limits(self):
+        "Float for limits of x axis. Settable"
+        return self._x_limits
+
+    @x_limits.setter
+    def x_limits(self, value):
+        self._x_limits = value
+        self.events.x_limits(value=value)
+
+    @property
+    def y_limits(self):
+        "Float for limits of y axis. Settable"
+        return self._y_limits
+
+    @y_limits.setter
+    def y_limits(self, value):
+        self._y_limits = value
+        self.events.y_limits(value=value)
+
     def _on_artist_added(self, event):
         artist = event.item
         self._adopt_artist(artist)
@@ -299,7 +345,8 @@ class AxesSpec(BaseSpec):
             f"{self.__class__.__name__}(lines={self.lines!r}, "
             f"images={self.images!r}, title={self.title!r},"
             f"x_label={self.x_label!r}, y_label={self.y_label!r}, "
-            f"uuid={self.uuid!r})"
+            f"aspect={self.aspect!r}, x_limits={self.x_limits!r}, "
+            f"y_limits={self.y_limits!r}, uuid={self.uuid!r})"
         )
 
 
@@ -451,7 +498,7 @@ class LineSpec(ArtistSpec):
 
 
 class ImageSpec(ArtistSpec):
-    "Describes an image stack (both data and style)"
+    "Describes an image (both data and style)"
 
 
 # EventedLists for each type of spec. We plan to add type-checking to these,
