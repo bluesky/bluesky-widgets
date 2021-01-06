@@ -122,9 +122,6 @@ Builders with a List of Figures
 .. autoclass:: bluesky_widgets.models.plot_builders.AutoRecentLines
    :members:
 
-.. autoclass:: bluesky_widgets.models.plot_builders.PromptPlotter
-   :members:
-
 Streaming Utilities
 ===================
 

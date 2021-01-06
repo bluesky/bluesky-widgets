@@ -1,5 +1,4 @@
 from collections import defaultdict
-import collections.abc
 import functools
 import itertools
 
@@ -10,123 +9,9 @@ from .plot_specs import (
     AxesSpec,
     ImageSpec,
     LineSpec,
-    FigureSpecList,
 )
 from .utils import auto_label, call_or_eval, RunList, run_is_live_and_not_completed
-from ..utils.list import EventedList
 from ..utils.dict_view import DictView
-
-
-class BuilderList(EventedList):
-    "A list of functions that accept a BlueskyRun and return FigureSpec(s)."
-    ...
-
-
-class PromptPlotter:
-    """
-    Produce Figures from BlueskyRuns promptly (as Run completion time).
-
-    Parameters
-    ----------
-    builders : BuilderList[callable]
-        A list of functions that accept a BlueskyRun and return FigureSpec(s).
-
-    Attributes
-    ----------
-    runs : RunList[BlueskyRun]
-        Add or remove runs from this list.
-    figures : FigureSpecList[FigureSpec]
-        Figures will be added to this list.
-    builders : BuilderList[callable]
-        A list of functions with the expected signature::
-
-            f(run: BlueskyRun) -> FigureSpec
-
-        or::
-
-            f(run: BlueskyRun) -> List{FigureSpec]
-    """
-
-    def __init__(self, builders):
-        self.figures = FigureSpecList()
-        self.builders = BuilderList()
-        self.runs = RunList()
-        self.builders.extend(builders)
-        self.runs.events.added.connect(self._on_run_added)
-
-    def add_run(self, run):
-        """
-        Add a Run.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        """
-        self.runs.append(run)
-
-    def discard_run(self, run):
-        """
-        Discard a Run.
-
-        If the Run is not present, this will return silently.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        """
-        if run in self.runs:
-            self.runs.remove(run)
-
-    def _on_run_added(self, event):
-        run = event.item
-        # If Run is complete, process is now. Otherwise, schedule it to
-        # process when it completes.
-        if not run_is_live_and_not_completed(run):
-            self._process_run(run)
-        else:
-            run.events.completed.connect(lambda event: self._process_run(event.run))
-
-    def _on_builder_added(self, event):
-        builder = event.item
-        self.builders.append(builder)
-        # Process all runs we already have with the new builder.
-        for run in self.runs:
-            if not run_is_live_and_not_completed(run):
-                self._process_run(run)
-            else:
-                run.events.completed.connect(lambda event: self._process_run(event.run))
-
-    def _process_run(self, run):
-        for builder in self.builders:
-            figures = builder(run)
-        # Tolerate a FigureSpec or a list of them.
-        if not isinstance(figures, collections.abc.Iterable):
-            figures = [figures]
-        self.figures.extend(figures)
-
-
-def prompt_line_builder(run):
-    """
-    This is a simple example.
-
-    This makes a hard-coded assumption that the data has columns "motor" and
-    "det" in the primary stream.
-    """
-
-    def func(run):
-        "Return any arrays x, y. They must be of equal length."
-        # *Lazily* read the data so that large arrays are not loaded unless
-        # the yare used.
-        ds = run.primary.read()
-        # Do any computation you want in here....
-        return ds["motor"], ds["det"]
-
-    label = f"Scan {run.metadata['start']['scan_id']}"
-    line = LineSpec(func, run, label)
-    axes = AxesSpec(lines=[line], x_label="motor", y_label="det")
-    figure = FigureSpec((axes,), title="det v motor")
-
-    return [figure]
 
 
 class RecentLines:
