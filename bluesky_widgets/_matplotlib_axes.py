@@ -149,7 +149,9 @@ class MatplotlibAxes:
         array = image_spec.func(run)
 
         # Initialize artist with currently-available data.
-        artist = self.axes.imshow(array, label=image_spec.label, origin='lower', **image_spec.style)
+        artist = self.axes.imshow(
+            array, label=image_spec.label, origin="lower", **image_spec.style
+        )
         self.axes.set_aspect(self.model.aspect)
         self.axes.figure.colorbar(artist)
 

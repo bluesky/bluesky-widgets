@@ -371,9 +371,9 @@ class Images:
         # and upper limits to columns-0.5 horizontally and rows-0.5 vertically
         # if limits aren't specifically set.
         if self.axes.x_limits is None:
-            self.axes.x_limits = (-0.5, array_shape[-1]-0.5)
+            self.axes.x_limits = (-0.5, array_shape[-1] - 0.5)
         if self.axes.y_limits is None:
-            self.axes.y_limits = (-0.5, array_shape[-2]-0.5)
+            self.axes.y_limits = (-0.5, array_shape[-2] - 0.5)
         # TODO Set axes x, y from xarray dims
 
     def _transform(self, run, field):
@@ -486,10 +486,10 @@ class RasteredImage:
         namespace=None,
         axes=None,
         clim=None,
-        cmap='viridis',
+        cmap="viridis",
         extent=None,
-        x_positive='right',
-        y_positive='up',
+        x_positive="right",
+        y_positive="up",
     ):
         super().__init__()
 
@@ -538,7 +538,7 @@ class RasteredImage:
     def cmap(self, value):
         self._cmap = value
         for image in self.axes.images:
-            image.style.update({'cmap': value})
+            image.style.update({"cmap": value})
 
     @property
     def clim(self):
@@ -548,7 +548,7 @@ class RasteredImage:
     def clim(self, value):
         self._clim = value
         for image in self.axes.images:
-            image.style.update({'clim': value})
+            image.style.update({"clim": value})
 
     @property
     def extent(self):
@@ -558,28 +558,30 @@ class RasteredImage:
     def extent(self, value):
         self._extent = value
         for image in self.axes.images:
-            image.style.update({'extent': value})
+            image.style.update({"extent": value})
 
     @property
     def x_positive(self):
         xmin, xmax = self.axes.x_limits
         if xmin > xmax:
-            self._x_positive = 'left'
+            self._x_positive = "left"
         else:
-            self._x_positive = 'right'
+            self._x_positive = "right"
         return self._x_positive
 
     @x_positive.setter
     def x_positive(self, value):
-        if value not in ['right', 'left']:
+        if value not in ["right", "left"]:
             raise ValueError('x_positive must be "right" or "left"')
         self._x_positive = value
         xmin, xmax = self.axes.x_limits
-        if ((xmin > xmax and self._x_positive == 'right') or
-                (xmax > xmin and self._x_positive == 'left')):
+        if (xmin > xmax and self._x_positive == "right") or (
+            xmax > xmin and self._x_positive == "left"
+        ):
             self.axes.x_limits = (xmax, xmin)
-        elif ((xmax >= xmin and self._x_positive == 'right') or
-                (xmin >= xmax and self._x_positive == 'left')):
+        elif (xmax >= xmin and self._x_positive == "right") or (
+            xmin >= xmax and self._x_positive == "left"
+        ):
             self.axes.x_limits = (xmin, xmax)
             self._x_positive = value
 
@@ -587,28 +589,30 @@ class RasteredImage:
     def y_positive(self):
         ymin, ymax = self.axes.y_limits
         if ymin > ymax:
-            self._y_positive = 'down'
+            self._y_positive = "down"
         else:
-            self._y_positive = 'up'
+            self._y_positive = "up"
         return self._y_positive
 
     @y_positive.setter
     def y_positive(self, value):
-        if value not in ['up', 'down']:
+        if value not in ["up", "down"]:
             raise ValueError('y_positive must be "up" or "down"')
         self._y_positive = value
         ymin, ymax = self.axes.y_limits
-        if ((ymin > ymax and self._y_positive == 'up') or
-                (ymax > ymin and self._y_positive == 'down')):
+        if (ymin > ymax and self._y_positive == "up") or (
+            ymax > ymin and self._y_positive == "down"
+        ):
             self.axes.y_limits = (ymax, ymin)
-        elif ((ymax >= ymin and self._y_positive == 'up') or
-                (ymin >= ymax and self._y_positive == 'down')):
+        elif (ymax >= ymin and self._y_positive == "up") or (
+            ymin >= ymax and self._y_positive == "down"
+        ):
             self.axes.y_limits = (ymin, ymax)
             self._y_positive = value
 
     def _add_image(self):
         func = functools.partial(self._transform, field=self.field)
-        style = {'cmap': self._cmap, 'clim': self._clim, 'extent': self._extent}
+        style = {"cmap": self._cmap, "clim": self._clim, "extent": self._extent}
         image = ImageSpec(func, self.run, label=self.field, style=style)
         self._run_manager.track_artist(image)
         md = self.run.metadata["start"]
@@ -621,14 +625,14 @@ class RasteredImage:
         # In order to see entire pixels, we set lower limits to -0.5
         # and upper limits to columns-0.5 horizontally and rows-0.5 vertically
         # if limits aren't specifically set.
-        if self.axes.x_limits is None and self._x_positive == 'right':
-            self.axes.x_limits = (-0.5, md["shape"][1]-0.5)
-        elif self.axes.x_limits is None and self._x_positive == 'left':
-            self.axes.x_limits = (md["shape"][1]-0.5, -0.5)
-        if self.axes.y_limits is None and self._y_positive == 'up':
-            self.axes.y_limits = (-0.5, md["shape"][0]-0.5)
-        elif self.axes.y_limits is None and self._y_positive == 'down':
-            self.axes.y_limits = (md["shape"][0]-0.5, -0.5)
+        if self.axes.x_limits is None and self._x_positive == "right":
+            self.axes.x_limits = (-0.5, md["shape"][1] - 0.5)
+        elif self.axes.x_limits is None and self._x_positive == "left":
+            self.axes.x_limits = (md["shape"][1] - 0.5, -0.5)
+        if self.axes.y_limits is None and self._y_positive == "up":
+            self.axes.y_limits = (-0.5, md["shape"][0] - 0.5)
+        elif self.axes.y_limits is None and self._y_positive == "down":
+            self.axes.y_limits = (md["shape"][0] - 0.5, -0.5)
 
     def _transform(self, run, field):
         image_data = numpy.ones(self._shape) * numpy.nan

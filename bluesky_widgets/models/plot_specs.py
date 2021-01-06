@@ -176,7 +176,7 @@ class AxesSpec(BaseSpec):
         title=None,
         x_label=None,
         y_label=None,
-        aspect='equal',
+        aspect="equal",
         x_limits=None,
         y_limits=None,
         uuid=None,
@@ -193,8 +193,13 @@ class AxesSpec(BaseSpec):
         self._x_limits = x_limits
         self._y_limits = y_limits
         self.events = EmitterGroup(
-            source=self, title=Event, x_label=Event, y_label=Event, aspect=Event,
-            x_limits=Event, y_limits=Event
+            source=self,
+            title=Event,
+            x_label=Event,
+            y_label=Event,
+            aspect=Event,
+            x_limits=Event,
+            y_limits=Event,
         )
         super().__init__(uuid)
         for line in self._lines:
