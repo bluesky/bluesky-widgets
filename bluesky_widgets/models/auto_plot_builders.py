@@ -213,24 +213,10 @@ class AutoRecentLines(Auto):
         super().add_run(run, pinned=pinned)
 
 
-# HACK: Shim Images to implement add_run, discard_run as expected by Auto.
-# Not sure yet if we should make Images accept multiple runs. It makes things
-# more complex in terms of tracking the Run <---> Artist mapping.
-
-
-class _ShimmedImage(Image):
-    def add_run(self, run):
-        self.run = run
-
-    def discard_run(self, run):
-        if run.metadata["start"]["uid"] == self.run.metadata["start"]["uid"]:
-            self.run = None
-
-
 class AutoImages(Auto):
     @property
     def _plot_builder(self):
-        return _ShimmedImage
+        return Image
 
     @property
     def _heuristic(self):

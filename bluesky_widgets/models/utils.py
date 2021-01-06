@@ -1,10 +1,12 @@
 import ast
+import collections
 import contextlib
 import inspect
 
 import numpy
 
 from ..utils.list import EventedList
+from ..utils.event import EmitterGroup, Event
 
 
 class RunList(EventedList):
@@ -234,3 +236,128 @@ def auto_label(callable_or_expr):
             f"expected callable or string, received {callable_or_expr!r} of "
             f"type {type(callable_or_expr).__name__}"
         )
+
+
+class RunManager:
+    """
+    Keep a RunList with a maximum number of Runs, plus any 'pinned' Runs.
+
+    This is used internally as a helper class by Lines, Images, and others.
+    This tracks the relationship between Runs and Artists and ensures correct
+    cleanup when a Run is removed.
+    """
+
+    def __init__(self, max_runs, needs_streams):
+        self._max_runs = int(max_runs)
+        self._needs_streams = tuple(needs_streams)
+        self.runs = RunList()
+        self._pinned = set()
+        # Maps Run (uid) to set of ArtistSpec.
+        self._runs_to_artists = collections.defaultdict(list)
+
+        self.runs.events.added.connect(self._on_run_added)
+        self.runs.events.removed.connect(self._on_run_removed)
+        self.events = EmitterGroup(source=self, run_ready=Event)
+
+    def add_run(self, run, *, pinned=False):
+        """
+        Add a Run.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        pinned : Boolean
+            If True, retain this Run until it is removed by the user.
+        """
+        if pinned:
+            self._pinned.add(run.metadata["start"]["uid"])
+        self.runs.append(run)
+
+    def discard_run(self, run):
+        """
+        Discard a Run, including any pinned and unpinned.
+
+        If the Run is not present, this will return silently.
+
+        Parameters
+        ----------
+        run : BlueskyRun
+        """
+        if run in self.runs:
+            self.runs.remove(run)
+
+    def track_artist(self, artist):
+        """
+        Track an Artist.
+
+        This ensures it will be removed when the associated Run is removed.
+
+        Parameters
+        ----------
+        artist : ArtistSpec
+        """
+        # TODO Someday we will need aritsts that represent data from *multiple*
+        # runs, and then we will need to rethink the expected API of artist
+        # (.run -> .runs?) and the cache management here. But that would be a
+        # widereaching change, so we'll stay within the framework as it is
+        # today.
+        run = artist.run
+        run_uid = run.metadata["start"]["uid"]
+        self._runs_to_artists[run_uid].append(artist)
+
+    def _cull_runs(self):
+        "Remove Runs from the beginning of self.runs to keep the length <= max_runs."
+        i = 0
+        while len(self.runs) > self.max_runs + len(self._pinned):
+            while self.runs[i].metadata["start"]["uid"] in self._pinned:
+                i += 1
+            self.runs.pop(i)
+
+    def _on_run_added(self, event):
+        """
+        When a new Run is added, mark it as ready or listen for it to become ready.
+
+        By "ready" we mean, it has all the streams it needs to be drawn.
+        """
+        self._cull_runs()
+        run = event.item
+        if run_is_live_and_not_completed(run):
+            # If the stream of interest is defined already, plot now.
+            if set(self.needs_streams).issubset(set(list(run))):
+                self.events.run_ready(run=run)
+            else:
+                # Otherwise, connect a callback to run when the stream of interest arrives.
+                run.events.new_stream.connect(self._on_new_stream)
+        else:
+            if set(self.needs_streams).issubset(set(list(run))):
+                self.events.run_ready(run=run)
+
+    def _on_run_removed(self, event):
+        "Remove any extant artists if its corresponding Run is removed."
+        run_uid = event.item.metadata["start"]["uid"]
+        self._pinned.discard(run_uid)
+        for artist in self._runs_to_artists.pop(run_uid):
+            artist.axes.discard(artist)
+
+    def _on_new_stream(self, event):
+        "When an unready Run get a new stream, check it if is now ready."
+        if set(self.needs_streams).issubset(set(list(event.run))):
+            self.events.run_ready(run=event.run)
+            event.run.events.new_stream.disconnect(self._on_new_stream)
+
+    @property
+    def max_runs(self):
+        return self._max_runs
+
+    @max_runs.setter
+    def max_runs(self, value):
+        self._max_runs = value
+        self._cull_runs()
+
+    @property
+    def pinned(self):
+        return frozenset(self._pinned)
+
+    @property
+    def needs_streams(self):
+        return self._needs_streams

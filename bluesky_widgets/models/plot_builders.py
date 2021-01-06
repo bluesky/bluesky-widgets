@@ -1,4 +1,3 @@
-from collections import defaultdict
 import functools
 import itertools
 
@@ -10,13 +9,13 @@ from .plot_specs import (
     ImageSpec,
     LineSpec,
 )
-from .utils import auto_label, call_or_eval, RunList, run_is_live_and_not_completed
+from .utils import auto_label, call_or_eval, RunManager, run_is_live_and_not_completed
 from ..utils.dict_view import DictView
 
 
-class RecentLines:
+class Lines:
     """
-    Plot y vs x for the last N runs.
+    Plot ys vs x for the last N runs.
 
     This supports plotting columns like ``"I0"`` but also Python
     expressions like ``"5 * log(I0/It)"`` and even
@@ -26,8 +25,6 @@ class RecentLines:
 
     Parameters
     ----------
-    max_runs : Integer
-        Number of lines to show at once
     x : String | Callable
         Field name (e.g. "theta") or expression (e.g. "- deg2rad(theta) / 2")
         or callable with expected signature::
@@ -50,6 +47,8 @@ class RecentLines:
         :func:`bluesky_widgets.models.utils.call_or_eval` for details and more
         examples.
 
+    max_runs : Integer
+        Number of Runs to visualize at once
 
     label_maker : Callable, optional
         Expected signature::
@@ -67,7 +66,7 @@ class RecentLines:
     Attributes
     ----------
     max_runs : int
-        Number of Runs to plot at once. This may be changed at any point.
+        Number of Runs to visualize at once. This may be changed at any point.
         (Note: Increasing it will not restore any Runs that have already been
         removed, but it will allow more new Runs to be added.)
     runs : RunList[BlueskyRun]
@@ -91,7 +90,7 @@ class RecentLines:
 
     Plot "det" vs "motor" and view it.
 
-    >>> model = RecentLines(3, "motor", ["det"])
+    >>> model = Lines("motor", ["det"])
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.add_run(run)
@@ -100,21 +99,21 @@ class RecentLines:
     Plot a mathematical transformation of the columns using any object in
     numpy. This can be given as a string expression:
 
-    >>> model = RecentLines(3, "abs(motor)", ["-log(det)"])
-    >>> model = RecentLines(3, "abs(motor)", ["pi * det"])
-    >>> model = RecentLines(3, "abs(motor)", ["sqrt(det)"])
+    >>> model = Lines("abs(motor)", ["-log(det)"])
+    >>> model = Lines("abs(motor)", ["pi * det"])
+    >>> model = Lines("abs(motor)", ["sqrt(det)"])
 
     Plot multiple lines.
 
-    >>> model = RecentLines(3, "motor", ["log(I0/It)", "log(I0)", "log(It)"])
+    >>> model = Lines("motor", ["log(I0/It)", "log(I0)", "log(It)"])
 
     Plot every tenth point.
 
-    >>> model = RecentLines(3, "motor", ["intesnity[::10]"])
+    >>> model = Lines("motor", ["intesnity[::10]"])
 
     Access data outside the "primary" stream, such as a stream name "baseline".
 
-    >>> model = RecentLines(3, "motor", ["intensity/baseline['intensity'][0]"])
+    >>> model = Lines("motor", ["intensity/baseline['intensity'][0]"])
 
     As shown, objects from numpy can be used in expressions. You may define
     additional words, such as "savlog" for a Savitzky-Golay smoothing filter,
@@ -122,19 +121,19 @@ class RecentLines:
 
     >>> import scipy.signal
     >>> namespace = {"savgol": scipy.signal.savgol_filter}
-    >>> model = RecentLines(3, "motor", ["savgol(intensity, 5, 2)"],
+    >>> model = Lines("motor", ["savgol(intensity, 5, 2)"],
     ...                     namespace=namespace)
 
     Or you may pass in a function. It will be passed parameters according to
     their names.
 
-    >>> model = RecentLines(3, "motor", [lambda intensity: savgol(intensity, 5, 2)])
+    >>> model = Lines("motor", [lambda intensity: savgol(intensity, 5, 2)])
 
     More examples of this function-based usage:
 
-    >>> model = RecentLines(3, "abs(motor)", [lambda det: -log(det)])
-    >>> model = RecentLines(3, "abs(motor)", [lambda det, pi: pi * det])
-    >>> model = RecentLines(3, "abs(motor)", [lambda det, np: np.sqrt(det)])
+    >>> model = Lines("abs(motor)", [lambda det: -log(det)])
+    >>> model = Lines("abs(motor)", [lambda det, pi: pi * det])
+    >>> model = Lines("abs(motor)", [lambda det, np: np.sqrt(det)])
 
     Custom, user-defined objects may be added in the same way, either by adding
     names to the namespace or providing the functions directly.
@@ -142,7 +141,6 @@ class RecentLines:
 
     def __init__(
         self,
-        max_runs,
         x,
         ys,
         *,
@@ -150,6 +148,7 @@ class RecentLines:
         needs_streams=("primary",),
         namespace=None,
         axes=None,
+        max_runs=10,
     ):
         super().__init__()
 
@@ -170,25 +169,17 @@ class RecentLines:
                 def label_maker(run, y):
                     return f"Scan {run.metadata['start'].get('scan_id', '?')}"
 
-        # Stash these and expose them as read-only properties.
-        self._max_runs = int(max_runs)
         self._x = x
         if isinstance(ys, str):
             raise ValueError("`ys` must be a list of strings, not a string")
         self._ys = tuple(ys)
         self._label_maker = label_maker
-        self._needs_streams = tuple(needs_streams)
         self._namespace = namespace
 
-        self.runs = RunList()
-        self._pinned = set()
+        self._run_manager = RunManager(max_runs, needs_streams)
+        self._run_manager.events.run_ready.connect(self._add_lines)
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
-        # Maps Run (uid) to set of LineSpec UUIDs.
-        self._runs_to_lines = defaultdict(set)
-
-        self.runs.events.added.connect(self._on_run_added)
-        self.runs.events.removed.connect(self._on_run_removed)
 
         if axes is None:
             axes = AxesSpec(
@@ -200,129 +191,55 @@ class RecentLines:
             figure = axes.figure
         self.axes = axes
         self.figure = figure
+        self.add_run = self._run_manager.add_run
+        self.discard_run = self._run_manager.discard_run
 
     def _transform(self, run, x, y):
         return call_or_eval((x, y), run, self.needs_streams, self.namespace)
 
-    def add_run(self, run, *, pinned=False):
-        """
-        Add a Run.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        pinned : Boolean
-            If True, retain this Run until it is removed by the user.
-        """
-        if pinned:
-            self._pinned.add(run.metadata["start"]["uid"])
-        self.runs.append(run)
-
-    def discard_run(self, run):
-        """
-        Discard a Run, including any pinned and unpinned.
-
-        If the Run is not present, this will return silently.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        """
-        if run in self.runs:
-            self.runs.remove(run)
-
-    def _add_lines(self, run):
+    def _add_lines(self, event):
         "Add a line."
-        # Create a plot if we do not have one.
-        # If necessary, removes runs to make room for the new one.
-        self._cull_runs()
-
+        run = event.run
         for y in self.ys:
             label = self._label_maker(run, y)
             # If run is in progress, give it a special color so it stands out.
             if run_is_live_and_not_completed(run):
                 color = "black"
-                # Later, when it completes, flip the color to one from the cycle.
-                run.events.completed.connect(self._on_run_complete)
+
+                def restyle_line_when_complete(event):
+                    "When run is complete, update style."
+                    line.style.update({"color": next(self._color_cycle)})
+
+                run.events.completed.connect(restyle_line_when_complete)
             else:
                 color = next(self._color_cycle)
             style = {"color": color}
 
             # Style pinned runs differently.
-            if run.metadata["start"]["uid"] in self._pinned:
+            if run.metadata["start"]["uid"] in self.pinned:
                 style.update(linestyle="dashed")
                 label += " (pinned)"
 
             func = functools.partial(self._transform, x=self.x, y=y)
             line = LineSpec(func, run, label, style)
-            run_uid = run.metadata["start"]["uid"]
-            self._runs_to_lines[run_uid].add(line.uuid)
+            self._run_manager.track_artist(line)
             self.axes.lines.append(line)
-
-    def _cull_runs(self):
-        "Remove Runs from the beginning of self.runs to keep the length <= max_runs."
-        i = 0
-        while len(self.runs) > self.max_runs + len(self._pinned):
-            while self.runs[i].metadata["start"]["uid"] in self._pinned:
-                i += 1
-            self.runs.pop(i)
-
-    def _on_run_added(self, event):
-        "When a new Run is added, draw a line or schedule it to be drawn."
-        run = event.item
-        # If the stream of interest is defined already, plot now.
-        if set(self.needs_streams).issubset(set(list(run))):
-            self._add_lines(run)
-        else:
-            # Otherwise, connect a callback to run when the stream of interest arrives.
-            run.events.new_stream.connect(self._on_new_stream)
-
-    def _on_run_removed(self, event):
-        "Remove the line if its corresponding Run is removed."
-        run_uid = event.item.metadata["start"]["uid"]
-        self._pinned.discard(run_uid)
-        line_uuids = self._runs_to_lines.pop(run_uid)
-        for line_uuid in line_uuids:
-            try:
-                line = self.axes.by_uuid[line_uuid]
-            except KeyError:
-                # The LineSpec was externally removed from the AxesSpec.
-                continue
-            self.axes.lines.remove(line)
-
-    def _on_new_stream(self, event):
-        "This callback runs whenever BlueskyRun has a new stream."
-        if set(self.needs_streams).issubset(set(list(event.run))):
-            self._add_lines(event.run)
-            event.run.events.new_stream.disconnect(self._on_new_stream)
-
-    def _on_run_complete(self, event):
-        "When a run completes, update the color from back to a color."
-        run_uid = event.run.metadata["start"]["uid"]
-        try:
-            line_uuids = self._runs_to_lines[run_uid]
-        except KeyError:
-            # The Run has been removed before the Run completed.
-            return
-        for line_uuid in line_uuids:
-            try:
-                line = self.axes.by_uuid[line_uuid]
-            except KeyError:
-                # The LineSpec was externally removed from the AxesSpec.
-                continue
-            line.style.update({"color": next(self._color_cycle)})
 
     @property
     def max_runs(self):
-        return self._max_runs
+        return self._run_manager.max_runs
 
     @max_runs.setter
     def max_runs(self, value):
-        self._max_runs = value
-        self._cull_runs()
+        self._run_manager.max_runs = value
 
-    # Read-only properties so that these settings are inspectable, but not
-    # changeable.
+    @property
+    def needs_streams(self):
+        return self._run_manager._needs_streams
+
+    @property
+    def pinned(self):
+        return self._run_manager._pinned
 
     @property
     def x(self):
@@ -333,16 +250,8 @@ class RecentLines:
         return self._ys
 
     @property
-    def needs_streams(self):
-        return self._needs_streams
-
-    @property
     def namespace(self):
         return DictView(self._namespace or {})
-
-    @property
-    def pinned(self):
-        return frozenset(self._pinned)
 
 
 class Image:
