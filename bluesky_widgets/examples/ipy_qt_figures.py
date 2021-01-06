@@ -10,11 +10,11 @@ from bluesky.plans import scan
 from ophyd.sim import motor, det
 
 from bluesky_widgets.utils.streaming import stream_documents_into_runs
-from bluesky_widgets.models.auto_plot_builders import AutoRecentLines
+from bluesky_widgets.models.auto_plot_builders import AutoLines
 from bluesky_widgets.qt.figures import QtFigures
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 
-model = AutoRecentLines(3)
+model = AutoLines(max_runs=3)
 view = QtFigures(model.figures)
 view.show()
 

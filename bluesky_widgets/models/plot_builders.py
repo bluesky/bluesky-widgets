@@ -48,7 +48,7 @@ class Lines:
         examples.
 
     max_runs : Integer
-        Number of Runs to visualize at once
+        Number of Runs to visualize at once. Default is 10.
 
     label_maker : Callable, optional
         Expected signature::
@@ -68,7 +68,8 @@ class Lines:
     max_runs : int
         Number of Runs to visualize at once. This may be changed at any point.
         (Note: Increasing it will not restore any Runs that have already been
-        removed, but it will allow more new Runs to be added.)
+        removed, but it will allow more new Runs to be added.) Runs added
+        with ``pinned=True`` are exempt from the limit.
     runs : RunList[BlueskyRun]
         As runs are appended entries will be removed from the beginning of the
         last (first in, first out) so that there are at most ``max_runs``.
@@ -144,11 +145,11 @@ class Lines:
         x,
         ys,
         *,
+        max_runs=10,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
         axes=None,
-        max_runs=10,
     ):
         super().__init__()
 
@@ -175,12 +176,6 @@ class Lines:
         self._ys = tuple(ys)
         self._label_maker = label_maker
         self._namespace = namespace
-
-        self._run_manager = RunManager(max_runs, needs_streams)
-        self._run_manager.events.run_ready.connect(self._add_lines)
-
-        self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
-
         if axes is None:
             axes = AxesSpec(
                 x_label=auto_label(self.x),
@@ -191,6 +186,11 @@ class Lines:
             figure = axes.figure
         self.axes = axes
         self.figure = figure
+
+        self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
+
+        self._run_manager = RunManager(max_runs, needs_streams)
+        self._run_manager.events.run_ready.connect(self._add_lines)
         self.add_run = self._run_manager.add_run
         self.discard_run = self._run_manager.discard_run
 
@@ -226,6 +226,24 @@ class Lines:
             self.axes.lines.append(line)
 
     @property
+    def x(self):
+        return self._x
+
+    @property
+    def ys(self):
+        return self._ys
+
+    @property
+    def namespace(self):
+        return DictView(self._namespace or {})
+
+    # Expose some properties from the internal RunManger helper class.
+
+    @property
+    def runs(self):
+        return self._run_manager.runs
+
+    @property
     def max_runs(self):
         return self._run_manager.max_runs
 
@@ -241,20 +259,8 @@ class Lines:
     def pinned(self):
         return self._run_manager._pinned
 
-    @property
-    def x(self):
-        return self._x
 
-    @property
-    def ys(self):
-        return self._ys
-
-    @property
-    def namespace(self):
-        return DictView(self._namespace or {})
-
-
-class Image:
+class Images:
     """
     Plot an image from a Run.
 
@@ -266,6 +272,8 @@ class Image:
 
     field : string
         Field name or expression
+    max_runs : Integer
+        Number of Runs to visualize at once. Default is 1.
     label_maker : Callable, optional
         Expected signature::
 
@@ -281,8 +289,16 @@ class Image:
 
     Attributes
     ----------
-    run : BlueskyRun
-        The currently-viewed Run
+    max_runs : int
+        Number of Runs to visualize at once. This may be changed at any point.
+        (Note: Increasing it will not restore any Runs that have already been
+        removed, but it will allow more new Runs to be added.) Runs added
+        with ``pinned=True`` are exempt from the limit.
+    runs : RunList[BlueskyRun]
+        As runs are appended entries will be removed from the beginning of the
+        last (first in, first out) so that there are at most ``max_runs``.
+    pinned : Frozenset[String]
+        Run uids of pinned runs.
     figure : FigureSpec
     axes : AxesSpec
     field : String
@@ -297,7 +313,7 @@ class Image:
     >>> model = Images("ccd")
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
-    >>> model.run = run
+    >>> model.add_run(run)
     """
 
     # TODO: fix x and y limits here
@@ -306,6 +322,7 @@ class Image:
         self,
         field,
         *,
+        max_runs=1,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
@@ -318,21 +335,15 @@ class Image:
             # the schema, so we fail gracefully if it is missing.
 
             def label_maker(run, field):
-                md = self.run.metadata["start"]
+                md = run.metadata["start"]
                 return (
                     f"Scan ID {md.get('scan_id', '?')}   UID {md['uid'][:8]}   "
                     f"{auto_label(field)}"
                 )
 
-        self._label_maker = label_maker
-
-        # Stash these and expose them as read-only properties.
         self._field = field
-        self._needs_streams = needs_streams
+        self._label_maker = label_maker
         self._namespace = namespace
-
-        self._run = None
-
         if axes is None:
             axes = AxesSpec()
             figure = FigureSpec((axes,), title="")
@@ -341,23 +352,19 @@ class Image:
         self.axes = axes
         self.figure = figure
 
-    @property
-    def run(self):
-        return self._run
+        self._run_manager = RunManager(max_runs, needs_streams)
+        self._run_manager.events.run_ready.connect(self._add_images)
+        self.add_run = self._run_manager.add_run
+        self.discard_run = self._run_manager.discard_run
 
-    @run.setter
-    def run(self, value):
-        self._run = value
-        self.axes.images.clear()
-        if self._run is not None:
-            self._add_image()
-
-    def _add_image(self):
+    def _add_images(self, event):
+        run = event.run
         func = functools.partial(self._transform, field=self.field)
-        image = ImageSpec(func, self.run, label=self.field)
-        array_shape = self.run.primary.read()[self.field].shape
+        image = ImageSpec(func, run, label=self.field)
+        array_shape = run.primary.read()[self.field].shape
+        self._run_manager.track_artist(image)
         self.axes.images.append(image)
-        self.axes.title = self._label_maker(self.run, self.field)
+        self.axes.title = self._label_maker(run, self.field)
         # By default, pixels center on integer coordinates ranging from 0 to
         # columns-1 horizontally and 0 to rows-1 vertically.
         # In order to see entire pixels, we set lower limits to -0.5
@@ -381,16 +388,34 @@ class Image:
         return data
 
     @property
-    def needs_streams(self):
-        return self._needs_streams
+    def field(self):
+        return self._field
 
     @property
     def namespace(self):
         return DictView(self._namespace or {})
 
+    # Expose some properties from the internal RunManger helper class.
+
     @property
-    def field(self):
-        return self._field
+    def runs(self):
+        return self._run_manager.runs
+
+    @property
+    def max_runs(self):
+        return self._run_manager.max_runs
+
+    @max_runs.setter
+    def max_runs(self, value):
+        self._run_manager.max_runs = value
+
+    @property
+    def needs_streams(self):
+        return self._run_manager._needs_streams
+
+    @property
+    def pinned(self):
+        return self._run_manager._pinned
 
 
 class RasteredImage:
@@ -455,6 +480,7 @@ class RasteredImage:
         field,
         shape,
         *,
+        max_runs=None,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
@@ -482,7 +508,6 @@ class RasteredImage:
         # Stash these and expose them as read-only properties.
         self._field = field
         self._shape = shape
-        self._needs_streams = needs_streams
         self._namespace = namespace
 
         self._run = None
@@ -493,12 +518,17 @@ class RasteredImage:
         else:
             figure = axes.figure
         self.axes = axes
+        self.figure = figure
         self._clim = clim
         self._cmap = cmap
         self._extent = extent
         self._x_positive = x_positive
         self._y_positive = y_positive
-        self.figure = figure
+
+        self._run_manager = RunManager(max_runs, needs_streams)
+        self._run_manager.events.run_ready.connect(self._add_lines)
+        self.add_run = self._run_manager.add_run
+        self.discard_run = self._run_manager.discard_run
 
     @property
     def cmap(self):
@@ -507,8 +537,8 @@ class RasteredImage:
     @cmap.setter
     def cmap(self, value):
         self._cmap = value
-        for i in self.axes.images:
-            i.style.update({'cmap': value})
+        for image in self.axes.images:
+            image.style.update({'cmap': value})
 
     @property
     def clim(self):
@@ -517,8 +547,8 @@ class RasteredImage:
     @clim.setter
     def clim(self, value):
         self._clim = value
-        for i in self.axes.images:
-            i.style.update({'clim': value})
+        for image in self.axes.images:
+            image.style.update({'clim': value})
 
     @property
     def extent(self):
@@ -527,8 +557,8 @@ class RasteredImage:
     @extent.setter
     def extent(self, value):
         self._extent = value
-        for i in self.axes.images:
-            i.style.update({'extent': value})
+        for image in self.axes.images:
+            image.style.update({'extent': value})
 
     @property
     def x_positive(self):
@@ -576,21 +606,11 @@ class RasteredImage:
             self.axes.y_limits = (ymin, ymax)
             self._y_positive = value
 
-    @property
-    def run(self):
-        return self._run
-
-    @run.setter
-    def run(self, value):
-        self._run = value
-        self.axes.images.clear()
-        if self._run is not None:
-            self._add_image()
-
     def _add_image(self):
         func = functools.partial(self._transform, field=self.field)
         style = {'cmap': self._cmap, 'clim': self._clim, 'extent': self._extent}
         image = ImageSpec(func, self.run, label=self.field, style=style)
+        self._run_manager.track_artist(image)
         md = self.run.metadata["start"]
         self.axes.images.append(image)
         self.axes.title = self._label_maker(self.run, self.field)
@@ -611,23 +631,19 @@ class RasteredImage:
             self.axes.y_limits = (md["shape"][0]-0.5, -0.5)
 
     def _transform(self, run, field):
-        i_data = numpy.ones(self._shape) * numpy.nan
+        image_data = numpy.ones(self._shape) * numpy.nan
         (data,) = numpy.asarray(
             call_or_eval((field,), run, self.needs_streams, self.namespace)
         )
         snaking = self.run.metadata["start"]["snaking"]
-        for i in range(len(data)):
-            pos = list(numpy.unravel_index(i, self._shape))
+        for index in range(len(data)):
+            pos = list(numpy.unravel_index(index, self._shape))
             if snaking[1] and (pos[0] % 2):
                 pos[1] = self._shape[1] - pos[1] - 1
             pos = tuple(pos)
-            i_data[pos] = data[i]
+            image_data[pos] = data[index]
 
-        return i_data
-
-    @property
-    def needs_streams(self):
-        return self._needs_streams
+        return image_data
 
     @property
     def namespace(self):
@@ -640,3 +656,25 @@ class RasteredImage:
     @property
     def shape(self):
         return self._shape
+
+    # Expose some properties from the internal RunManger helper class.
+
+    @property
+    def runs(self):
+        return self._run_manager.runs
+
+    @property
+    def max_runs(self):
+        return self._run_manager.max_runs
+
+    @max_runs.setter
+    def max_runs(self, value):
+        self._run_manager.max_runs = value
+
+    @property
+    def needs_streams(self):
+        return self._run_manager._needs_streams
+
+    @property
+    def pinned(self):
+        return self._run_manager._pinned

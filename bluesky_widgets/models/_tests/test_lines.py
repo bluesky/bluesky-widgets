@@ -1,7 +1,7 @@
 from bluesky_live.run_builder import build_simple_run
 import pytest
 
-from ..plot_builders import RecentLines
+from ..plot_builders import Lines
 from ...headless.figures import HeadlessFigure
 
 
@@ -17,10 +17,10 @@ MAX_RUNS = 3
 
 
 def test_pinned():
-    "Test RecentLines with 'pinned' and un-pinned runs."
+    "Test Lines with 'pinned' and un-pinned runs."
     ys = ["det", "det2"]
     num_ys = len(ys)
-    model = RecentLines(MAX_RUNS, "motor", ys)
+    model = Lines("motor", ys, max_runs=MAX_RUNS)
     view = HeadlessFigure(model.figure)
 
     # Add MAX_RUNS and then some more and check that they do get bumped off.
@@ -51,15 +51,16 @@ def test_pinned():
 
 def test_properties():
     "Touch various accessors"
-    model = RecentLines(MAX_RUNS, "c * motor", ["det"], namespace={"c": 3})
+    model = Lines("c * motor", ["det"], namespace={"c": 3}, max_runs=MAX_RUNS)
     view = HeadlessFigure(model.figure)
-    model.run = runs[0]
-    assert model.run is runs[0]
+    model.add_run(runs[0])
+    assert model.runs[0] is runs[0]
     assert model.max_runs == MAX_RUNS
     assert model.x == "c * motor"
     assert model.ys == ("det",)
     assert dict(model.namespace) == {"c": 3}
     assert model.needs_streams == ("primary",)
+    assert model.pinned == frozenset()
 
     view.close()
 
@@ -67,7 +68,7 @@ def test_properties():
 def test_decrease_max_runs():
     "Decreasing max_runs should remove the runs and their associated lines."
     INITIAL_MAX_RUNS = 5
-    model = RecentLines(5, "motor", ["det"], namespace={"c": 3})
+    model = Lines("motor", ["det"], namespace={"c": 3}, max_runs=INITIAL_MAX_RUNS)
     view = HeadlessFigure(model.figure)
     for run in runs[:5]:
         model.add_run(run)
@@ -83,9 +84,9 @@ def test_decrease_max_runs():
 
 @pytest.mark.parametrize("expr", ["det / det2", "-log(det)", "np.sqrt(det)"])
 def test_expressions(expr):
-    "Test RecentLines with 'pinned' and un-pinned runs."
+    "Test Lines with 'pinned' and un-pinned runs."
     ys = [expr]
-    model = RecentLines(MAX_RUNS, "motor", ys)
+    model = Lines("motor", ys, max_runs=MAX_RUNS)
     view = HeadlessFigure(model.figure)
     model.add_run(runs[0])
     assert len(model.figure.axes[0].lines) == 1
@@ -102,9 +103,9 @@ def test_expressions(expr):
     ],
 )
 def test_functions(func):
-    "Test RecentLines with 'pinned' and un-pinned runs."
+    "Test Lines with 'pinned' and un-pinned runs."
     ys = [func]
-    model = RecentLines(MAX_RUNS, "motor", ys)
+    model = Lines("motor", ys, max_runs=MAX_RUNS)
     view = HeadlessFigure(model.figure)
     model.add_run(runs[0])
     assert len(model.figure.axes[0].lines) == 1

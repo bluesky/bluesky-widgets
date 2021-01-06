@@ -287,8 +287,5 @@ def infer_images(run, stream_name):
     ds = run[stream_name].to_dask()
     for field in ds:
         if 2 <= ds[field].ndim < 5:
-            print("added", field)
             suggestions.append({"field": field, "needs_streams": (stream_name,)})
-        else:
-            print("skipped", field)
     return suggestions

@@ -66,7 +66,7 @@ def construct_namespace(run, stream_names):
 
     This is used by the plot builders to support usages like
 
-    >>> model = Lines("-motor", ["log(det)"])
+    >>> model = RecentLines(3, "-motor", ["log(det)"])
 
     The words available in these expressions include:
 
@@ -319,7 +319,6 @@ class RunManager:
 
         By "ready" we mean, it has all the streams it needs to be drawn.
         """
-        self._cull_runs()
         run = event.item
         if run_is_live_and_not_completed(run):
             # If the stream of interest is defined already, plot now.
@@ -359,5 +358,5 @@ class RunManager:
         return frozenset(self._pinned)
 
     @property
-    def needs_streams(self):
+    def needs_stream(self):
         return self._needs_streams

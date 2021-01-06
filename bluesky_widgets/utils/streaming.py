@@ -40,8 +40,8 @@ def stream_documents_into_runs(add_run):
     Add runs to a model with an ``add_run`` method. For example, it might be a
     model that generates figures.
 
-    >>> from bluesky_widgets.models.plot_builders import AutoRecentLines
-    >>> model = AutoRecentLines(3)
+    >>> from bluesky_widgets.models.plot_builders import AutoLines
+    >>> model = AutoLines()
 
     >>> RE.subscribe(stream_documents_into_runs(model.add_run))
     """

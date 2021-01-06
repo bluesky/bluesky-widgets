@@ -87,8 +87,8 @@ of them. This is an example of a builder that creates one Figure:
 
 .. code:: python
 
-    from bluesky_widgets.models.plot_builders import RecentLines
-    model = RecentLines(3, "motor", ["det"])
+    from bluesky_widgets.models.plot_builders import Lines
+    model = Lines(3, "motor", ["det"])
     model.runs  # append Runs to this list
 
     # Build a view by passing model.figure to any Figure view, e.g.
@@ -99,8 +99,8 @@ And this is an example of a builder that creates a list of Figures:
 
 .. code:: python
 
-    from bluesky_widgets.models.plot_builders import AutoRecentLines
-    model = AutoRecentLines(3)
+    from bluesky_widgets.models.plot_builders import AutoLines
+    model = AutoLines(3)
     model.runs  # append Runs to this list
 
     # Build a view by passing model.figures to any Figures view, e.g.
@@ -110,16 +110,16 @@ And this is an example of a builder that creates a list of Figures:
 Builders with a Single Figure
 -----------------------------
 
-.. autoclass:: bluesky_widgets.models.plot_builders.RecentLines
+.. autoclass:: bluesky_widgets.models.plot_builders.Lines
    :members:
 
-.. autoclass:: bluesky_widgets.models.plot_builders.Image
+.. autoclass:: bluesky_widgets.models.plot_builders.Images
    :members:
 
 Builders with a List of Figures
 -------------------------------
 
-.. autoclass:: bluesky_widgets.models.plot_builders.AutoRecentLines
+.. autoclass:: bluesky_widgets.models.plot_builders.AutoLines
    :members:
 
 Streaming Utilities

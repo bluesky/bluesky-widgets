@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from ..utils.dict_view import DictView
 from .utils import run_is_live_and_not_completed
-from .plot_builders import Image, RecentLines
+from .plot_builders import Images, Lines
 from .plot_specs import FigureSpecList
 from ._heuristics import infer_lines_to_plot, infer_images
 
@@ -20,7 +20,7 @@ class Auto:
     @abstractproperty
     def _plot_builder(self):
         """
-        Plot-builder model, such as RecentLines.
+        Plot-builder model, such as Lines.
 
         Expected to implement:
 
@@ -52,7 +52,7 @@ class Auto:
     def __init__(self):
         self.figures = FigureSpecList()
 
-        # Map key like ((x, y), stream_name) to RecentLines instance so configured.
+        # Map key like ((x, y), stream_name) to plot_builder instance so configured.
         self._key_to_instance = {}
         # Map FigureSpec UUID to key like ((x, y), stream_name)
         self._figure_to_key = {}
@@ -145,7 +145,7 @@ class Auto:
             self._key_to_instance.pop(key)
 
 
-class AutoRecentLines(Auto):
+class AutoLines(Auto):
     """
     Automatically guess useful lines to plot. Show the last N runs (per figure).
 
@@ -162,11 +162,11 @@ class AutoRecentLines(Auto):
         (Note: Increasing it will not restore any Runs that have already been
         removed, but it will allow more new Runs to be added.)
     keys_to_figures : dict
-        Read-only mapping of each key to the active RecentLines instance.
+        Read-only mapping of each key to the active Lines instance.
 
     Examples
     --------
-    >>> model = AutoRecentLines(3)
+    >>> model = AutoLines(3)
     >>> from bluesky_widgets.jupyter.figures import JupyterFigures
     >>> view = JupyterFigures(model.figures)
     >>> model.add_run(run)
@@ -179,7 +179,7 @@ class AutoRecentLines(Auto):
 
     @property
     def _plot_builder(self):
-        return RecentLines
+        return Lines
 
     @property
     def _heuristic(self):
@@ -216,7 +216,7 @@ class AutoRecentLines(Auto):
 class AutoImages(Auto):
     @property
     def _plot_builder(self):
-        return Image
+        return Images
 
     @property
     def _heuristic(self):
