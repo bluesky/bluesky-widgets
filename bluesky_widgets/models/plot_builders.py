@@ -418,7 +418,7 @@ class Images:
         return self._run_manager._pinned
 
 
-class RasteredImage:
+class RasteredImages:
     """
     Plot a rastered image from a Run.
 
@@ -469,10 +469,10 @@ class RasteredImage:
 
     Examples
     --------
-    >>> model = Images("ccd")
+    >>> model = RasteredImages("intensity", shape=(100, 200))
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
-    >>> model.run = run
+    >>> model.add_run(run)
     """
 
     def __init__(
@@ -480,7 +480,7 @@ class RasteredImage:
         field,
         shape,
         *,
-        max_runs=None,
+        max_runs=1,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
@@ -498,7 +498,7 @@ class RasteredImage:
             # the schema, so we fail gracefully if it is missing.
 
             def label_maker(run, field):
-                md = self.run.metadata["start"]
+                md = run.metadata["start"]
                 return (
                     f"Scan ID {md.get('scan_id', '?')}   UID {md['uid'][:8]}   {field}"
                 )
@@ -526,7 +526,7 @@ class RasteredImage:
         self._y_positive = y_positive
 
         self._run_manager = RunManager(max_runs, needs_streams)
-        self._run_manager.events.run_ready.connect(self._add_lines)
+        self._run_manager.events.run_ready.connect(self._add_image)
         self.add_run = self._run_manager.add_run
         self.discard_run = self._run_manager.discard_run
 
@@ -610,14 +610,15 @@ class RasteredImage:
             self.axes.y_limits = (ymin, ymax)
             self._y_positive = value
 
-    def _add_image(self):
+    def _add_image(self, event):
+        run = event.run
         func = functools.partial(self._transform, field=self.field)
         style = {"cmap": self._cmap, "clim": self._clim, "extent": self._extent}
-        image = ImageSpec(func, self.run, label=self.field, style=style)
+        image = ImageSpec(func, run, label=self.field, style=style)
         self._run_manager.track_artist(image)
-        md = self.run.metadata["start"]
+        md = run.metadata["start"]
         self.axes.images.append(image)
-        self.axes.title = self._label_maker(self.run, self.field)
+        self.axes.title = self._label_maker(run, self.field)
         self.axes.x_label = md["motors"][1]
         self.axes.y_label = md["motors"][0]
         # By default, pixels center on integer coordinates ranging from 0 to
@@ -639,7 +640,7 @@ class RasteredImage:
         (data,) = numpy.asarray(
             call_or_eval((field,), run, self.needs_streams, self.namespace)
         )
-        snaking = self.run.metadata["start"]["snaking"]
+        snaking = run.metadata["start"]["snaking"]
         for index in range(len(data)):
             pos = list(numpy.unravel_index(index, self._shape))
             if snaking[1] and (pos[0] % 2):
