@@ -20,7 +20,7 @@ class Lines:
     This supports plotting columns like ``"I0"`` but also Python
     expressions like ``"5 * log(I0/It)"`` and even
     ``"my_custom_function(I0)"``. See examples below. Consult
-    :func:``bluesky_widgets.models.utils.construct_namespace` for details
+    :func:`bluesky_widgets.models.utils.construct_namespace` for details
     about the available variables.
 
     Parameters

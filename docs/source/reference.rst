@@ -107,8 +107,8 @@ And this is an example of a builder that creates a list of Figures:
     from bluesky_widgets.jupyter.figures import JupyterFigures
     view = JupyterFigures(model.figures)
 
-Builders with a Single Figure
------------------------------
+Plot Builder
+------------
 
 .. autoclass:: bluesky_widgets.models.plot_builders.Lines
    :members:
@@ -116,10 +116,13 @@ Builders with a Single Figure
 .. autoclass:: bluesky_widgets.models.plot_builders.Images
    :members:
 
-Builders with a List of Figures
--------------------------------
+"Automatic" Plot Builders
+-------------------------
 
-.. autoclass:: bluesky_widgets.models.plot_builders.AutoLines
+These attempt to infer from the data's structure and ts metadata some useful
+figure(s) to build.
+
+.. autoclass:: bluesky_widgets.models.auto_plot_builders.AutoLines
    :members:
 
 Streaming Utilities
