@@ -1,5 +1,6 @@
 from bluesky_live.run_builder import RunBuilder
 import pytest
+import numpy
 
 from ..plot_builders import RasteredImage
 from ..plot_specs import AxesSpec
@@ -73,7 +74,7 @@ def test_non_snaking_image_data(non_snaking_run):
     model.run = run
     actual_data = model.figure.axes[0].images[0].func(run)
     expected_data = [[1, 2], [3, 4]]
-    assert (actual_data == expected_data).all()
+    assert numpy.array_equal(actual_data, expected_data)
 
 
 def test_snaking_image_data(snaking_run):
@@ -82,4 +83,82 @@ def test_snaking_image_data(snaking_run):
     model.run = run
     actual_data = model.figure.axes[0].images[0].func(run)
     expected_data = [[1, 2], [4, 3]]
-    assert (actual_data == expected_data).all()
+    assert numpy.array_equal(actual_data, expected_data)
+
+
+def test_non_snaking_image_data_positions():
+    md = {"motors": ["y", "x"], "shape": [2, 2], "snaking": (False, False)}
+    model = RasteredImage("ccd", shape=(2, 2))
+    with RunBuilder(md) as builder:
+        ccd = iter([1, 2, 3, 4])
+        x = iter([0, 1, 0, 1])
+        y = iter([0, 0, 1, 1])
+        run = builder.get_run()
+        model.run = run
+        # First data point
+        builder.add_stream("primary", data={"ccd": [next(ccd)],
+                                            "x": [next(x)],
+                                            "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, numpy.nan], [numpy.nan, numpy.nan]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+        # Second point
+        builder.add_data("primary", data={"ccd": [next(ccd)],
+                                          "x": [next(x)],
+                                          "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, 2], [numpy.nan, numpy.nan]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+        # Third point
+        builder.add_data("primary", data={"ccd": [next(ccd)],
+                                          "x": [next(x)],
+                                          "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, 2], [3, numpy.nan]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+        # Fourth point
+        builder.add_data("primary", data={"ccd": [next(ccd)],
+                                          "x": [next(x)],
+                                          "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, 2], [3, 4]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+
+
+def test_snaking_image_data_positions():
+    md = {"motors": ["y", "x"], "shape": [2, 2], "snaking": (False, True)}
+    model = RasteredImage("ccd", shape=(2, 2))
+    with RunBuilder(md) as builder:
+        ccd = iter([1, 2, 3, 4])
+        x = iter([0, 1, 1, 0])
+        y = iter([0, 0, 1, 1])
+        run = builder.get_run()
+        model.run = run
+        # First data point
+        builder.add_stream("primary", data={"ccd": [next(ccd)],
+                                            "x": [next(x)],
+                                            "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, numpy.nan], [numpy.nan, numpy.nan]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+        # Second point
+        builder.add_data("primary", data={"ccd": [next(ccd)],
+                                          "x": [next(x)],
+                                          "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, 2], [numpy.nan, numpy.nan]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+        # Third point
+        builder.add_data("primary", data={"ccd": [next(ccd)],
+                                          "x": [next(x)],
+                                          "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, 2], [numpy.nan, 3]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+        # Fourth point
+        builder.add_data("primary", data={"ccd": [next(ccd)],
+                                          "x": [next(x)],
+                                          "y": [next(y)]})
+        actual_data = model.figure.axes[0].images[0].func(run)
+        expected_data = [[1, 2], [4, 3]]
+        assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
