@@ -119,8 +119,8 @@ Plot Builder
 "Automatic" Plot Builders
 -------------------------
 
-These attempt to infer from the data's structure and ts metadata some useful
-figure(s) to build.
+These attempt to infer some useful figure(s) to build based on the data's
+structure and its metadata.
 
 .. autoclass:: bluesky_widgets.models.auto_plot_builders.AutoLines
    :members:

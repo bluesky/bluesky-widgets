@@ -61,9 +61,10 @@ class AutoPlotter:
 
         self.figures = FigureSpecList()
 
-        # Map key like to plot_builder plot_builder so configured.
+        # Map key (which contains a plot_builder configuration) to a
+        # plot_builder instance configured with it.
         self._key_to_plot_builder = {}
-        # Map FigureSpec UUID to key like ((x, y), stream_name)
+        # Map FigureSpec UUID to key.
         self._figure_to_key = {}
         # Track inactive plot_builders/figures which are no longer being updated
         # with new Runs. Structure is a dict-of-dicts like:
