@@ -7,14 +7,14 @@ This is roughly adapted from bluesky.callbacks.best_effort.
 from warnings import warn
 
 
-def infer_lines_to_plot(run, stream):
+def infer_lines_to_plot(run, stream_name):
     """
-    Given a run and stream, suggest what to plot.
+    Given a run and stream, suggest lines to plot.
 
     Parameters
     ----------
     run : BlueskyRun
-    stream : BlueskyEventStream
+    stream_name : String
 
     Returns
     -------
@@ -26,12 +26,12 @@ def infer_lines_to_plot(run, stream):
 
     A "suggestion" looks like this.
 
-    >>> infer_lines(run1)
-    [(("motor", "det"), "primary")]
+    >>> infer_lines_to_plot(run1)
+    [{"x": "motor", "ys": ["det"], "needs_streams": ["primary"]}]
 
     Sometimes there are no suggestions.
 
-    >>> infer_lines(run1)
+    >>> infer_lines_to_plot(run1)
     []
     """
     omit_single_point_plot = False
@@ -77,6 +77,7 @@ def infer_lines_to_plot(run, stream):
 
     # We only care about the first descriptor because we are not referencing
     # configuration.
+    stream = run[stream_name]
     descriptor = stream._descriptors[0]  # HACK!
     stream_name = descriptor.get("name", "primary")  # fall back for old descriptors
 
@@ -125,7 +126,7 @@ def infer_lines_to_plot(run, stream):
     ndims = len(dim_fields)
     if not 0 < ndims < 3:
         # we need 1 or 2 dims to do anything, do not make empty figures
-        return
+        return []
 
     # if self._fig_factory:
     #     fig = self._fig_factory(fig_name)
@@ -159,7 +160,7 @@ def infer_lines_to_plot(run, stream):
 
     if ndims == 1:
         (x_key,) = dim_fields
-        stuff = []
+        suggestions = []
         for y_key in columns:
             dtype = descriptor["data_keys"][y_key]["dtype"]
             if dtype not in ("number", "integer"):
@@ -167,8 +168,10 @@ def infer_lines_to_plot(run, stream):
                     "Omitting {} from plot because dtype is {}" "".format(y_key, dtype)
                 )
                 continue
-            stuff.append(((x_key, y_key), stream_name))
-        return stuff
+            suggestions.append(
+                {"x": x_key, "ys": (y_key,), "needs_streams": (stream_name,)}
+            )
+        return suggestions
 
     elif ndims == 2:
         return []
@@ -251,3 +254,38 @@ def hinted_fields(descriptor):
             fields = descriptor["object_keys"][obj_name]
         columns.extend(fields)
     return columns
+
+
+def infer_images(run, stream_name):
+    """
+    Given a run and stream name, suggest images to display.
+
+    Parameters
+    ----------
+    run : BlueskyRun
+    stream_name : String
+
+    Returns
+    -------
+    suggestions : List[Tuple[String], String]
+        Structured as [((x, y), stream_name), ...]
+
+    Examples
+    --------
+
+    A "suggestion" looks like this.
+
+    >>> infer_imagesj(run1)
+    [{"field": "fastccd_image"}]
+
+    Sometimes there are no suggestions.
+
+    >>> infer_images(run1)
+    []
+    """
+    suggestions = []
+    ds = run[stream_name].to_dask()
+    for field in ds:
+        if 2 <= ds[field].ndim < 5:
+            suggestions.append({"field": field, "needs_streams": (stream_name,)})
+    return suggestions

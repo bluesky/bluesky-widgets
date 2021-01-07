@@ -12,7 +12,7 @@ Connect a consumer to localhost:XXXXX
 
 python -m bluesky_widgets.examples.qt_viewer_with_search localhost:XXXXX
 """
-from bluesky_widgets.models.plot_builders import AutoRecentLines
+from bluesky_widgets.models.auto_plot_builders import AutoLines
 from bluesky_widgets.jupyter.figures import JupyterFigures
 
 
@@ -31,7 +31,7 @@ class ExampleApp:
     def __init__(self, *, show=True, title="Example App"):
         super().__init__()
         self.title = title
-        self.model = AutoRecentLines(3)
+        self.model = AutoLines(max_runs=3)
         self._widget = JupyterFigures(self.model.figures)
 
     def _ipython_display_(self, *args, **kwargs):

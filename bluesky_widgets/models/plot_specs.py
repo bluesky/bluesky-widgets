@@ -155,6 +155,7 @@ class AxesSpec(BaseSpec):
     """
 
     __slots__ = (
+        "_type_map",
         "_figure",
         "_artists",
         "_lines",
@@ -175,7 +176,7 @@ class AxesSpec(BaseSpec):
         title=None,
         x_label=None,
         y_label=None,
-        aspect='equal',
+        aspect=None,
         x_limits=None,
         y_limits=None,
         uuid=None,
@@ -192,8 +193,13 @@ class AxesSpec(BaseSpec):
         self._x_limits = x_limits
         self._y_limits = y_limits
         self.events = EmitterGroup(
-            source=self, title=Event, x_label=Event, y_label=Event, aspect=Event,
-            x_limits=Event, y_limits=Event
+            source=self,
+            title=Event,
+            x_label=Event,
+            y_label=Event,
+            aspect=Event,
+            x_limits=Event,
+            y_limits=Event,
         )
         super().__init__(uuid)
         for line in self._lines:
@@ -204,6 +210,10 @@ class AxesSpec(BaseSpec):
         self._lines.events.removed.connect(self._on_artist_removed)
         self._images.events.added.connect(self._on_artist_added)
         self._images.events.removed.connect(self._on_artist_removed)
+        self._type_map = {
+            LineSpec: self._lines,
+            ImageSpec: self._images,
+        }
 
     @property
     def figure(self):
@@ -267,6 +277,17 @@ class AxesSpec(BaseSpec):
         """
         # Return a copy to prohibit mutation of internal bookkeeping.
         return DictView(self._artists)
+
+    def discard(self, artist):
+        "Discard any Aritst."
+        try:
+            self._type_map[type(artist)].remove(artist)
+        except ValueError:
+            pass
+
+    def remove(self, artist):
+        "Remove any Aritst."
+        self._type_map[type(artist)].remove(artist)
 
     @property
     def title(self):

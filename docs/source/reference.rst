@@ -87,8 +87,8 @@ of them. This is an example of a builder that creates one Figure:
 
 .. code:: python
 
-    from bluesky_widgets.models.plot_builders import RecentLines
-    model = RecentLines(3, "motor", ["det"])
+    from bluesky_widgets.models.plot_builders import Lines
+    model = Lines(3, "motor", ["det"])
     model.runs  # append Runs to this list
 
     # Build a view by passing model.figure to any Figure view, e.g.
@@ -99,30 +99,30 @@ And this is an example of a builder that creates a list of Figures:
 
 .. code:: python
 
-    from bluesky_widgets.models.plot_builders import AutoRecentLines
-    model = AutoRecentLines(3)
+    from bluesky_widgets.models.plot_builders import AutoLines
+    model = AutoLines(3)
     model.runs  # append Runs to this list
 
     # Build a view by passing model.figures to any Figures view, e.g.
     from bluesky_widgets.jupyter.figures import JupyterFigures
     view = JupyterFigures(model.figures)
 
-Builders with a Single Figure
------------------------------
+Plot Builder
+------------
 
-.. autoclass:: bluesky_widgets.models.plot_builders.RecentLines
+.. autoclass:: bluesky_widgets.models.plot_builders.Lines
    :members:
 
-.. autoclass:: bluesky_widgets.models.plot_builders.Image
+.. autoclass:: bluesky_widgets.models.plot_builders.Images
    :members:
 
-Builders with a List of Figures
--------------------------------
+"Automatic" Plot Builders
+-------------------------
 
-.. autoclass:: bluesky_widgets.models.plot_builders.AutoRecentLines
-   :members:
+These attempt to infer some useful figure(s) to build based on the data's
+structure and its metadata.
 
-.. autoclass:: bluesky_widgets.models.plot_builders.PromptPlotter
+.. autoclass:: bluesky_widgets.models.auto_plot_builders.AutoLines
    :members:
 
 Streaming Utilities

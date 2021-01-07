@@ -29,12 +29,22 @@ class MatplotlibAxes:
         self.model = model
         self.axes = axes
 
+        # If we specify data limits and axes aspect and position, we have
+        # overdetermined the system. When these are incompatible, we want
+        # matplotlib to expand the data limts along one dimension rather than
+        # disorting the boundaries of the axes (for example, creating a tall,
+        # shinny axes box).
+        self.axes.set_adjustable("datalim")
+
         axes.set_title(model.title)
         axes.set_xlabel(model.x_label)
         axes.set_ylabel(model.y_label)
-        axes.set_aspect(model.aspect)
-        axes.set_xlim(model.x_limits)
-        axes.set_ylim(model.y_limits)
+        aspect = model.aspect or "auto"
+        axes.set_aspect(aspect)
+        if model.x_limits is not None:
+            axes.set_xlim(model.x_limits)
+        if model.y_limits is not None:
+            axes.set_ylim(model.y_limits)
 
         # Use matplotlib's user-configurable ID so that we can look up the
         # AxesSpec from the axes if we need to.
@@ -99,7 +109,8 @@ class MatplotlibAxes:
         self._update_and_draw()
 
     def _on_aspect_changed(self, event):
-        self.axes.set_aspect(event.value)
+        aspect = event.value or "auto"
+        self.axes.set_aspect(aspect)
         self._update_and_draw()
 
     def _on_x_limits_changed(self, event):
@@ -149,8 +160,9 @@ class MatplotlibAxes:
         array = image_spec.func(run)
 
         # Initialize artist with currently-available data.
-        artist = self.axes.imshow(array, label=image_spec.label, origin='lower', **image_spec.style)
-        self.axes.set_aspect(self.model.aspect)
+        artist = self.axes.imshow(
+            array, label=image_spec.label, origin="lower", **image_spec.style
+        )
         self.axes.figure.colorbar(artist)
 
         # If this is connected to a streaming data source and is not yet

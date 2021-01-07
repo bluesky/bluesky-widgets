@@ -1,5 +1,3 @@
-from collections import defaultdict
-import collections.abc
 import functools
 import itertools
 
@@ -10,140 +8,23 @@ from .plot_specs import (
     AxesSpec,
     ImageSpec,
     LineSpec,
-    FigureSpecList,
 )
-from ._heuristics import infer_lines_to_plot
-from .utils import auto_label, call_or_eval, RunList, run_is_live_and_not_completed
-from ..utils.list import EventedList
+from .utils import auto_label, call_or_eval, RunManager, run_is_live_and_not_completed
 from ..utils.dict_view import DictView
 
 
-class BuilderList(EventedList):
-    "A list of functions that accept a BlueskyRun and return FigureSpec(s)."
-    ...
-
-
-class PromptPlotter:
+class Lines:
     """
-    Produce Figures from BlueskyRuns promptly (as Run completion time).
-
-    Parameters
-    ----------
-    builders : BuilderList[callable]
-        A list of functions that accept a BlueskyRun and return FigureSpec(s).
-
-    Attributes
-    ----------
-    runs : RunList[BlueskyRun]
-        Add or remove runs from this list.
-    figures : FigureSpecList[FigureSpec]
-        Figures will be added to this list.
-    builders : BuilderList[callable]
-        A list of functions with the expected signature::
-
-            f(run: BlueskyRun) -> FigureSpec
-
-        or::
-
-            f(run: BlueskyRun) -> List{FigureSpec]
-    """
-
-    def __init__(self, builders):
-        self.figures = FigureSpecList()
-        self.builders = BuilderList()
-        self.runs = RunList()
-        self.builders.extend(builders)
-        self.runs.events.added.connect(self._on_run_added)
-
-    def add_run(self, run):
-        """
-        Add a Run.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        """
-        self.runs.append(run)
-
-    def discard_run(self, run):
-        """
-        Discard a Run.
-
-        If the Run is not present, this will return silently.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        """
-        if run in self.runs:
-            self.runs.remove(run)
-
-    def _on_run_added(self, event):
-        run = event.item
-        # If Run is complete, process is now. Otherwise, schedule it to
-        # process when it completes.
-        if not run_is_live_and_not_completed(run):
-            self._process_run(run)
-        else:
-            run.events.completed.connect(lambda event: self._process_run(event.run))
-
-    def _on_builder_added(self, event):
-        builder = event.item
-        self.builders.append(builder)
-        # Process all runs we already have with the new builder.
-        for run in self.runs:
-            if not run_is_live_and_not_completed(run):
-                self._process_run(run)
-            else:
-                run.events.completed.connect(lambda event: self._process_run(event.run))
-
-    def _process_run(self, run):
-        for builder in self.builders:
-            figures = builder(run)
-        # Tolerate a FigureSpec or a list of them.
-        if not isinstance(figures, collections.abc.Iterable):
-            figures = [figures]
-        self.figures.extend(figures)
-
-
-def prompt_line_builder(run):
-    """
-    This is a simple example.
-
-    This makes a hard-coded assumption that the data has columns "motor" and
-    "det" in the primary stream.
-    """
-
-    def func(run):
-        "Return any arrays x, y. They must be of equal length."
-        # *Lazily* read the data so that large arrays are not loaded unless
-        # the yare used.
-        ds = run.primary.read()
-        # Do any computation you want in here....
-        return ds["motor"], ds["det"]
-
-    label = f"Scan {run.metadata['start']['scan_id']}"
-    line = LineSpec(func, run, label)
-    axes = AxesSpec(lines=[line], x_label="motor", y_label="det")
-    figure = FigureSpec((axes,), title="det v motor")
-
-    return [figure]
-
-
-class RecentLines:
-    """
-    Plot y vs x for the last N runs.
+    Plot ys vs x for the last N runs.
 
     This supports plotting columns like ``"I0"`` but also Python
     expressions like ``"5 * log(I0/It)"`` and even
     ``"my_custom_function(I0)"``. See examples below. Consult
-    :func:``bluesky_widgets.models.utils.construct_namespace` for details
+    :func:`bluesky_widgets.models.utils.construct_namespace` for details
     about the available variables.
 
     Parameters
     ----------
-    max_runs : Integer
-        Number of lines to show at once
     x : String | Callable
         Field name (e.g. "theta") or expression (e.g. "- deg2rad(theta) / 2")
         or callable with expected signature::
@@ -166,6 +47,8 @@ class RecentLines:
         :func:`bluesky_widgets.models.utils.call_or_eval` for details and more
         examples.
 
+    max_runs : Integer
+        Number of Runs to visualize at once. Default is 10.
 
     label_maker : Callable, optional
         Expected signature::
@@ -183,9 +66,10 @@ class RecentLines:
     Attributes
     ----------
     max_runs : int
-        Number of Runs to plot at once. This may be changed at any point.
+        Number of Runs to visualize at once. This may be changed at any point.
         (Note: Increasing it will not restore any Runs that have already been
-        removed, but it will allow more new Runs to be added.)
+        removed, but it will allow more new Runs to be added.) Runs added
+        with ``pinned=True`` are exempt from the limit.
     runs : RunList[BlueskyRun]
         As runs are appended entries will be removed from the beginning of the
         last (first in, first out) so that there are at most ``max_runs``.
@@ -207,7 +91,7 @@ class RecentLines:
 
     Plot "det" vs "motor" and view it.
 
-    >>> model = RecentLines(3, "motor", ["det"])
+    >>> model = Lines("motor", ["det"])
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
     >>> model.add_run(run)
@@ -216,21 +100,21 @@ class RecentLines:
     Plot a mathematical transformation of the columns using any object in
     numpy. This can be given as a string expression:
 
-    >>> model = RecentLines(3, "abs(motor)", ["-log(det)"])
-    >>> model = RecentLines(3, "abs(motor)", ["pi * det"])
-    >>> model = RecentLines(3, "abs(motor)", ["sqrt(det)"])
+    >>> model = Lines("abs(motor)", ["-log(det)"])
+    >>> model = Lines("abs(motor)", ["pi * det"])
+    >>> model = Lines("abs(motor)", ["sqrt(det)"])
 
     Plot multiple lines.
 
-    >>> model = RecentLines(3, "motor", ["log(I0/It)", "log(I0)", "log(It)"])
+    >>> model = Lines("motor", ["log(I0/It)", "log(I0)", "log(It)"])
 
     Plot every tenth point.
 
-    >>> model = RecentLines(3, "motor", ["intesnity[::10]"])
+    >>> model = Lines("motor", ["intesnity[::10]"])
 
     Access data outside the "primary" stream, such as a stream name "baseline".
 
-    >>> model = RecentLines(3, "motor", ["intensity/baseline['intensity'][0]"])
+    >>> model = Lines("motor", ["intensity/baseline['intensity'][0]"])
 
     As shown, objects from numpy can be used in expressions. You may define
     additional words, such as "savlog" for a Savitzky-Golay smoothing filter,
@@ -238,19 +122,19 @@ class RecentLines:
 
     >>> import scipy.signal
     >>> namespace = {"savgol": scipy.signal.savgol_filter}
-    >>> model = RecentLines(3, "motor", ["savgol(intensity, 5, 2)"],
+    >>> model = Lines("motor", ["savgol(intensity, 5, 2)"],
     ...                     namespace=namespace)
 
     Or you may pass in a function. It will be passed parameters according to
     their names.
 
-    >>> model = RecentLines(3, "motor", [lambda intensity: savgol(intensity, 5, 2)])
+    >>> model = Lines("motor", [lambda intensity: savgol(intensity, 5, 2)])
 
     More examples of this function-based usage:
 
-    >>> model = RecentLines(3, "abs(motor)", [lambda det: -log(det)])
-    >>> model = RecentLines(3, "abs(motor)", [lambda det, pi: pi * det])
-    >>> model = RecentLines(3, "abs(motor)", [lambda det, np: np.sqrt(det)])
+    >>> model = Lines("abs(motor)", [lambda det: -log(det)])
+    >>> model = Lines("abs(motor)", [lambda det, pi: pi * det])
+    >>> model = Lines("abs(motor)", [lambda det, np: np.sqrt(det)])
 
     Custom, user-defined objects may be added in the same way, either by adding
     names to the namespace or providing the functions directly.
@@ -258,10 +142,10 @@ class RecentLines:
 
     def __init__(
         self,
-        max_runs,
         x,
         ys,
         *,
+        max_runs=10,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
@@ -286,26 +170,12 @@ class RecentLines:
                 def label_maker(run, y):
                     return f"Scan {run.metadata['start'].get('scan_id', '?')}"
 
-        # Stash these and expose them as read-only properties.
-        self._max_runs = int(max_runs)
         self._x = x
         if isinstance(ys, str):
             raise ValueError("`ys` must be a list of strings, not a string")
         self._ys = tuple(ys)
         self._label_maker = label_maker
-        self._needs_streams = tuple(needs_streams)
         self._namespace = namespace
-
-        self.runs = RunList()
-        self._pinned = set()
-
-        self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
-        # Maps Run (uid) to set of LineSpec UUIDs.
-        self._runs_to_lines = defaultdict(set)
-
-        self.runs.events.added.connect(self._on_run_added)
-        self.runs.events.removed.connect(self._on_run_removed)
-
         if axes is None:
             axes = AxesSpec(
                 x_label=auto_label(self.x),
@@ -317,128 +187,43 @@ class RecentLines:
         self.axes = axes
         self.figure = figure
 
+        self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
+
+        self._run_manager = RunManager(max_runs, needs_streams)
+        self._run_manager.events.run_ready.connect(self._add_lines)
+        self.add_run = self._run_manager.add_run
+        self.discard_run = self._run_manager.discard_run
+
     def _transform(self, run, x, y):
         return call_or_eval((x, y), run, self.needs_streams, self.namespace)
 
-    def add_run(self, run, pinned=False):
-        """
-        Add a Run.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        pinned : Boolean
-            If True, retain this Run until it is removed by the user.
-        """
-        if pinned:
-            self._pinned.add(run.metadata["start"]["uid"])
-        self.runs.append(run)
-
-    def discard_run(self, run):
-        """
-        Discard a Run, including any pinned and unpinned.
-
-        If the Run is not present, this will return silently.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        """
-        if run in self.runs:
-            self.runs.remove(run)
-
-    def _add_lines(self, run):
+    def _add_lines(self, event):
         "Add a line."
-        # Create a plot if we do not have one.
-        # If necessary, removes runs to make room for the new one.
-        self._cull_runs()
-
+        run = event.run
         for y in self.ys:
             label = self._label_maker(run, y)
             # If run is in progress, give it a special color so it stands out.
             if run_is_live_and_not_completed(run):
                 color = "black"
-                # Later, when it completes, flip the color to one from the cycle.
-                run.events.completed.connect(self._on_run_complete)
+
+                def restyle_line_when_complete(event):
+                    "When run is complete, update style."
+                    line.style.update({"color": next(self._color_cycle)})
+
+                run.events.completed.connect(restyle_line_when_complete)
             else:
                 color = next(self._color_cycle)
             style = {"color": color}
 
             # Style pinned runs differently.
-            if run.metadata["start"]["uid"] in self._pinned:
+            if run.metadata["start"]["uid"] in self.pinned:
                 style.update(linestyle="dashed")
                 label += " (pinned)"
 
             func = functools.partial(self._transform, x=self.x, y=y)
             line = LineSpec(func, run, label, style)
-            run_uid = run.metadata["start"]["uid"]
-            self._runs_to_lines[run_uid].add(line.uuid)
+            self._run_manager.track_artist(line)
             self.axes.lines.append(line)
-
-    def _cull_runs(self):
-        "Remove Runs from the beginning of self.runs to keep the length <= max_runs."
-        i = 0
-        while len(self.runs) > self.max_runs + len(self._pinned):
-            while self.runs[i].metadata["start"]["uid"] in self._pinned:
-                i += 1
-            self.runs.pop(i)
-
-    def _on_run_added(self, event):
-        "When a new Run is added, draw a line or schedule it to be drawn."
-        run = event.item
-        # If the stream of interest is defined already, plot now.
-        if set(self.needs_streams).issubset(set(list(run))):
-            self._add_lines(run)
-        else:
-            # Otherwise, connect a callback to run when the stream of interest arrives.
-            run.events.new_stream.connect(self._on_new_stream)
-
-    def _on_run_removed(self, event):
-        "Remove the line if its corresponding Run is removed."
-        run_uid = event.item.metadata["start"]["uid"]
-        self._pinned.discard(run_uid)
-        line_uuids = self._runs_to_lines.pop(run_uid)
-        for line_uuid in line_uuids:
-            try:
-                line = self.axes.by_uuid[line_uuid]
-            except KeyError:
-                # The LineSpec was externally removed from the AxesSpec.
-                continue
-            self.axes.lines.remove(line)
-
-    def _on_new_stream(self, event):
-        "This callback runs whenever BlueskyRun has a new stream."
-        if set(self.needs_streams).issubset(set(list(event.run))):
-            self._add_lines(event.run)
-            event.run.events.new_stream.disconnect(self._on_new_stream)
-
-    def _on_run_complete(self, event):
-        "When a run completes, update the color from back to a color."
-        run_uid = event.run.metadata["start"]["uid"]
-        try:
-            line_uuids = self._runs_to_lines[run_uid]
-        except KeyError:
-            # The Run has been removed before the Run completed.
-            return
-        for line_uuid in line_uuids:
-            try:
-                line = self.axes.by_uuid[line_uuid]
-            except KeyError:
-                # The LineSpec was externally removed from the AxesSpec.
-                continue
-            line.style.update({"color": next(self._color_cycle)})
-
-    @property
-    def max_runs(self):
-        return self._max_runs
-
-    @max_runs.setter
-    def max_runs(self, value):
-        self._max_runs = value
-        self._cull_runs()
-
-    # Read-only properties so that these settings are inspectable, but not
-    # changeable.
 
     @property
     def x(self):
@@ -449,155 +234,33 @@ class RecentLines:
         return self._ys
 
     @property
-    def needs_streams(self):
-        return self._needs_streams
-
-    @property
     def namespace(self):
         return DictView(self._namespace or {})
 
-    @property
-    def pinned(self):
-        return frozenset(self._pinned)
-
-
-class AutoRecentLines:
-    """
-    Automatically guess useful lines to plot. Show the last N runs (per figure).
-
-    Parameters
-    ----------
-    max_runs : int
-        Number of Runs to plot at once, per figure
-
-    Attributes
-    ----------
-    figures : FigureSpecList[FigureSpec]
-    max_runs : int
-        Number of Runs to plot at once. This may be changed at any point.
-        (Note: Increasing it will not restore any Runs that have already been
-        removed, but it will allow more new Runs to be added.)
-    keys_to_figures : dict
-        Read-only mapping of each key to the active RecentLines instance.
-
-    Examples
-    --------
-    >>> model = AutoRecentLines(3)
-    >>> from bluesky_widgets.jupyter.figures import JupyterFigures
-    >>> view = JupyterFigures(model.figures)
-    >>> model.add_run(run)
-    >>> model.add_run(another_run, pinned=True)
-    """
-
-    def __init__(self, max_runs):
-        self.figures = FigureSpecList()
-        self._max_runs = max_runs
-
-        # Map key like ((x, y), stream_name) to RecentLines instance so configured.
-        self._key_to_instance = {}
-        # Map FigureSpec UUID to key like ((x, y), stream_name)
-        self._figure_to_key = {}
-        # Track inactive instances/figures which are no longer being updated
-        # with new Runs. Structure is a dict-of-dicts like:
-        # {key: {figure_uuid: instance, ...}, ...}
-        self._inactive_instances = defaultdict(dict)
-        self.figures.events.removed.connect(self._on_figure_removed)
+    # Expose some properties from the internal RunManger helper class.
 
     @property
-    def keys_to_figures(self):
-        "Read-only mapping of each key to the active RecentLines instance."
-        return DictView({v: k for k, v in self._figure_to_key.items()})
-
-    def new_instance_for_key(self, key):
-        """
-        Make a new RecentLine instance for a key.
-
-        If there is an existing one the instance and figure will remain but
-        will no longer be updated with new Runs. Those will go to a new
-        instance and figure, created here.
-        """
-        (x, y), stream_name = key
-        old_instance = self._key_to_instance.pop(key, None)
-        if old_instance is not None:
-            self._inactive_instances[key][old_instance.figure.uuid] = old_instance
-        instance = RecentLines(
-            max_runs=self.max_runs, x=x, ys=[y], needs_streams=[stream_name]
-        )
-        self._key_to_instance[key] = instance
-        self._figure_to_key[instance.figure.uuid] = key
-        self.figures.append(instance.figure)
-        return instance
-
-    def add_run(self, run, pinned=False):
-        """
-        Add a Run.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        pinned : Boolean
-            If True, retain this Run until it is removed by the user.
-        """
-        for stream_name in run:
-            self._handle_stream(run, stream_name, pinned)
-        if run_is_live_and_not_completed(run):
-            # Listen for additional streams.
-            run.events.new_stream.connect(
-                lambda event: self._handle_stream(run, event.name, pinned)
-            )
-
-    def discard_run(self, run):
-        """
-        Discard a Run, including any pinned and unpinned.
-
-        If the Run is not present, this will return silently. Also,
-        note that this only affect "active" plots that are currently
-        receive new runs. Inactive ones will be left as they are.
-
-        Parameters
-        ----------
-        run : BlueskyRun
-        """
-        for instance in self._key_to_instance.values():
-            instance.discard_run(run)
-
-    def _handle_stream(self, run, stream_name, pinned):
-        "This examines a stream and adds this run to RecentLines instances."
-        for key in infer_lines_to_plot(run, run[stream_name]):
-            try:
-                instance = self._key_to_instance[key]
-            except KeyError:
-                instance = self.new_instance_for_key(key)
-            instance.add_run(run, pinned=pinned)
-
-    def _on_figure_removed(self, event):
-        """
-        A figure was removed from self.figures.
-
-        Remove the relevant RecentLines instance.
-        """
-        figure = event.item
-        try:
-            key = self._figure_to_key.pop(figure.uuid)
-        except KeyError:
-            # This figure belongs to an inactive instance.
-            del self._inactive_instances[key][figure.uuid]
-
-        else:
-            self._key_to_instance.pop(key)
+    def runs(self):
+        return self._run_manager.runs
 
     @property
     def max_runs(self):
-        return self._max_runs
+        return self._run_manager.max_runs
 
     @max_runs.setter
     def max_runs(self, value):
-        self._max_runs = value
-        for instance in self._key_to_instance.values():
-            instance.max_runs = value
+        self._run_manager.max_runs = value
+
+    @property
+    def needs_streams(self):
+        return self._run_manager._needs_streams
+
+    @property
+    def pinned(self):
+        return self._run_manager._pinned
 
 
-class Image:
+class Images:
     """
     Plot an image from a Run.
 
@@ -609,6 +272,8 @@ class Image:
 
     field : string
         Field name or expression
+    max_runs : Integer
+        Number of Runs to visualize at once. Default is 1.
     label_maker : Callable, optional
         Expected signature::
 
@@ -624,8 +289,16 @@ class Image:
 
     Attributes
     ----------
-    run : BlueskyRun
-        The currently-viewed Run
+    max_runs : int
+        Number of Runs to visualize at once. This may be changed at any point.
+        (Note: Increasing it will not restore any Runs that have already been
+        removed, but it will allow more new Runs to be added.) Runs added
+        with ``pinned=True`` are exempt from the limit.
+    runs : RunList[BlueskyRun]
+        As runs are appended entries will be removed from the beginning of the
+        last (first in, first out) so that there are at most ``max_runs``.
+    pinned : Frozenset[String]
+        Run uids of pinned runs.
     figure : FigureSpec
     axes : AxesSpec
     field : String
@@ -640,7 +313,7 @@ class Image:
     >>> model = Images("ccd")
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
-    >>> model.run = run
+    >>> model.add_run(run)
     """
 
     # TODO: fix x and y limits here
@@ -649,6 +322,7 @@ class Image:
         self,
         field,
         *,
+        max_runs=1,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
@@ -661,21 +335,15 @@ class Image:
             # the schema, so we fail gracefully if it is missing.
 
             def label_maker(run, field):
-                md = self.run.metadata["start"]
+                md = run.metadata["start"]
                 return (
                     f"Scan ID {md.get('scan_id', '?')}   UID {md['uid'][:8]}   "
                     f"{auto_label(field)}"
                 )
 
-        self._label_maker = label_maker
-
-        # Stash these and expose them as read-only properties.
         self._field = field
-        self._needs_streams = needs_streams
+        self._label_maker = label_maker
         self._namespace = namespace
-
-        self._run = None
-
         if axes is None:
             axes = AxesSpec()
             figure = FigureSpec((axes,), title="")
@@ -684,58 +352,73 @@ class Image:
         self.axes = axes
         self.figure = figure
 
-    @property
-    def run(self):
-        return self._run
+        self._run_manager = RunManager(max_runs, needs_streams)
+        self._run_manager.events.run_ready.connect(self._add_images)
+        self.add_run = self._run_manager.add_run
+        self.discard_run = self._run_manager.discard_run
 
-    @run.setter
-    def run(self, value):
-        self._run = value
-        self.axes.images.clear()
-        if self._run is not None:
-            self._add_image()
-
-    def _add_image(self):
+    def _add_images(self, event):
+        run = event.run
         func = functools.partial(self._transform, field=self.field)
-        image = ImageSpec(func, self.run, label=self.field)
-        array_shape = self.run.primary.read()[self.field].shape
+        image = ImageSpec(func, run, label=self.field)
+        array_shape = run.primary.read()[self.field].shape
+        self._run_manager.track_artist(image)
         self.axes.images.append(image)
-        self.axes.title = self._label_maker(self.run, self.field)
+        self.axes.title = self._label_maker(run, self.field)
         # By default, pixels center on integer coordinates ranging from 0 to
         # columns-1 horizontally and 0 to rows-1 vertically.
         # In order to see entire pixels, we set lower limits to -0.5
         # and upper limits to columns-0.5 horizontally and rows-0.5 vertically
         # if limits aren't specifically set.
         if self.axes.x_limits is None:
-            self.axes.x_limits = (-0.5, array_shape[-1]-0.5)
+            self.axes.x_limits = (-0.5, array_shape[-1] - 0.5)
         if self.axes.y_limits is None:
-            self.axes.y_limits = (-0.5, array_shape[-2]-0.5)
+            self.axes.y_limits = (-0.5, array_shape[-2] - 0.5)
         # TODO Set axes x, y from xarray dims
 
     def _transform(self, run, field):
         (data,) = numpy.asarray(
             call_or_eval((field,), run, self.needs_streams, self.namespace)
         )
-        # Reduce the data until it is 2D by repeatedly averaging over
-        # the leading axis until there only two axes.
+        # If the data is more than 2D, take the middle slice from the leading
+        # axis until there are only two axes.
         while data.ndim > 2:
-            data = data.mean(0)
+            middle = data.shape[0] // 2
+            data = data[middle]
         return data
-
-    @property
-    def needs_streams(self):
-        return self._needs_streams
-
-    @property
-    def namespace(self):
-        return DictView(self._namespace or {})
 
     @property
     def field(self):
         return self._field
 
+    @property
+    def namespace(self):
+        return DictView(self._namespace or {})
 
-class RasteredImage:
+    # Expose some properties from the internal RunManger helper class.
+
+    @property
+    def runs(self):
+        return self._run_manager.runs
+
+    @property
+    def max_runs(self):
+        return self._run_manager.max_runs
+
+    @max_runs.setter
+    def max_runs(self, value):
+        self._run_manager.max_runs = value
+
+    @property
+    def needs_streams(self):
+        return self._run_manager._needs_streams
+
+    @property
+    def pinned(self):
+        return self._run_manager._pinned
+
+
+class RasteredImages:
     """
     Plot a rastered image from a Run.
 
@@ -786,10 +469,10 @@ class RasteredImage:
 
     Examples
     --------
-    >>> model = Images("ccd")
+    >>> model = RasteredImages("intensity", shape=(100, 200))
     >>> from bluesky_widgets.jupyter.figures import JupyterFigure
     >>> view = JupyterFigure(model.figure)
-    >>> model.run = run
+    >>> model.add_run(run)
     """
 
     def __init__(
@@ -797,15 +480,16 @@ class RasteredImage:
         field,
         shape,
         *,
+        max_runs=1,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
         axes=None,
         clim=None,
-        cmap='viridis',
+        cmap="viridis",
         extent=None,
-        x_positive='right',
-        y_positive='up',
+        x_positive="right",
+        y_positive="up",
     ):
         super().__init__()
 
@@ -814,7 +498,7 @@ class RasteredImage:
             # the schema, so we fail gracefully if it is missing.
 
             def label_maker(run, field):
-                md = self.run.metadata["start"]
+                md = run.metadata["start"]
                 return (
                     f"Scan ID {md.get('scan_id', '?')}   UID {md['uid'][:8]}   {field}"
                 )
@@ -824,23 +508,27 @@ class RasteredImage:
         # Stash these and expose them as read-only properties.
         self._field = field
         self._shape = shape
-        self._needs_streams = needs_streams
         self._namespace = namespace
 
         self._run = None
 
         if axes is None:
-            axes = AxesSpec(aspect="equal")
+            axes = AxesSpec()
             figure = FigureSpec((axes,), title="")
         else:
             figure = axes.figure
         self.axes = axes
+        self.figure = figure
         self._clim = clim
         self._cmap = cmap
         self._extent = extent
         self._x_positive = x_positive
         self._y_positive = y_positive
-        self.figure = figure
+
+        self._run_manager = RunManager(max_runs, needs_streams)
+        self._run_manager.events.run_ready.connect(self._add_image)
+        self.add_run = self._run_manager.add_run
+        self.discard_run = self._run_manager.discard_run
 
     @property
     def cmap(self):
@@ -849,8 +537,8 @@ class RasteredImage:
     @cmap.setter
     def cmap(self, value):
         self._cmap = value
-        for i in self.axes.images:
-            i.style.update({'cmap': value})
+        for image in self.axes.images:
+            image.style.update({"cmap": value})
 
     @property
     def clim(self):
@@ -859,8 +547,8 @@ class RasteredImage:
     @clim.setter
     def clim(self, value):
         self._clim = value
-        for i in self.axes.images:
-            i.style.update({'clim': value})
+        for image in self.axes.images:
+            image.style.update({"clim": value})
 
     @property
     def extent(self):
@@ -869,29 +557,31 @@ class RasteredImage:
     @extent.setter
     def extent(self, value):
         self._extent = value
-        for i in self.axes.images:
-            i.style.update({'extent': value})
+        for image in self.axes.images:
+            image.style.update({"extent": value})
 
     @property
     def x_positive(self):
         xmin, xmax = self.axes.x_limits
         if xmin > xmax:
-            self._x_positive = 'left'
+            self._x_positive = "left"
         else:
-            self._x_positive = 'right'
+            self._x_positive = "right"
         return self._x_positive
 
     @x_positive.setter
     def x_positive(self, value):
-        if value not in ['right', 'left']:
+        if value not in ["right", "left"]:
             raise ValueError('x_positive must be "right" or "left"')
         self._x_positive = value
         xmin, xmax = self.axes.x_limits
-        if ((xmin > xmax and self._x_positive == 'right') or
-                (xmax > xmin and self._x_positive == 'left')):
+        if (xmin > xmax and self._x_positive == "right") or (
+            xmax > xmin and self._x_positive == "left"
+        ):
             self.axes.x_limits = (xmax, xmin)
-        elif ((xmax >= xmin and self._x_positive == 'right') or
-                (xmin >= xmax and self._x_positive == 'left')):
+        elif (xmax >= xmin and self._x_positive == "right") or (
+            xmin >= xmax and self._x_positive == "left"
+        ):
             self.axes.x_limits = (xmin, xmax)
             self._x_positive = value
 
@@ -899,43 +589,36 @@ class RasteredImage:
     def y_positive(self):
         ymin, ymax = self.axes.y_limits
         if ymin > ymax:
-            self._y_positive = 'down'
+            self._y_positive = "down"
         else:
-            self._y_positive = 'up'
+            self._y_positive = "up"
         return self._y_positive
 
     @y_positive.setter
     def y_positive(self, value):
-        if value not in ['up', 'down']:
+        if value not in ["up", "down"]:
             raise ValueError('y_positive must be "up" or "down"')
         self._y_positive = value
         ymin, ymax = self.axes.y_limits
-        if ((ymin > ymax and self._y_positive == 'up') or
-                (ymax > ymin and self._y_positive == 'down')):
+        if (ymin > ymax and self._y_positive == "up") or (
+            ymax > ymin and self._y_positive == "down"
+        ):
             self.axes.y_limits = (ymax, ymin)
-        elif ((ymax >= ymin and self._y_positive == 'up') or
-                (ymin >= ymax and self._y_positive == 'down')):
+        elif (ymax >= ymin and self._y_positive == "up") or (
+            ymin >= ymax and self._y_positive == "down"
+        ):
             self.axes.y_limits = (ymin, ymax)
             self._y_positive = value
 
-    @property
-    def run(self):
-        return self._run
-
-    @run.setter
-    def run(self, value):
-        self._run = value
-        self.axes.images.clear()
-        if self._run is not None:
-            self._add_image()
-
-    def _add_image(self):
+    def _add_image(self, event):
+        run = event.run
         func = functools.partial(self._transform, field=self.field)
-        style = {'cmap': self._cmap, 'clim': self._clim, 'extent': self._extent}
-        image = ImageSpec(func, self.run, label=self.field, style=style)
-        md = self.run.metadata["start"]
+        style = {"cmap": self._cmap, "clim": self._clim, "extent": self._extent}
+        image = ImageSpec(func, run, label=self.field, style=style)
+        self._run_manager.track_artist(image)
+        md = run.metadata["start"]
         self.axes.images.append(image)
-        self.axes.title = self._label_maker(self.run, self.field)
+        self.axes.title = self._label_maker(run, self.field)
         self.axes.x_label = md["motors"][1]
         self.axes.y_label = md["motors"][0]
         # By default, pixels center on integer coordinates ranging from 0 to
@@ -943,33 +626,31 @@ class RasteredImage:
         # In order to see entire pixels, we set lower limits to -0.5
         # and upper limits to columns-0.5 horizontally and rows-0.5 vertically
         # if limits aren't specifically set.
-        if self.axes.x_limits is None and self._x_positive == 'right':
-            self.axes.x_limits = (-0.5, md["shape"][1]-0.5)
-        elif self.axes.x_limits is None and self._x_positive == 'left':
-            self.axes.x_limits = (md["shape"][1]-0.5, -0.5)
-        if self.axes.y_limits is None and self._y_positive == 'up':
-            self.axes.y_limits = (-0.5, md["shape"][0]-0.5)
-        elif self.axes.y_limits is None and self._y_positive == 'down':
-            self.axes.y_limits = (md["shape"][0]-0.5, -0.5)
+        if self.axes.x_limits is None and self._x_positive == "right":
+            self.axes.x_limits = (-0.5, md["shape"][1] - 0.5)
+        elif self.axes.x_limits is None and self._x_positive == "left":
+            self.axes.x_limits = (md["shape"][1] - 0.5, -0.5)
+        if self.axes.y_limits is None and self._y_positive == "up":
+            self.axes.y_limits = (-0.5, md["shape"][0] - 0.5)
+        elif self.axes.y_limits is None and self._y_positive == "down":
+            self.axes.y_limits = (md["shape"][0] - 0.5, -0.5)
+        # TODO Try to make the axes aspect equal unless the extent is highly non-square.
+        ...
 
     def _transform(self, run, field):
-        i_data = numpy.ones(self._shape) * numpy.nan
+        image_data = numpy.ones(self._shape) * numpy.nan
         (data,) = numpy.asarray(
             call_or_eval((field,), run, self.needs_streams, self.namespace)
         )
-        snaking = self.run.metadata["start"]["snaking"]
-        for i in range(len(data)):
-            pos = list(numpy.unravel_index(i, self._shape))
+        snaking = run.metadata["start"]["snaking"]
+        for index in range(len(data)):
+            pos = list(numpy.unravel_index(index, self._shape))
             if snaking[1] and (pos[0] % 2):
                 pos[1] = self._shape[1] - pos[1] - 1
             pos = tuple(pos)
-            i_data[pos] = data[i]
+            image_data[pos] = data[index]
 
-        return i_data
-
-    @property
-    def needs_streams(self):
-        return self._needs_streams
+        return image_data
 
     @property
     def namespace(self):
@@ -982,3 +663,25 @@ class RasteredImage:
     @property
     def shape(self):
         return self._shape
+
+    # Expose some properties from the internal RunManger helper class.
+
+    @property
+    def runs(self):
+        return self._run_manager.runs
+
+    @property
+    def max_runs(self):
+        return self._run_manager.max_runs
+
+    @max_runs.setter
+    def max_runs(self, value):
+        self._run_manager.max_runs = value
+
+    @property
+    def needs_streams(self):
+        return self._run_manager._needs_streams
+
+    @property
+    def pinned(self):
+        return self._run_manager._pinned
