@@ -176,7 +176,7 @@ class AxesSpec(BaseSpec):
         title=None,
         x_label=None,
         y_label=None,
-        aspect="equal",
+        aspect=None,
         x_limits=None,
         y_limits=None,
         uuid=None,

@@ -513,7 +513,6 @@ class RasteredImages:
         self._run = None
 
         if axes is None:
-            axes = AxesSpec(aspect="equal")
             figure = FigureSpec((axes,), title="")
         else:
             figure = axes.figure
@@ -634,6 +633,8 @@ class RasteredImages:
             self.axes.y_limits = (-0.5, md["shape"][0] - 0.5)
         elif self.axes.y_limits is None and self._y_positive == "down":
             self.axes.y_limits = (md["shape"][0] - 0.5, -0.5)
+        # TODO Try to make the axes aspect equal unless the extent is highly non-square.
+        ...
 
     def _transform(self, run, field):
         image_data = numpy.ones(self._shape) * numpy.nan

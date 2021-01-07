@@ -29,10 +29,18 @@ class MatplotlibAxes:
         self.model = model
         self.axes = axes
 
+        # If we specify data limits and axes aspect and position, we have
+        # overdetermined the system. When these are incompatible, we want
+        # matplotlib to expand the data limts along one dimension rather than
+        # disorting the boundaries of the axes (for example, creating a tall,
+        # shinny axes box).
+        self.axes.set_adjustable("datalim")
+
         axes.set_title(model.title)
         axes.set_xlabel(model.x_label)
         axes.set_ylabel(model.y_label)
-        axes.set_aspect(model.aspect)
+        aspect = model.aspect or "auto"
+        axes.set_aspect(aspect)
         if model.x_limits is not None:
             axes.set_xlim(model.x_limits)
         if model.y_limits is not None:
@@ -101,6 +109,7 @@ class MatplotlibAxes:
         self._update_and_draw()
 
     def _on_aspect_changed(self, event):
+        aspect = event.value or "auto"
         self.axes.set_aspect(event.value)
         self._update_and_draw()
 
