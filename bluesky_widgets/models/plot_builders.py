@@ -513,6 +513,7 @@ class RasteredImages:
         self._run = None
 
         if axes is None:
+            axes = AxesSpec()
             figure = FigureSpec((axes,), title="")
         else:
             figure = axes.figure
