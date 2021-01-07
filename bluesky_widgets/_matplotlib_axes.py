@@ -110,7 +110,7 @@ class MatplotlibAxes:
 
     def _on_aspect_changed(self, event):
         aspect = event.value or "auto"
-        self.axes.set_aspect(event.value)
+        self.axes.set_aspect(aspect)
         self._update_and_draw()
 
     def _on_x_limits_changed(self, event):
@@ -163,7 +163,6 @@ class MatplotlibAxes:
         artist = self.axes.imshow(
             array, label=image_spec.label, origin="lower", **image_spec.style
         )
-        self.axes.set_aspect(self.model.aspect)
         self.axes.figure.colorbar(artist)
 
         # If this is connected to a streaming data source and is not yet
