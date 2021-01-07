@@ -6,8 +6,27 @@ This is roughly adapted from bluesky.callbacks.best_effort.
 """
 from warnings import warn
 
+from .plot_builders import Images, Lines
 
-def infer_lines_to_plot(run, stream_name):
+
+class GenericPlotSuggestor:
+    """
+    This makes suggestions based on the metadata and the structure/shape of the data.
+
+
+    This is useful as a first example in the context of just getting started,
+    or teaching, or demos. More specific suggestions are possible with more
+    knowledge of the context.
+    """
+
+    def suggest(self, run, stream_name):
+        suggestions = []
+        suggestions.extend(suggest_lines(run, stream_name))
+        suggestions.extend(suggest_images(run, stream_name))
+        return suggestions
+
+
+def suggest_lines(run, stream_name):
     """
     Given a run and stream, suggest lines to plot.
 
@@ -159,6 +178,8 @@ def infer_lines_to_plot(run, stream_name):
     # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
     if ndims == 1:
+        if descriptor.get("name") == "baseline":
+            return []
         (x_key,) = dim_fields
         suggestions = []
         for y_key in columns:
@@ -169,7 +190,11 @@ def infer_lines_to_plot(run, stream_name):
                 )
                 continue
             suggestions.append(
-                {"x": x_key, "ys": (y_key,), "needs_streams": (stream_name,)}
+                (
+                    Lines,
+                    {"x": x_key, "ys": (y_key,), "needs_streams": (stream_name,)},
+                    (x_key, y_key),
+                )
             )
         return suggestions
 
@@ -256,7 +281,7 @@ def hinted_fields(descriptor):
     return columns
 
 
-def infer_images(run, stream_name):
+def suggest_images(run, stream_name):
     """
     Given a run and stream name, suggest images to display.
 
@@ -287,5 +312,7 @@ def infer_images(run, stream_name):
     ds = run[stream_name].to_dask()
     for field in ds:
         if 2 <= ds[field].ndim < 5:
-            suggestions.append({"field": field, "needs_streams": (stream_name,)})
+            suggestions.append(
+                (Images, {"field": field, "needs_streams": (stream_name,)}, field)
+            )
     return suggestions
