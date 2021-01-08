@@ -186,6 +186,15 @@ class Lines:
             figure = axes.figure
         self.axes = axes
         self.figure = figure
+        # If the Axes' figure is not yet set, listen for it to be set.
+        if figure is None:
+
+            def set_figure(event):
+                self.figure = event.value
+                # This occurs at most once, so we can now stop listening.
+                self.axes.events.figure.disconnect(set_figure)
+
+            self.axes.events.figure.connect(set_figure)
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
 
@@ -351,6 +360,15 @@ class Images:
             figure = axes.figure
         self.axes = axes
         self.figure = figure
+        # If the Axes' figure is not yet set, listen for it to be set.
+        if figure is None:
+
+            def set_figure(event):
+                self.figure = event.value
+                # This occurs at most once, so we can now stop listening.
+                self.axes.events.figure.disconnect(set_figure)
+
+            self.axes.events.figure.connect(set_figure)
 
         self._run_manager = RunManager(max_runs, needs_streams)
         self._run_manager.events.run_ready.connect(self._add_images)
@@ -519,6 +537,15 @@ class RasteredImages:
             figure = axes.figure
         self.axes = axes
         self.figure = figure
+        # If the Axes' figure is not yet set, listen for it to be set.
+        if figure is None:
+
+            def set_figure(event):
+                self.figure = event.value
+                # This occurs at most once, so we can now stop listening.
+                self.axes.events.figure.disconnect(set_figure)
+
+            self.axes.events.figure.connect(set_figure)
         self._clim = clim
         self._cmap = cmap
         self._extent = extent

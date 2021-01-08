@@ -2,6 +2,7 @@ from bluesky_live.run_builder import build_simple_run
 import numpy
 
 from ..plot_builders import Images
+from ..plot_specs import AxesSpec, FigureSpec
 
 
 def test_image():
@@ -31,3 +32,11 @@ def test_properties():
     assert model.field == "c * ccd"
     assert dict(model.namespace) == {"c": 3}
     assert model.needs_streams == ("primary",)
+
+
+def test_figure_set_after_instantiation():
+    axes = AxesSpec()
+    model = Images("ccd", axes=axes)
+    assert model.figure is None
+    figure = FigureSpec((axes,), title="")
+    assert model.figure is figure

@@ -3,7 +3,7 @@ import pytest
 import numpy
 
 from ..plot_builders import RasteredImages
-from ..plot_specs import AxesSpec
+from ..plot_specs import AxesSpec, FigureSpec
 
 
 @pytest.fixture
@@ -161,3 +161,11 @@ def test_snaking_image_data_positions():
         actual_data = model.figure.axes[0].images[0].func(run)
         expected_data = [[1, 2], [4, 3]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+
+
+def test_figure_set_after_instantiation():
+    axes = AxesSpec()
+    model = RasteredImages("ccd", shape=(2, 2), axes=axes)
+    assert model.figure is None
+    figure = FigureSpec((axes,), title="")
+    assert model.figure is figure
