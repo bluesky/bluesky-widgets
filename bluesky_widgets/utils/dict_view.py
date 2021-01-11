@@ -7,7 +7,7 @@ class DictView(collections.abc.Mapping):
         self._internal_dict = d
 
     def __repr__(self):
-        return f"({self._internal_dict!r})"
+        return f"{self.__class__.__name__}({self._internal_dict!r})"
 
     def __getitem__(self, key):
         return self._internal_dict[key]
