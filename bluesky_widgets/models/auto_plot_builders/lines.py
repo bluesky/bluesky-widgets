@@ -11,7 +11,19 @@ class AutoLines(AutoPlotter):
         super().__init__()
         # Map (x, tuple_of_tuple_of_ys) to line of Lines instances for each group of y.
         self._lines_instances = {}
-        self.max_runs = None
+        self._max_runs = max_runs
+
+    @property
+    def max_runs(self):
+        return self._max_runs
+
+    @max_runs.setter
+    def max_runs(self, value):
+        if max_runs is not None:
+            for lines_instances in self._lines_instances.values():
+                for lines in line_instances:
+                    line.max_runs = value
+        self._max_runs = max_runs
 
     def handle_new_stream(self, run, stream_name, **kwargs):
         """
