@@ -1,11 +1,9 @@
 """
-This module and all the interfaces in it are *highly* provisional likely to be
-drastically re-thought in the near future.
-
-This is roughly adapted from bluesky.callbacks.best_effort.
+This module contains utility functions used by the built-in auto-plotters.
+The module is private because the interfaces may change in the future.
+Use the auto-plotters in bluesky_widgets.models.auto_plot_builders to use this
+functionality.
 """
-from warnings import warn
-
 
 def hinted_fields(descriptor):
     # Figure out which columns to put in the table.

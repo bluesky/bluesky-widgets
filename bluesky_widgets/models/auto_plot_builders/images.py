@@ -12,7 +12,6 @@ class AutoImages(AutoPlotter):
         run : BlueskyRun
         stream_name : String
         """
-        suggestions = []
         ds = run[stream_name].to_dask()
         for field in ds:
             if 2 <= ds[field].ndim < 5:
