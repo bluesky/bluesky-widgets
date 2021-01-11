@@ -5,6 +5,7 @@ Use the auto-plotters in bluesky_widgets.models.auto_plot_builders to use this
 functionality.
 """
 
+
 def hinted_fields(descriptor):
     # Figure out which columns to put in the table.
     obj_names = list(descriptor["object_keys"])
