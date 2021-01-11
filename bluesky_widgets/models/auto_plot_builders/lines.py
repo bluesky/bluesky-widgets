@@ -193,7 +193,13 @@ class AutoLines(AutoPlotter):
                     lines_instances.append(lines)
                 if not axes_list:
                     return
-                figure = FigureSpec(axes_list, title="XANES and XMCD")
+                title = (", ".join((str(lines.ys[0]) for lines in lines_instances))
+                         + f" vs. {x_key}")
+                if len(title) > 15:
+                    short_title = title[:15] + "..."
+                else:
+                    short_title = title
+                figure = FigureSpec(axes_list, title=title, short_title=title)
                 self._lines_instances[key] = lines_instances
                 self.plot_builders.extend(lines_instances)
                 self.figures.append(figure)
