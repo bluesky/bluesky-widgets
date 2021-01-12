@@ -16,10 +16,10 @@ class AutoImages(AutoPlotter):
     @max_runs.setter
     def max_runs(self, value):
         if max_runs is not None:
-            for lines_instances in self._lines_instances.values():
-                for lines in line_instances:
-                    line.max_runs = value
-        self._max_runs = max_runs
+            for builders in self._lines_instances.values():
+                for builder in builders:
+                    builder.max_runs = value
+        self._max_runs = value
 
     def handle_new_stream(self, run, stream_name):
         """
