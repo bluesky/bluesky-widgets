@@ -120,3 +120,5 @@ def test_figure_set_after_instantiation():
     assert model.figure is None
     figure = FigureSpec((axes,), title="")
     assert model.figure is figure
+    view = HeadlessFigure(model.figure)
+    view.close()

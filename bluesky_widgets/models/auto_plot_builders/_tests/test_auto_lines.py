@@ -16,7 +16,7 @@ MAX_RUNS = 3
 
 
 def test_pinned():
-    "Test Lines with 'pinned' and un-pinned runs."
+    "Test AutoLines with 'pinned' and un-pinned runs."
     NUM_YS = 2
     model = AutoLines(max_runs=MAX_RUNS)
     view = HeadlessFigures(model.figures)
