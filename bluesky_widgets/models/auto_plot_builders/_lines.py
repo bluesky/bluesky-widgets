@@ -3,7 +3,7 @@ from warnings import warn
 from ..plot_builders import Lines
 from ..plot_specs import FigureSpec, AxesSpec
 from .._heuristics import hinted_fields
-from .base import AutoPlotter
+from ._base import AutoPlotter
 
 
 class AutoLines(AutoPlotter):

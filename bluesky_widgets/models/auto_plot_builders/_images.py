@@ -1,5 +1,5 @@
 from ..plot_builders import Images
-from .base import AutoPlotter
+from ._base import AutoPlotter
 
 
 class AutoImages(AutoPlotter):
