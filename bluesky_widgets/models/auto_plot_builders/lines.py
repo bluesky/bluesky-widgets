@@ -19,7 +19,7 @@ class AutoLines(AutoPlotter):
 
     @max_runs.setter
     def max_runs(self, value):
-        if max_runs is not None:
+        if value is not None:
             for builders in self._lines_instances.values():
                 for builder in builders:
                     builder.max_runs = value
@@ -185,18 +185,20 @@ class AutoLines(AutoPlotter):
                         ys=(y_key,),
                         needs_streams=(stream_name,),
                         axes=axes,
-                        **lines_kwargs
+                        **lines_kwargs,
                     )
                     lines_instances.append(lines)
                 if not axes_list:
                     return
-                title = (", ".join((str(lines.ys[0]) for lines in lines_instances))
-                         + f" vs. {x_key}")
+                title = (
+                    ", ".join((str(lines.ys[0]) for lines in lines_instances))
+                    + f" vs. {x_key}"
+                )
                 if len(title) > 15:
                     short_title = title[:15] + "..."
                 else:
                     short_title = title
-                figure = FigureSpec(axes_list, title=title, short_title=title)
+                figure = FigureSpec(axes_list, title=title, short_title=short_title)
                 self._lines_instances[key] = lines_instances
                 self.plot_builders.extend(lines_instances)
                 self.figures.append(figure)

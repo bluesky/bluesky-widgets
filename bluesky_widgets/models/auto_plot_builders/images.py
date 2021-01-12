@@ -15,7 +15,7 @@ class AutoImages(AutoPlotter):
 
     @max_runs.setter
     def max_runs(self, value):
-        if max_runs is not None:
+        if value is not None:
             for builders in self._lines_instances.values():
                 for builder in builders:
                     builder.max_runs = value
