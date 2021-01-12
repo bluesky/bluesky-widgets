@@ -8,6 +8,8 @@ class AutoPlotter(abc.ABC):
     """
     Generate best-effort figures based on a heuristic.
 
+    Subclasses must define the method ``handle_new_stream``.
+
     Parameters
     ----------
     plot_suggestors : List[PlotSuggestors]
@@ -34,9 +36,14 @@ class AutoPlotter(abc.ABC):
             self.handle_new_stream(run, stream_name, **kwargs)
         if run_is_live_and_not_completed(run):
             # Listen for additional streams.
-            run.events.new_stream.connect(
-                lambda event: self.handle_new_stream(run, event.name, **kwargs)
-            )
+
+            def pass_to_handle_new_stream(event):
+                self.handle_new_stream(run, event.name, **kwargs)
+
+            run.events.new_stream.connect(pass_to_handle_new_stream)
+            # When run is complete, stop listening.
+            run.events.completed.connect(
+                lambda event: run.event.new_stream.disconnect(pass_to_handle_new_stream))
 
     def discard_run(self, run):
         """
