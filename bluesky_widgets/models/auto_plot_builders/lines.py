@@ -81,7 +81,6 @@ class AutoLines(AutoPlotter):
         # configuration.
         stream = run[stream_name]
         descriptor = stream._descriptors[0]  # HACK!
-        stream_name = descriptor.get("name", "primary")  # fall back for old descriptors
 
         columns = hinted_fields(descriptor)
 
