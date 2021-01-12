@@ -7,6 +7,19 @@ from ._base import AutoPlotter
 
 
 class AutoLines(AutoPlotter):
+    """
+    Construct figures with line plots automatically.
+
+    The decision of which lines to plot is based on metadata and data shape.
+
+    Examples
+    --------
+
+    >>> model = AutoLines()
+    >>> from bluesky_widgets.jupyter.figures import JupyterFigures
+    >>> view = JupyterFigures(model.figures)
+    >>> model.add_run(run)
+    """
     def __init__(self, *, max_runs=None):
         super().__init__()
         # Map (stream_name, x, tuple_of_tuple_of_ys) to line of Lines instances for each group of y.
@@ -27,6 +40,8 @@ class AutoLines(AutoPlotter):
 
     def handle_new_stream(self, run, stream_name, **kwargs):
         """
+        This is used internally and should not be called directly by user code.
+
         Given a run and stream name, add or update figures with line plots.
 
         Parameters
