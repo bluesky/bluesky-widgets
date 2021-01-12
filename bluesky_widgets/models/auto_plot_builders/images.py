@@ -5,7 +5,7 @@ from .base import AutoPlotter
 class AutoImages(AutoPlotter):
     def __init__(self, *, max_runs=None):
         super().__init__()
-        # Map field to instance of Images
+        # Map (stream_name, field) to instance of Images
         self._field_to_builder = {}
         self._max_runs = max_runs
 
@@ -33,6 +33,11 @@ class AutoImages(AutoPlotter):
         ds = run[stream_name].to_dask()
         for field in ds:
             if 2 <= ds[field].ndim < 5:
-                images = Images(field=field, needs_streams=(stream_name,))
+                try:
+                    images = self._field_to_builder[(stream_name, field)]
+                except KeyError:
+                    images = Images(field=field, needs_streams=(stream_name,))
+                    self._field_to_builder[(stream_name, field)] = images
+                images.add_run(run)
                 self.plot_builders.append(images)
                 self.figures.append(images.figure)
