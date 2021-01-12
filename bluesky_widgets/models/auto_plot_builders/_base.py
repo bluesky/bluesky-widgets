@@ -43,7 +43,7 @@ class AutoPlotter(abc.ABC):
             run.events.new_stream.connect(pass_to_handle_new_stream)
             # When run is complete, stop listening.
             run.events.completed.connect(
-                lambda event: run.event.new_stream.disconnect(pass_to_handle_new_stream)
+                lambda event: run.events.new_stream.disconnect(pass_to_handle_new_stream)
             )
 
     def discard_run(self, run):
