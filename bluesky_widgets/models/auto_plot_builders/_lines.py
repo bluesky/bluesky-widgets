@@ -20,6 +20,7 @@ class AutoLines(AutoPlotter):
     >>> view = JupyterFigures(model.figures)
     >>> model.add_run(run)
     """
+
     def __init__(self, *, max_runs=None):
         super().__init__()
         # Map (stream_name, x, tuple_of_tuple_of_ys) to line of Lines instances for each group of y.

@@ -18,6 +18,7 @@ class AutoImages(AutoPlotter):
     >>> view = JupyterFigures(model.figures)
     >>> model.add_run(run)
     """
+
     def __init__(self, *, max_runs=None):
         super().__init__()
         # Map (stream_name, field) to instance of Images
