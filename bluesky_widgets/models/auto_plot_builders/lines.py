@@ -9,7 +9,7 @@ from .base import AutoPlotter
 class AutoLines(AutoPlotter):
     def __init__(self, *, max_runs=None):
         super().__init__()
-        # Map (x, tuple_of_tuple_of_ys) to line of Lines instances for each group of y.
+        # Map (stream_name, x, tuple_of_tuple_of_ys) to line of Lines instances for each group of y.
         self._lines_instances = {}
         self._max_runs = max_runs
 
@@ -161,10 +161,8 @@ class AutoLines(AutoPlotter):
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
         if ndims == 1:
-            if descriptor.get("name") == "baseline":
-                return
             (x_key,) = dim_fields
-            key = (x_key, (tuple(columns),))
+            key = (stream_name, x_key, (tuple(columns),))
             try:
                 lines_instances = self._lines_instances[key]
             except KeyError:
