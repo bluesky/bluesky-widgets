@@ -2,6 +2,7 @@ from bluesky_live.run_builder import build_simple_run
 import pytest
 
 from ..plot_builders import Lines
+from ..plot_specs import AxesSpec, FigureSpec
 from ...headless.figures import HeadlessFigure
 
 
@@ -110,4 +111,14 @@ def test_functions(func):
     model.add_run(runs[0])
     assert len(model.figure.axes[0].lines) == 1
 
+    view.close()
+
+
+def test_figure_set_after_instantiation():
+    axes = AxesSpec()
+    model = Lines("motor", [], axes=axes)
+    assert model.figure is None
+    figure = FigureSpec((axes,), title="")
+    assert model.figure is figure
+    view = HeadlessFigure(model.figure)
     view.close()

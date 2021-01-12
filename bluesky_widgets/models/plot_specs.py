@@ -194,6 +194,7 @@ class AxesSpec(BaseSpec):
         self._y_limits = y_limits
         self.events = EmitterGroup(
             source=self,
+            figure=Event,
             title=Event,
             x_label=Event,
             y_label=Event,
@@ -238,6 +239,7 @@ class AxesSpec(BaseSpec):
                 f"to {self.figure} and thus cannot be added to a new Figure."
             )
         self._figure = figure
+        self.events.figure(value=figure)
 
     @property
     def lines(self):
