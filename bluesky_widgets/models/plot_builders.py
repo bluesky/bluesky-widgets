@@ -379,19 +379,9 @@ class Images:
         run = event.run
         func = functools.partial(self._transform, field=self.field)
         image = ImageSpec(func, run, label=self.field)
-        array_shape = run.primary.to_dask()[self.field].shape
         self._run_manager.track_artist(image)
         self.axes.images.append(image)
         self.axes.title = self._label_maker(run, self.field)
-        # By default, pixels center on integer coordinates ranging from 0 to
-        # columns-1 horizontally and 0 to rows-1 vertically.
-        # In order to see entire pixels, we set lower limits to -0.5
-        # and upper limits to columns-0.5 horizontally and rows-0.5 vertically
-        # if limits aren't specifically set.
-        if self.axes.x_limits is None:
-            self.axes.x_limits = (-0.5, array_shape[-1] - 0.5)
-        if self.axes.y_limits is None:
-            self.axes.y_limits = (-0.5, array_shape[-2] - 0.5)
         # TODO Set axes x, y from xarray dims
 
     def _transform(self, run, field):
