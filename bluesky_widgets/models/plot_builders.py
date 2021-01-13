@@ -379,7 +379,7 @@ class Images:
         run = event.run
         func = functools.partial(self._transform, field=self.field)
         image = ImageSpec(func, run, label=self.field)
-        array_shape = run.primary.read()[self.field].shape
+        array_shape = run.primary.to_dask()[self.field].shape
         self._run_manager.track_artist(image)
         self.axes.images.append(image)
         self.axes.title = self._label_maker(run, self.field)
