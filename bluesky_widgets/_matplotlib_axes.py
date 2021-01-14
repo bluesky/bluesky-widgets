@@ -250,14 +250,15 @@ class MatplotlibHostParasiteAxes(MatplotlibAxes):
             (artist,) = init_host(self.axes, y, label)
             self.axes.figure.add_axes(self.axes)
         else:
-            (artist,) = add_parasite(self.axes, y, label, self.count*30)
+            (artist,) = add_parasite(self.axes, y, label, self.count*40)
+        self.axes.legend()
         return (artist, )
 
     def _add_line(self, line_spec):
         super()._add_line(line_spec)
         self.count += 1
 
-#MatplotlibAxes = MatplotlibHostParasiteAxes
+MatplotlibAxes = MatplotlibHostParasiteAxes
 
 def _quiet_mpl_noisy_logger():
     "Do not filter or silence it, but avoid defaulting to the logger of last resort."
