@@ -240,23 +240,24 @@ class MatplotlibAxes:
 
 class MatplotlibHostParasiteAxes(MatplotlibAxes):
     def __init__(self, model: AxesSpec, axes, *args, **kwargs):
-        self.count = 0
+        self.axis_count = 0
         axes = convert_axes_to_host_axes(axes)
         super().__init__(model, axes, *args, **kwargs)
 
     def axes_plot(self, x, y, label, *args, **kwargs):
-        if self.count == 0:
+        if self.axis_count == 0:
             self.axes.figure.clf()
             (artist,) = init_host(self.axes, y, label)
             self.axes.figure.add_axes(self.axes)
         else:
-            (artist,) = add_parasite(self.axes, y, label, self.count*40)
+            parasite_axis_count = self.axis_count - 1
+            (artist,) = add_parasite(self.axes, y, label, parasite_axis_count*40)
         self.axes.legend()
         return (artist, )
 
     def _add_line(self, line_spec):
         super()._add_line(line_spec)
-        self.count += 1
+        self.axis_count += 1
 
 MatplotlibAxes = MatplotlibHostParasiteAxes
 
