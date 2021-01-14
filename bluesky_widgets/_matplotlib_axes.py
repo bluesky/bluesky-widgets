@@ -246,10 +246,11 @@ class MatplotlibHostParasiteAxes(MatplotlibAxes):
 
     def axes_plot(self, x, y, label, *args, **kwargs):
         if self.count == 0:
+            self.axes.figure.clf()
             (artist,) = init_host(self.axes, y, label)
             self.axes.figure.add_axes(self.axes)
         else:
-            (artist,) = add_parasite(self.axes, y, label, 30)
+            (artist,) = add_parasite(self.axes, y, label, self.count*30)
         return (artist, )
 
     def _add_line(self, line_spec):
