@@ -4,8 +4,37 @@ bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
 import logging
 
+from mpl_toolkits.axisartist.parasite_axes import HostAxes, ParasiteAxes
 from .models.plot_specs import Axes, Line, Image
+from .models.utils import run_is_live_and_not_completed
 
+def convert_axes_to_host_axes(axes):
+    fig = axes.get_figure()
+    rect = axes._position
+    return HostAxes(fig, rect)
+
+def init_host(host, data, label):
+    host.set_ylabel(label)
+    host.axis["right"].set_visible(False)
+    p, = host.plot(range(len(data)), data, label=label)
+    host.axis["left"].label.set_color(p.get_color())
+    return (p, )
+	
+
+def add_parasite(host, data, label, offset):
+    par = ParasiteAxes(host, sharex=host)
+    host.parasites.append(par)
+    par.set_ylabel(label)
+    offset = (offset, 0)
+    new_axisline = par.get_grid_helper().new_fixed_axis
+    par.axis["right3"] = new_axisline(loc="right", axes=par, offset=offset)
+    p, = par.plot(range(len(data)), data, label=label)
+    par.set_ylim(*par.get_ylim()) # axes don't draw until resize without this - not sure why
+    par.axis["right3"].label.set_color(p.get_color())
+    return (p,)
+
+
+	
 
 class MatplotlibAxes:
     """
@@ -116,6 +145,9 @@ class MatplotlibAxes:
         artist_spec = event.item
         self._add_artist(artist_spec)
 
+    def axes_plot(self, x, y, label, *args, **kwargs):
+        return self.axes.plot(x, y, label=label, **kwargs)
+
     def _add_artist(self, artist_spec):
         """
         Add an artist.
@@ -179,7 +211,7 @@ class MatplotlibAxes:
     # creation and update signatures, so we need this amount of wrapping.
 
     def _construct_line(self, *, x, y, label, style):
-        (artist,) = self.axes.plot(x, y, label=label, **style)
+        (artist,) = self.axes_plot(x, y, label=label, **style)
         self.axes.relim()  # Recompute data limits.
         self.axes.autoscale_view()  # Rescale the view using those new limits.
         self.draw_idle()
@@ -206,6 +238,25 @@ class MatplotlibAxes:
 
         return artist, update
 
+class MatplotlibHostParasiteAxes(MatplotlibAxes):
+    def __init__(self, model: AxesSpec, axes, *args, **kwargs):
+        self.count = 0
+        axes = convert_axes_to_host_axes(axes)
+        super().__init__(model, axes, *args, **kwargs)
+
+    def axes_plot(self, x, y, label, *args, **kwargs):
+        if self.count == 0:
+            (artist,) = init_host(self.axes, y, label)
+            self.axes.figure.add_axes(self.axes)
+        else:
+            (artist,) = add_parasite(self.axes, y, label, 30)
+        return (artist, )
+
+    def _add_line(self, line_spec):
+        super()._add_line(line_spec)
+        self.count += 1
+
+#MatplotlibAxes = MatplotlibHostParasiteAxes
 
 def _quiet_mpl_noisy_logger():
     "Do not filter or silence it, but avoid defaulting to the logger of last resort."
