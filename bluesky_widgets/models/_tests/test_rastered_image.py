@@ -30,19 +30,22 @@ def snaking_run():
     return run
 
 
-def test_rastered_image(non_snaking_run):
+def test_rastered_image(non_snaking_run, FigureView):
     "Test RasteredImages with a 2D array."
     run = non_snaking_run
     model = RasteredImages("ccd", shape=(2, 2))
+    view = FigureView(model.figure)
     assert not model.figure.axes[0].images
     model.add_run(run)
     assert model.figure.axes[0].images
+    view.close()
 
 
-def test_x_y_positive_change_x_y_limits(non_snaking_run):
+def test_x_y_positive_change_x_y_limits(non_snaking_run, FigureView):
     "Test x_positive and y_positive change x_limits and y_limits"
     run = non_snaking_run
     model = RasteredImages("ccd", shape=(2, 2), x_positive="left", y_positive="down")
+    view = FigureView(model.figure)
     model.add_run(run)
     expected_x_lims = expected_y_lims = (1.5, -0.5)
     assert model.axes.x_limits == expected_x_lims
@@ -52,42 +55,51 @@ def test_x_y_positive_change_x_y_limits(non_snaking_run):
     expected_x_lims = expected_y_lims = (-0.5, 1.5)
     assert model.axes.x_limits == expected_x_lims
     assert model.axes.y_limits == expected_y_lims
+    view.close()
 
 
-def test_x_y_limits_change_x_y_positive(non_snaking_run):
+def test_x_y_limits_change_x_y_positive(non_snaking_run, FigureView):
     "Test x_limits and y_limits change x_positive and y_positive"
     run = non_snaking_run
     axes = AxesSpec(x_limits=(1.5, -0.5), y_limits=(1.5, -0.5))
+    FigureSpec((axes,), title="")
     model = RasteredImages("ccd", shape=(2, 2), axes=axes)
+    view = FigureView(model.figure)
     model.add_run(run)
     assert model.x_positive == "left"
     assert model.y_positive == "down"
     model.axes.x_limits = model.axes.y_limits = (-0.5, 1.5)
     assert model.x_positive == "right"
     assert model.y_positive == "up"
+    view.close()
 
 
-def test_non_snaking_image_data(non_snaking_run):
+def test_non_snaking_image_data(non_snaking_run, FigureView):
     run = non_snaking_run
     model = RasteredImages("ccd", shape=(2, 2))
     model.add_run(run)
+    view = FigureView(model.figure)
     actual_data = model.figure.axes[0].images[0].func(run)
     expected_data = [[1, 2], [3, 4]]
     assert numpy.array_equal(actual_data, expected_data)
+    view.close()
 
 
-def test_snaking_image_data(snaking_run):
+def test_snaking_image_data(snaking_run, FigureView):
     run = snaking_run
     model = RasteredImages("ccd", shape=(2, 2))
+    view = FigureView(model.figure)
     model.add_run(run)
     actual_data = model.figure.axes[0].images[0].func(run)
     expected_data = [[1, 2], [4, 3]]
     assert numpy.array_equal(actual_data, expected_data)
+    view.close()
 
 
-def test_non_snaking_image_data_positions():
+def test_non_snaking_image_data_positions(FigureView):
     md = {"motors": ["y", "x"], "shape": [2, 2], "snaking": (False, False)}
     model = RasteredImages("ccd", shape=(2, 2))
+    view = FigureView(model.figure)
     with RunBuilder(md) as builder:
         ccd = iter([1, 2, 3, 4])
         x = iter([0, 1, 0, 1])
@@ -122,11 +134,13 @@ def test_non_snaking_image_data_positions():
         actual_data = model.figure.axes[0].images[0].func(run)
         expected_data = [[1, 2], [3, 4]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+    view.close()
 
 
-def test_snaking_image_data_positions():
+def test_snaking_image_data_positions(FigureView):
     md = {"motors": ["y", "x"], "shape": [2, 2], "snaking": (False, True)}
     model = RasteredImages("ccd", shape=(2, 2))
+    view = FigureView(model.figure)
     with RunBuilder(md) as builder:
         ccd = iter([1, 2, 3, 4])
         x = iter([0, 1, 1, 0])
@@ -161,6 +175,7 @@ def test_snaking_image_data_positions():
         actual_data = model.figure.axes[0].images[0].func(run)
         expected_data = [[1, 2], [4, 3]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
+    view.close()
 
 
 def test_figure_set_after_instantiation():

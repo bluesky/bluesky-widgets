@@ -37,7 +37,14 @@ with open(path.join(here, "requirements.txt")) as requirements_file:
         if not line.startswith("#")
     ]
 
-extras_require = {"pyside2": ["PySide2", "qtpy"], "pyqt5": ["PyQt5", "qtpy"]}
+extras_require = {
+    # TODO Some of the views do not require matplotlib. Should that get its own
+    # group? Seems a little much to ask the user to manage all this, so I am
+    # erring on the side of inclusion for now.
+    "pyside2": ["PySide2", "qtpy", "matplotlib"],
+    "pyqt5": ["PyQt5", "qtpy", "matplotlib"],
+    "jupyter": ["ipywidgets", "ipympl", "matplotlib"],
+}
 with open(path.join(here, "requirements-examples.txt")) as requirements_file:
     extras_require["examples"] = [
         line
