@@ -22,7 +22,7 @@ jobs:
 
     - name: Install
       shell: bash -l {0}
-      run: source continuous_integration/scripts/install.sh
+      run: source continuous_integration/scripts/install.sh pyqt5
 
     - name: Install documentation-building requirements
       shell: bash -l {0}
