@@ -3,7 +3,6 @@ import pytest
 
 from ..plot_builders import Lines
 from ..plot_specs import AxesSpec, FigureSpec
-from ...headless.figures import HeadlessFigure
 
 
 # Make some runs to use.
@@ -17,12 +16,12 @@ runs = [
 MAX_RUNS = 3
 
 
-def test_pinned():
+def test_pinned(FigureView):
     "Test Lines with 'pinned' and un-pinned runs."
     ys = ["det", "det2"]
     num_ys = len(ys)
     model = Lines("motor", ys, max_runs=MAX_RUNS)
-    view = HeadlessFigure(model.figure)
+    view = FigureView(model.figure)
 
     # Add MAX_RUNS and then some more and check that they do get bumped off.
     for run in runs[:5]:
@@ -50,10 +49,10 @@ def test_pinned():
     view.close()
 
 
-def test_properties():
+def test_properties(FigureView):
     "Touch various accessors"
     model = Lines("c * motor", ["det"], namespace={"c": 3}, max_runs=MAX_RUNS)
-    view = HeadlessFigure(model.figure)
+    view = FigureView(model.figure)
     model.add_run(runs[0])
     assert model.runs[0] is runs[0]
     assert model.max_runs == MAX_RUNS
@@ -66,11 +65,11 @@ def test_properties():
     view.close()
 
 
-def test_decrease_max_runs():
+def test_decrease_max_runs(FigureView):
     "Decreasing max_runs should remove the runs and their associated lines."
     INITIAL_MAX_RUNS = 5
     model = Lines("motor", ["det"], namespace={"c": 3}, max_runs=INITIAL_MAX_RUNS)
-    view = HeadlessFigure(model.figure)
+    view = FigureView(model.figure)
     for run in runs[:5]:
         model.add_run(run)
     assert len(model.runs) == INITIAL_MAX_RUNS
@@ -84,11 +83,11 @@ def test_decrease_max_runs():
 
 
 @pytest.mark.parametrize("expr", ["det / det2", "-log(det)", "np.sqrt(det)"])
-def test_expressions(expr):
+def test_expressions(expr, FigureView):
     "Test Lines with 'pinned' and un-pinned runs."
     ys = [expr]
     model = Lines("motor", ys, max_runs=MAX_RUNS)
-    view = HeadlessFigure(model.figure)
+    view = FigureView(model.figure)
     model.add_run(runs[0])
     assert len(model.figure.axes[0].lines) == 1
 
@@ -102,23 +101,24 @@ def test_expressions(expr):
         lambda det, log: -log(det),
         lambda det, np: np.sqrt(det),
     ],
+    ids=["division", "top-level-log", "np-dot-log"],
 )
-def test_functions(func):
+def test_functions(func, FigureView):
     "Test Lines with 'pinned' and un-pinned runs."
     ys = [func]
     model = Lines("motor", ys, max_runs=MAX_RUNS)
-    view = HeadlessFigure(model.figure)
+    view = FigureView(model.figure)
     model.add_run(runs[0])
     assert len(model.figure.axes[0].lines) == 1
 
     view.close()
 
 
-def test_figure_set_after_instantiation():
+def test_figure_set_after_instantiation(FigureView):
     axes = AxesSpec()
     model = Lines("motor", [], axes=axes)
     assert model.figure is None
     figure = FigureSpec((axes,), title="")
     assert model.figure is figure
-    view = HeadlessFigure(model.figure)
+    view = FigureView(model.figure)
     view.close()
