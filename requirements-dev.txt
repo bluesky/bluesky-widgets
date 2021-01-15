@@ -8,6 +8,7 @@ flake8
 ophyd>=1.5.3
 pytest
 pytest-qt
+pytest-xvfb
 pyzmq
 qtpy
 sphinx
