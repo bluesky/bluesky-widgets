@@ -385,9 +385,7 @@ class Images:
         # TODO Set axes x, y from xarray dims
 
     def _transform(self, run, field):
-        (data,) = numpy.asarray(
-            call_or_eval((field,), run, self.needs_streams, self.namespace)
-        )
+        (data,) = call_or_eval((field,), run, self.needs_streams, self.namespace)
         # If the data is more than 2D, take the middle slice from the leading
         # axis until there are only two axes.
         while data.ndim > 2:
