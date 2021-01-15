@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
-        pip-selectors: ["pyside2", "pyqt5"]
+        pip-selectors: ["pyqt5"]
 
       fail-fast: false
     steps:
