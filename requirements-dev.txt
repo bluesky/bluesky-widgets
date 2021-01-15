@@ -5,16 +5,17 @@ codecov
 coverage
 databroker
 flake8
-napari
+ipympl
+ipywidgets
 ophyd>=1.5.3
 pytest
 pytest-qt
+pytest-xvfb
 pyzmq
 qtpy
 sphinx
 # These are dependencies of various sphinx extensions for documentation.
 ipython
-ipywidgets
 matplotlib
 numpydoc
 sphinx-copybutton

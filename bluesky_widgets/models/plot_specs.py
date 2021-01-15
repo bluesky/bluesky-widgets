@@ -100,8 +100,8 @@ class AxesSpec(BaseSpec):
     """
     Describes a set of Axes
 
-    Paraemeters
-    -----------
+    Parameters
+    ----------
     lines : List[LineSpec], optional
     images : List[ImageSpec], optional
     title: String, optional
