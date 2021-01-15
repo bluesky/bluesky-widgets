@@ -14,8 +14,8 @@ python -m pip install --upgrade pip setuptools wheel numpy
 # Versioneer uses the most recent git tag to generate __version__, which appears
 # in the published documentation.
 git fetch --tags
-if [[ -n $1 ]]; then 
-    python -m pip install .[$1]
+if [[ -n $@ ]]; then
+    python -m pip install .[$@]
 else
     python -m pip install .
 fi
