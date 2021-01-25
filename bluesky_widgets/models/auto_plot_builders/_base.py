@@ -1,6 +1,6 @@
 import abc
 
-from ..plot_specs import FigureSpecList
+from ..plot_specs import FigureList
 from ..utils import run_is_live_and_not_completed
 
 
@@ -18,7 +18,7 @@ class AutoPlotter(abc.ABC):
     """
 
     def __init__(self):
-        self.figures = FigureSpecList()
+        self.figures = FigureList()
         self.figures.events.removed.connect(self._on_figure_removed)
         self.plot_builders = []
 

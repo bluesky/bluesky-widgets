@@ -2,7 +2,7 @@ from bluesky_live.run_builder import build_simple_run
 import numpy
 
 from ..plot_builders import Images
-from ..plot_specs import AxesSpec, FigureSpec
+from ..plot_specs import Axes, Figure
 
 
 def test_image(FigureView):
@@ -41,10 +41,10 @@ def test_properties(FigureView):
 
 
 def test_figure_set_after_instantiation(FigureView):
-    axes = AxesSpec()
+    axes = Axes()
     model = Images("ccd", axes=axes)
     assert model.figure is None
-    figure = FigureSpec((axes,), title="")
+    figure = Figure((axes,), title="")
     assert model.figure is figure
     view = FigureView(model.figure)
     view.close()

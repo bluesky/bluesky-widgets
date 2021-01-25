@@ -2,14 +2,14 @@ import collections.abc
 from pathlib import Path
 import matplotlib
 
-from ..models.plot_specs import FigureSpec, FigureSpecList
+from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
 from ..utils.dict_view import DictView
 
 
 class HeadlessFigures:
     """
-    A headless "view" for a FigureSpecList model.
+    A headless "view" for a FigureList model.
 
     It does not produce a graphical user interface. Instead, it provides
     methods for exporting figures as images.
@@ -30,7 +30,7 @@ class HeadlessFigures:
     >>> headless.export_all("path/to/directory/", format="jpg")
     """
 
-    def __init__(self, model: FigureSpecList):
+    def __init__(self, model: FigureList):
 
         self.model = model
         # Map Figure UUID to widget with HeadlessFigure
@@ -43,7 +43,7 @@ class HeadlessFigures:
 
     @property
     def figures(self):
-        "Read-only access to the mapping FigureSpec UUID -> HeadlessFigure"
+        "Read-only access to the mapping Figure UUID -> HeadlessFigure"
         return DictView(self._figures)
 
     def _on_figure_added(self, event):
@@ -105,7 +105,7 @@ class HeadlessFigures:
 
 class HeadlessFigure:
     """
-    A Headless "view" for a FigureSpec model. This always contains one Figure.
+    A Headless "view" for a Figure model. This always contains one Figure.
 
     Examples
     --------
@@ -116,7 +116,7 @@ class HeadlessFigure:
     >>> headless.export("my-figure.png")
     """
 
-    def __init__(self, model: FigureSpec):
+    def __init__(self, model: Figure):
         self.model = model
         self.figure, self.axes_list = _make_figure(model)
         self.figure.suptitle(model.title)
@@ -125,12 +125,12 @@ class HeadlessFigure:
             self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
 
         model.events.title.connect(self._on_title_changed)
-        # The FigureSpec model does not currently allow axes to be added or
+        # The Figure model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
 
     @property
     def axes(self):
-        "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
         return DictView(self._axes)
 
     def _on_title_changed(self, event):
@@ -161,7 +161,7 @@ def _make_figure(figure_spec):
     matplotlib.use("Agg")  # must set before importing matplotlib.pyplot
     import matplotlib.pyplot as plt  # noqa
 
-    # TODO Let FigureSpec give different options to subplots here,
+    # TODO Let Figure give different options to subplots here,
     # but verify that number of axes created matches the number of axes
     # specified.
     fig, axes = plt.subplots(len(figure_spec.axes))

@@ -2,11 +2,11 @@ from bluesky_live.run_builder import RunBuilder
 import pytest
 
 from ...models.plot_specs import (
-    FigureSpec,
-    FigureSpecList,
-    AxesSpec,
-    LineSpec,
-    ImageSpec,
+    Figure,
+    FigureList,
+    Axes,
+    Line,
+    Image,
 )
 from ..figures import QtFigure, QtFigures
 
@@ -23,9 +23,9 @@ def transform(run):
 
 
 def func(run):
-    line = LineSpec(transform, run, "label")
-    axes = AxesSpec(lines=[line], x_label="a", y_label="b", title="axes title")
-    figure = FigureSpec((axes,), title="figure title")
+    line = Line(transform, run, "label")
+    axes = Axes(lines=[line], x_label="a", y_label="b", title="axes title")
+    figure = Figure((axes,), title="figure title")
     return figure
 
 
@@ -39,7 +39,7 @@ def test_figures(qtbot):
     "Basic test: create QtFigures."
     figure = func(run)
     another_figure = func(run)
-    figures = FigureSpecList([figure, another_figure])
+    figures = FigureList([figure, another_figure])
     QtFigures(figures)
 
 
@@ -58,7 +58,7 @@ def test_figure_title_syncing(qtbot):
 
 def test_short_title_syncing(qtbot):
     model = func(run)
-    figures = FigureSpecList([model])
+    figures = FigureList([model])
     view = QtFigures(figures)
     actual_title = view.figures[model.uuid].figure._suptitle.get_text()
     assert view.tabText(0) == actual_title
@@ -78,7 +78,7 @@ def test_short_title_syncing(qtbot):
 def test_non_null_short_title_syncing(qtbot):
     model = func(run)
     model.short_title = "short title"
-    figures = FigureSpecList([model])
+    figures = FigureList([model])
     view = QtFigures(figures)
     actual_title = view.figures[model.uuid].figure._suptitle.get_text()
     assert view.tabText(0) == model.short_title
@@ -102,13 +102,13 @@ def test_axes_syncing(qtbot, model_property, mpl_method):
 
 def test_axes_set_figure():
     "Adding axes to a figure sets their figure."
-    axes = AxesSpec()
+    axes = Axes()
     assert axes.figure is None
-    figure = FigureSpec((axes,), title="figure title")
+    figure = Figure((axes,), title="figure title")
     assert axes.figure is figure
     # Once axes belong to a figure, they cannot belong to another figure.
     with pytest.raises(RuntimeError):
-        FigureSpec((axes,), title="figure title")
+        Figure((axes,), title="figure title")
 
     with pytest.raises(AttributeError):
         figure.axes = (axes,)  # not settable
@@ -117,8 +117,8 @@ def test_axes_set_figure():
 artist_set_axes_params = pytest.mark.parametrize(
     ("model_property", "artist_factory"),
     [
-        ("lines", lambda: LineSpec(transform, run, "label")),
-        ("images", lambda: ImageSpec(transform, run, "label")),
+        ("lines", lambda: Line(transform, run, "label")),
+        ("images", lambda: Image(transform, run, "label")),
     ],
     ids=["lines", "images"],
 )
@@ -128,21 +128,21 @@ artist_set_axes_params = pytest.mark.parametrize(
 def test_artist_set_axes_at_init(model_property, artist_factory):
     "Adding an artist to axes at init time sets its axes."
     artist = artist_factory()
-    axes = AxesSpec(**{model_property: [artist]})
+    axes = Axes(**{model_property: [artist]})
     assert artist in getattr(axes, model_property)
     assert artist in axes.by_uuid.values()
     assert artist.axes is axes
 
     # Once line belong to a axes, it cannot belong to another axes.
     with pytest.raises(RuntimeError):
-        AxesSpec(**{model_property: [artist]})
+        Axes(**{model_property: [artist]})
 
 
 @artist_set_axes_params
 def test_artist_set_axes_after_init(model_property, artist_factory):
     "Adding an artist to axes after init time sets its axes."
     artist = artist_factory()
-    axes = AxesSpec()
+    axes = Axes()
     getattr(axes, model_property).append(artist)
     assert artist in getattr(axes, model_property)
     assert artist in axes.by_uuid.values()
@@ -150,4 +150,4 @@ def test_artist_set_axes_after_init(model_property, artist_factory):
 
     # Once line belong to a axes, it cannot belong to another axes.
     with pytest.raises(RuntimeError):
-        AxesSpec(**{model_property: [artist]})
+        Axes(**{model_property: [artist]})

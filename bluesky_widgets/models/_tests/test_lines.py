@@ -2,7 +2,7 @@ from bluesky_live.run_builder import build_simple_run
 import pytest
 
 from ..plot_builders import Lines
-from ..plot_specs import AxesSpec, FigureSpec
+from ..plot_specs import Axes, Figure
 
 
 # Make some runs to use.
@@ -115,10 +115,10 @@ def test_functions(func, FigureView):
 
 
 def test_figure_set_after_instantiation(FigureView):
-    axes = AxesSpec()
+    axes = Axes()
     model = Lines("motor", [], axes=axes)
     assert model.figure is None
-    figure = FigureSpec((axes,), title="")
+    figure = Figure((axes,), title="")
     assert model.figure is figure
     view = FigureView(model.figure)
     view.close()

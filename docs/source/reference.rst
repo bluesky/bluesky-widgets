@@ -31,13 +31,13 @@ Models
 Figures, Axes, and Plot Entities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: bluesky_widgets.models.plot_specs.FigureSpec
+.. autoclass:: bluesky_widgets.models.plot_specs.Figure
    :members:
 
-.. autoclass:: bluesky_widgets.models.plot_specs.AxesSpec
+.. autoclass:: bluesky_widgets.models.plot_specs.Axes
    :members:
 
-.. autoclass:: bluesky_widgets.models.plot_specs.LineSpec
+.. autoclass:: bluesky_widgets.models.plot_specs.Line
    :members:
 
 Base Classes
@@ -82,7 +82,7 @@ Headless
 Plot Builders
 =============
 
-These are models which build a :class:`models.plot_specs.FigureSpec` or a list
+These are models which build a :class:`models.plot_specs.Figure` or a list
 of them. This is an example of a builder that creates one Figure:
 
 .. code:: python

@@ -1,16 +1,16 @@
 """
-This joins our AxesSpec model to matplotlib.axes.Axes. It is used by
+This joins our Axes model to matplotlib.axes.Axes. It is used by
 bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
 import logging
 
-from .models.plot_specs import AxesSpec, LineSpec, ImageSpec
+from .models.plot_specs import Axes, Line, Image
 from .models.utils import run_is_live_and_not_completed
 
 
 class MatplotlibAxes:
     """
-    Respond to changes in AxesSpec by manipulating matplotlib.axes.Axes.
+    Respond to changes in Axes by manipulating matplotlib.axes.Axes.
 
     Note that while most view classes accept model as their only __init__
     parameter, this view class expects matplotlib.axes.Axes as well. If we
@@ -24,7 +24,7 @@ class MatplotlibAxes:
     receives pre-made Axes from the outside, ultimately via plt.subplots(...).
     """
 
-    def __init__(self, model: AxesSpec, axes, *args, **kwargs):
+    def __init__(self, model: Axes, axes, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
         self.axes = axes
@@ -47,7 +47,7 @@ class MatplotlibAxes:
             axes.set_ylim(model.y_limits)
 
         # Use matplotlib's user-configurable ID so that we can look up the
-        # AxesSpec from the axes if we need to.
+        # Axes from the axes if we need to.
         axes.set_gid(model.uuid)
 
         # Keep a reference to all types of artist here.
@@ -57,8 +57,8 @@ class MatplotlibAxes:
         self._images = {}
 
         self.type_map = {
-            LineSpec: self._lines,
-            ImageSpec: self._images,
+            Line: self._lines,
+            Image: self._images,
         }
 
         for line_spec in model.lines:

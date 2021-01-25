@@ -3,7 +3,7 @@ import pytest
 import numpy
 
 from ..plot_builders import RasteredImages
-from ..plot_specs import AxesSpec, FigureSpec
+from ..plot_specs import Axes, Figure
 
 
 @pytest.fixture
@@ -61,8 +61,8 @@ def test_x_y_positive_change_x_y_limits(non_snaking_run, FigureView):
 def test_x_y_limits_change_x_y_positive(non_snaking_run, FigureView):
     "Test x_limits and y_limits change x_positive and y_positive"
     run = non_snaking_run
-    axes = AxesSpec(x_limits=(1.5, -0.5), y_limits=(1.5, -0.5))
-    FigureSpec((axes,), title="")
+    axes = Axes(x_limits=(1.5, -0.5), y_limits=(1.5, -0.5))
+    Figure((axes,), title="")
     model = RasteredImages("ccd", shape=(2, 2), axes=axes)
     view = FigureView(model.figure)
     model.add_run(run)
@@ -179,8 +179,8 @@ def test_snaking_image_data_positions(FigureView):
 
 
 def test_figure_set_after_instantiation():
-    axes = AxesSpec()
+    axes = Axes()
     model = RasteredImages("ccd", shape=(2, 2), axes=axes)
     assert model.figure is None
-    figure = FigureSpec((axes,), title="")
+    figure = Figure((axes,), title="")
     assert model.figure is figure

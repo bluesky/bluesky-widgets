@@ -4,10 +4,10 @@ import itertools
 import numpy
 
 from .plot_specs import (
-    FigureSpec,
-    AxesSpec,
-    ImageSpec,
-    LineSpec,
+    Figure,
+    Axes,
+    Image,
+    Line,
 )
 from .utils import auto_label, call_or_eval, RunManager, run_is_live_and_not_completed
 from ..utils.dict_view import DictView
@@ -59,7 +59,7 @@ class Lines:
         Streams referred to by x and y. Default is ``["primary"]``
     namespace : Dict, optional
         Inject additional tokens to be used in expressions for x and y
-    axes : AxesSpec, optional
+    axes : Axes, optional
         If None, an axes and figure are created with default labels and titles
         derived from the ``x`` and ``y`` parameters.
 
@@ -75,8 +75,8 @@ class Lines:
         last (first in, first out) so that there are at most ``max_runs``.
     pinned : Frozenset[String]
         Run uids of pinned runs.
-    figure : FigureSpec
-    axes : AxesSpec
+    figure : Figure
+    axes : Axes
     x : String | Callable
         Read-only access to x
     ys : Tuple[String | Callable]
@@ -177,11 +177,11 @@ class Lines:
         self._label_maker = label_maker
         self._namespace = namespace
         if axes is None:
-            axes = AxesSpec(
+            axes = Axes(
                 x_label=auto_label(self.x),
                 y_label=", ".join(auto_label(y) for y in self.ys),
             )
-            figure = FigureSpec((axes,), title=f"{axes.y_label} v {axes.x_label}")
+            figure = Figure((axes,), title=f"{axes.y_label} v {axes.x_label}")
         else:
             figure = axes.figure
         self.axes = axes
@@ -230,7 +230,7 @@ class Lines:
                 label += " (pinned)"
 
             func = functools.partial(self._transform, x=self.x, y=y)
-            line = LineSpec(func, run, label, style)
+            line = Line(func, run, label, style)
             self._run_manager.track_artist(line)
             self.axes.lines.append(line)
 
@@ -292,7 +292,7 @@ class Images:
         Streams referred to by field. Default is ``["primary"]``
     namespace : Dict, optional
         Inject additional tokens to be used in expressions for x and y
-    axes : AxesSpec, optional
+    axes : Axes, optional
         If None, an axes and figure are created with default labels and titles
         derived from the ``x`` and ``y`` parameters.
 
@@ -308,8 +308,8 @@ class Images:
         last (first in, first out) so that there are at most ``max_runs``.
     pinned : Frozenset[String]
         Run uids of pinned runs.
-    figure : FigureSpec
-    axes : AxesSpec
+    figure : Figure
+    axes : Axes
     field : String
         Read-only access to field or expression
     needs_streams : List[String], optional
@@ -354,8 +354,8 @@ class Images:
         self._label_maker = label_maker
         self._namespace = namespace
         if axes is None:
-            axes = AxesSpec()
-            figure = FigureSpec((axes,), title="")
+            axes = Axes()
+            figure = Figure((axes,), title="")
         else:
             figure = axes.figure
         self.axes = axes
@@ -378,7 +378,7 @@ class Images:
     def _add_images(self, event):
         run = event.run
         func = functools.partial(self._transform, field=self.field)
-        image = ImageSpec(func, run, label=self.field)
+        image = Image(func, run, label=self.field)
         self._run_manager.track_artist(image)
         self.axes.images.append(image)
         self.axes.title = self._label_maker(run, self.field)
@@ -444,7 +444,7 @@ class RasteredImages:
         Streams referred to by field. Default is ``["primary"]``
     namespace : Dict, optional
         Inject additional tokens to be used in expressions for x and y
-    axes : AxesSpec, optional
+    axes : Axes, optional
         If None, an axes and figure are created with default labels and titles
         derived from the ``x`` and ``y`` parameters.
     clim : Tuple, optional
@@ -464,8 +464,8 @@ class RasteredImages:
     ----------
     run : BlueskyRun
         The currently-viewed Run
-    figure : FigureSpec
-    axes : AxesSpec
+    figure : Figure
+    axes : Axes
     field : String
         Read-only access to field or expression
     needs_streams : List[String], optional
@@ -519,8 +519,8 @@ class RasteredImages:
         self._run = None
 
         if axes is None:
-            axes = AxesSpec()
-            figure = FigureSpec((axes,), title="")
+            axes = Axes()
+            figure = Figure((axes,), title="")
         else:
             figure = axes.figure
         self.axes = axes
@@ -629,7 +629,7 @@ class RasteredImages:
         run = event.run
         func = functools.partial(self._transform, field=self.field)
         style = {"cmap": self._cmap, "clim": self._clim, "extent": self._extent}
-        image = ImageSpec(func, run, label=self.field, style=style)
+        image = Image(func, run, label=self.field, style=style)
         self._run_manager.track_artist(image)
         md = run.metadata["start"]
         self.axes.images.append(image)

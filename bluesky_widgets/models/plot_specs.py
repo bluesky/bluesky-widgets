@@ -28,13 +28,13 @@ class BaseSpec:
         return self._uuid
 
 
-class FigureSpec(BaseSpec):
+class Figure(BaseSpec):
     """
     Describes a Figure
 
     Parameters
     ----------
-    axes : Tuple[AxesSpec]
+    axes : Tuple[Axes]
     title : String
         Figure title text
     uuid : UUID, optional
@@ -59,7 +59,7 @@ class FigureSpec(BaseSpec):
     @property
     def axes(self):
         """
-        Tuple of AxesSpecs. Set at FigureSpec creation time and immutable.
+        Tuple of Axess. Set at Figure creation time and immutable.
 
         Why is it immutable? Because rearranging Axes to make room for a new
         one is currently painful to do in matplotlib. This constraint might be
@@ -96,14 +96,14 @@ class FigureSpec(BaseSpec):
         )
 
 
-class AxesSpec(BaseSpec):
+class Axes(BaseSpec):
     """
     Describes a set of Axes
 
     Parameters
     ----------
-    lines : List[LineSpec], optional
-    images : List[ImageSpec], optional
+    lines : List[Line], optional
+    images : List[Image], optional
     title: String, optional
         Axes title text
     x_label : String, optional
@@ -125,17 +125,17 @@ class AxesSpec(BaseSpec):
 
     Note that plot entities like lines may be declared at init time:
 
-    >>> axes = AxesSpec(lines=[LineSpec(...)])
+    >>> axes = Axes(lines=[Line(...)])
 
     Or added later:
 
-    >>> axes = AxesSpec()
-    >>> axes.lines.append(LineSpec(...))
+    >>> axes = Axes()
+    >>> axes.lines.append(Line(...))
 
     Or a mix:
 
-    >>> axes = AxesSpec(lines=[LineSpec(...)])
-    >>> axes.lines.append(LineSpec(...))
+    >>> axes = Axes(lines=[Line(...)])
+    >>> axes.lines.append(Line(...))
 
     And they can be removed at any point:
 
@@ -146,12 +146,12 @@ class AxesSpec(BaseSpec):
     They may be accessed by type
 
     >>> axes.lines  # all lines
-    [LineSpec(...), LineSpec(...), ...]
+    [Line(...), Line(...), ...]
 
     Or by label
 
     >>> axes.by_label["Scan 8"]  # list of all plot entities with this label
-    [LineSpec(...)]  # typically contains just one element
+    [Line(...)]  # typically contains just one element
     """
 
     __slots__ = (
@@ -182,8 +182,8 @@ class AxesSpec(BaseSpec):
         uuid=None,
     ):
         self._figure = None
-        self._lines = LineSpecList(lines or [])
-        self._images = ImageSpecList(images or [])
+        self._lines = LineList(lines or [])
+        self._images = ImageList(images or [])
         # A colleciton of all artists, mappping UUID to object
         self._artists = {}
         self._title = title
@@ -212,8 +212,8 @@ class AxesSpec(BaseSpec):
         self._images.events.added.connect(self._on_artist_added)
         self._images.events.removed.connect(self._on_artist_removed)
         self._type_map = {
-            LineSpec: self._lines,
-            ImageSpec: self._images,
+            Line: self._lines,
+            Image: self._images,
         }
 
     @property
@@ -229,7 +229,7 @@ class AxesSpec(BaseSpec):
 
     def set_figure(self, figure):
         """
-        This is called by FigureSpec when the Axes is added to it.
+        This is called by Figure when the Axes is added to it.
 
         It may only be called once.
         """
@@ -243,12 +243,12 @@ class AxesSpec(BaseSpec):
 
     @property
     def lines(self):
-        "List of LineSpecs on these Axes. Mutable."
+        "List of Lines on these Axes. Mutable."
         return self._lines
 
     @property
     def images(self):
-        "List of ImageSpecs on these Axes. Mutable"
+        "List of Images on these Axes. Mutable"
         return self._images
 
     @property
@@ -386,11 +386,11 @@ class ArtistSpec(BaseSpec):
     run : BlueskyRun
         Contains data to be visualized.
     label : String
-        Label used in legend and for lookup by label on AxesSpec.
+        Label used in legend and for lookup by label on Axes.
     style : Dict, optional
         Options passed through to plotting framework, such as ``color`` or
         ``label``.
-    axes : AxesSpec, optional
+    axes : Axes, optional
         This may be specified here or set later using :meth:`set_axes`. Once
         specified, it cannot be changed.
     uuid : UUID, optional
@@ -418,7 +418,7 @@ class ArtistSpec(BaseSpec):
 
     def set_axes(self, axes):
         """
-        This is called by AxesSpec when the Artist is added to it.
+        This is called by Axes when the Artist is added to it.
 
         It may only be called once.
         """
@@ -452,7 +452,7 @@ class ArtistSpec(BaseSpec):
 
     @property
     def label(self):
-        "Label used in legend and for lookup by label on AxesSpec. Settable."
+        "Label used in legend and for lookup by label on Axes. Settable."
         return self._label
 
     @label.setter
@@ -493,7 +493,7 @@ class ArtistSpec(BaseSpec):
         )
 
 
-class LineSpec(ArtistSpec):
+class Line(ArtistSpec):
     """
     Describes the data, computation, and style for a line
 
@@ -505,11 +505,11 @@ class LineSpec(ArtistSpec):
     run : BlueskyRun
         Contains data to be visualized.
     label : String
-        Label used in legend and for lookup by label on AxesSpec.
+        Label used in legend and for lookup by label on Axes.
     style : Dict, optional
         Options passed through to plotting framework, such as ``color`` or
         ``label``.
-    axes : AxesSpec, optional
+    axes : Axes, optional
         This may be specified here or set later using :meth:`set_axes`. Once
         specified, it cannot be changed.
     uuid : UUID, optional
@@ -520,7 +520,7 @@ class LineSpec(ArtistSpec):
     __slots__ = ()
 
 
-class ImageSpec(ArtistSpec):
+class Image(ArtistSpec):
     "Describes an image (both data and style)"
 
 
@@ -528,17 +528,17 @@ class ImageSpec(ArtistSpec):
 # hence a specific container for each.
 
 
-class FigureSpecList(EventedList):
+class FigureList(EventedList):
     __slots__ = ()
 
 
-class AxesSpecList(EventedList):
+class AxesList(EventedList):
     __slots__ = ()
 
 
-class LineSpecList(EventedList):
+class LineList(EventedList):
     __slots__ = ()
 
 
-class ImageSpecList(EventedList):
+class ImageList(EventedList):
     __slots__ = ()
