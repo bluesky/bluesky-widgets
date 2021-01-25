@@ -10,9 +10,9 @@ def test_image(FigureView):
     run = build_simple_run({"ccd": numpy.random.random((11, 13))})
     model = Images("ccd")
     view = FigureView(model.figure)
-    assert not model.figure.axes[0].images
+    assert not model.figure.axes[0].artists
     model.add_run(run)
-    assert model.figure.axes[0].images
+    assert model.figure.axes[0].artists
     view.close()
 
 

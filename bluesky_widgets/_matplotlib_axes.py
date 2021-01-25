@@ -2,10 +2,48 @@
 This joins our Axes model to matplotlib.axes.Axes. It is used by
 bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
+import functools
 import logging
 
+import matplotlib
+import matplotlib.lines
+import matplotlib.image
+
 from .models.plot_specs import Axes, Line, Image
-from .models.utils import run_is_live_and_not_completed
+
+
+class _PatchedAxesImage(matplotlib.image.AxesImage):
+    """
+    AxesImage is an unusual Artist. Patch its API to me more like other Artitsts.
+
+    - It does not accept data at __init__. Data must be added through a
+      post-init method call.
+    - Its set(...) method also does not accept data (?).
+    """
+    def __init__(self, *args, array, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_data(array)
+
+        # TODO This is copied from imshow. How much of it do we want?
+        # im.set_alpha(alpha)
+        # if im.get_clip_path() is None:
+        #     # image does not already have clipping set, clip to axes patch
+        #     im.set_clip_path(self.patch)
+        # im._scale_norm(norm, vmin, vmax)
+        # im.set_url(url)
+
+        # # update ax.dataLim, and, if autoscaling, set viewLim
+        # # to tightly fit the image, regardless of dataLim.
+        # im.set_extent(im.get_extent())
+
+        # self.add_image(im)
+        # return im
+
+    def set(self, *, array=None, **kwargs):
+        if array is not None:
+            self.set_data(array)
+        if kwargs:
+            super().set(**kwargs)
 
 
 class MatplotlibAxes:
@@ -23,11 +61,17 @@ class MatplotlibAxes:
     with a nice layout, and it creates both Figure and Axes. So, this class
     receives pre-made Axes from the outside, ultimately via plt.subplots(...).
     """
-
     def __init__(self, model: Axes, axes, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
         self.axes = axes
+
+        # AxesImage *requires* Axes ax, so we define this mapping as an
+        # instance attribute that can wrap self.axes.
+        self.type_map = {
+            Line: (matplotlib.lines.Line2D, {"x": "xdata", "y": "ydata"}),
+            Image: (functools.partial(_PatchedAxesImage, ax=self.axes), {}),
+        }
 
         # If we specify data limits and axes aspect and position, we have
         # overdetermined the system. When these are incompatible, we want
@@ -52,30 +96,17 @@ class MatplotlibAxes:
 
         # Keep a reference to all types of artist here.
         self._artists = {}
-        # And keep type-specific references in type-specific caches.
-        self._lines = {}
-        self._images = {}
 
-        self.type_map = {
-            Line: self._lines,
-            Image: self._images,
-        }
-
-        for line_spec in model.lines:
-            self._add_line(line_spec)
-        self.connect(model.lines.events.added, self._on_line_added)
-        self.connect(model.lines.events.removed, self._on_artist_removed)
+        for artist in model.artists:
+            self._add_artist(artist)
+        self.connect(model.artists.events.added, self._on_artist_spec_added)
+        self.connect(model.artists.events.removed, self._on_artist_spec_removed)
         self.connect(model.events.title, self._on_title_changed)
         self.connect(model.events.x_label, self._on_x_label_changed)
         self.connect(model.events.y_label, self._on_y_label_changed)
         self.connect(model.events.aspect, self._on_aspect_changed)
         self.connect(model.events.x_limits, self._on_x_limits_changed)
         self.connect(model.events.y_limits, self._on_y_limits_changed)
-
-        for image_spec in model.images:
-            self._add_image(image_spec)
-        self.connect(model.images.events.added, self._on_image_added)
-        self.connect(model.images.events.removed, self._on_artist_removed)
 
     def connect(self, emitter, callback):
         """
@@ -121,83 +152,54 @@ class MatplotlibAxes:
         self.axes.set_ylim(event.value)
         self._update_and_draw()
 
-    def _on_line_added(self, event):
-        line_spec = event.item
-        self._add_line(line_spec)
+    def _on_artist_spec_added(self, event):
+        artist_spec = event.item
+        self._add_artist(artist_spec)
 
-    def _on_image_added(self, event):
-        image_spec = event.item
-        self._add_image(image_spec)
-
-    def _add_line(self, line_spec):
-        run = line_spec.run
-        x, y = line_spec.func(run)
-
+    def _add_artist(self, artist_spec):
+        """
+        Add an artist.
+        """
         # Initialize artist with currently-available data.
-        (artist,) = self.axes.plot(x, y, label=line_spec.label, **line_spec.style)
-
-        # If this is connected to a streaming data source and is not yet
-        # complete, listen for updates.
-        if run_is_live_and_not_completed(run):
-
-            def update(event):
-                x, y = line_spec.func(run)
-                artist.set_data(x, y)
-                self.axes.relim()  # Recompute data limits.
-                self.axes.autoscale_view()  # Rescale the view using those new limits.
-                self.draw_idle()
-
-            self.connect(run.events.new_data, update)
-            self.connect(
-                run.events.completed,
-                lambda event: run.events.new_data.disconnect(update),
-            )
-
-        self._add_artist(line_spec, artist)
-
-    def _add_image(self, image_spec):
-        run = image_spec.run
-        array = image_spec.func(run)
-
-        # Initialize artist with currently-available data.
-        artist = self.axes.imshow(
-            array, label=image_spec.label, origin="lower", **image_spec.style
+        artist_class, translation = self.type_map[type(artist_spec)]
+        translated_kwargs = {}
+        for k, v in artist_spec.update().items():
+            translated_kwargs[translation.get(k, k)] = v
+        artist = artist_class(
+            label=artist_spec.label,
+            **translated_kwargs,
+            **artist_spec.style
         )
-        self.axes.figure.colorbar(artist)
 
-        # If this is connected to a streaming data source and is not yet
-        # complete, listen for updates.
-        if hasattr(run, "events") and (run.metadata["stop"] is None):
+        if artist_spec.live:
 
             def update(event):
-                array = image_spec.func(run)
-                artist.set_data(array)
+                translated_kwargs = {}
+                for k, v in artist_spec.update().items():
+                    translated_kwargs[translation.get(k, k)] = v
+                artist.set(**translated_kwargs)
                 self.axes.relim()  # Recompute data limits.
                 self.axes.autoscale_view()  # Rescale the view using those new limits.
                 self.draw_idle()
 
-            self.connect(run.events.new_data, update)
+            self.connect(artist_spec.events.new_data, update)
             self.connect(
-                run.events.completed,
-                lambda event: run.events.new_data.disconnect(update),
+                artist_spec.events.completed,
+                lambda event: artist_spec.events.new_data.disconnect(update),
             )
 
-        self._add_artist(image_spec, artist)
-
-    def _add_artist(self, artist_spec, artist):
-        """
-        This is called by methods line _add_line to perform generic setup.
-        """
         # Track it as a generic artist cache and in a type-specific cache.
         self._artists[artist_spec.uuid] = artist
-        self.type_map[type(artist_spec)][artist_spec.uuid] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # ArtistSpec from the artist artist if we need to.
         artist.set_gid(artist_spec.uuid)
-
         # Listen for changes to label and style.
         self.connect(artist_spec.events.label, self._on_label_changed)
         self.connect(artist_spec.events.style_updated, self._on_style_updated)
+        # Add artist to Axes.
+        # TODO What happens with AxesImage here? It requires and receives the
+        # Axes up front. Does it ignore this call?
+        self.axes.add_artist(artist)
         self._update_and_draw()
 
     def _on_label_changed(self, event):
@@ -212,11 +214,10 @@ class MatplotlibAxes:
         artist.set(**event.update)
         self._update_and_draw()
 
-    def _on_artist_removed(self, event):
+    def _on_artist_spec_removed(self, event):
         artist_spec = event.item
         # Remove the artist from our caches.
         artist = self._artists.pop(artist_spec.uuid)
-        self.type_map[type(artist_spec)].pop(artist_spec.uuid)
         # Remove it from the canvas.
         artist.remove()
         self._update_and_draw()

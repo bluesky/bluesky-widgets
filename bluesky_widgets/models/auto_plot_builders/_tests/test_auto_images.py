@@ -13,7 +13,7 @@ def test_images():
     assert not model.figures
     model.add_run(run)
     assert len(model.figures) == 1
-    assert model.figures[0].axes[0].images
+    assert model.figures[0].axes[0].artists
     view.close()
 
 
@@ -30,6 +30,6 @@ def test_images_multiple_fields():
     assert not model.figures
     model.add_run(run)
     assert len(model.figures) == 2
-    assert model.figures[0].axes[0].images
-    assert model.figures[1].axes[0].images
+    assert model.figures[0].axes[0].artists
+    assert model.figures[1].axes[0].artists
     view.close()

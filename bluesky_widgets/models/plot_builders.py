@@ -204,7 +204,7 @@ class Lines:
         self.discard_run = self._run_manager.discard_run
 
     def _transform(self, run, x, y):
-        return call_or_eval((x, y), run, self.needs_streams, self.namespace)
+        return call_or_eval({"x": x, "y": y}, run, self.needs_streams, self.namespace)
 
     def _add_lines(self, event):
         "Add a line."
@@ -230,9 +230,9 @@ class Lines:
                 label += " (pinned)"
 
             func = functools.partial(self._transform, x=self.x, y=y)
-            line = Line(func, run, label, style)
-            self._run_manager.track_artist(line)
-            self.axes.lines.append(line)
+            line = Line.from_run(func, run, label, style)
+            self._run_manager.track_artist(line, [run])
+            self.axes.artists.append(line)
 
     @property
     def x(self):
@@ -378,20 +378,22 @@ class Images:
     def _add_images(self, event):
         run = event.run
         func = functools.partial(self._transform, field=self.field)
-        image = Image(func, run, label=self.field)
-        self._run_manager.track_artist(image)
-        self.axes.images.append(image)
+        image = Image.from_run(func, run, label=self.field)
+        self._run_manager.track_artist(image, [run])
+        self.axes.artists.append(image)
         self.axes.title = self._label_maker(run, self.field)
         # TODO Set axes x, y from xarray dims
 
     def _transform(self, run, field):
-        (data,) = call_or_eval((field,), run, self.needs_streams, self.namespace)
+        result = call_or_eval({"array": field}, run, self.needs_streams, self.namespace)
         # If the data is more than 2D, take the middle slice from the leading
         # axis until there are only two axes.
+        data = result["array"]
         while data.ndim > 2:
             middle = data.shape[0] // 2
             data = data[middle]
-        return data
+        result["array"] = data
+        return result
 
     @property
     def field(self):
@@ -552,8 +554,9 @@ class RasteredImages:
     @cmap.setter
     def cmap(self, value):
         self._cmap = value
-        for image in self.axes.images:
-            image.style.update({"cmap": value})
+        for artist in self.axes.artists:
+            if isinstance(artist, Image):
+                artist.style.update({"cmap": value})
 
     @property
     def clim(self):
@@ -562,8 +565,9 @@ class RasteredImages:
     @clim.setter
     def clim(self, value):
         self._clim = value
-        for image in self.axes.images:
-            image.style.update({"clim": value})
+        for artist in self.axes.artists:
+            if isinstance(artist, Image):
+                artist.style.update({"clim": value})
 
     @property
     def extent(self):
@@ -572,8 +576,9 @@ class RasteredImages:
     @extent.setter
     def extent(self, value):
         self._extent = value
-        for image in self.axes.images:
-            image.style.update({"extent": value})
+        for artist in self.axes.artist:
+            if isinstance(artist, Image):
+                artist.style.update({"extent": value})
 
     @property
     def x_positive(self):
@@ -629,10 +634,10 @@ class RasteredImages:
         run = event.run
         func = functools.partial(self._transform, field=self.field)
         style = {"cmap": self._cmap, "clim": self._clim, "extent": self._extent}
-        image = Image(func, run, label=self.field, style=style)
-        self._run_manager.track_artist(image)
+        image = Image.from_run(func, run, label=self.field, style=style)
+        self._run_manager.track_artist(image, [run])
         md = run.metadata["start"]
-        self.axes.images.append(image)
+        self.axes.artists.append(image)
         self.axes.title = self._label_maker(run, self.field)
         self.axes.x_label = md["motors"][1]
         self.axes.y_label = md["motors"][0]
@@ -654,9 +659,8 @@ class RasteredImages:
 
     def _transform(self, run, field):
         image_data = numpy.ones(self._shape) * numpy.nan
-        (data,) = numpy.asarray(
-            call_or_eval((field,), run, self.needs_streams, self.namespace)
-        )
+        result = call_or_eval({"data": field}, run, self.needs_streams, self.namespace)
+        data = result["data"]
         snaking = run.metadata["start"]["snaking"]
         for index in range(len(data)):
             pos = list(numpy.unravel_index(index, self._shape))
@@ -664,8 +668,7 @@ class RasteredImages:
                 pos[1] = self._shape[1] - pos[1] - 1
             pos = tuple(pos)
             image_data[pos] = data[index]
-
-        return image_data
+        return {"array": image_data}
 
     @property
     def namespace(self):

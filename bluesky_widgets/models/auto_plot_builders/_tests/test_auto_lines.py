@@ -40,7 +40,7 @@ def test_pinned():
         model.add_run(run)
         assert len(model.plot_builders[0].runs) == 1 + MAX_RUNS
         for axes_index in range(NUM_YS):
-            assert len(model.figures[0].axes[axes_index].lines) == (1 + MAX_RUNS)
+            assert len(model.figures[0].axes[axes_index].artists) == (1 + MAX_RUNS)
     # Check that it hasn't been bumped off.
     assert pinned_run in model.plot_builders[0].runs
     assert len(model.figures) == 1
@@ -49,7 +49,7 @@ def test_pinned():
     model.discard_run(pinned_run)
     assert len(model.plot_builders[0].runs) == MAX_RUNS
     for axes_index in range(NUM_YS):
-        assert len(model.figures[0].axes[axes_index].lines) == MAX_RUNS
+        assert len(model.figures[0].axes[axes_index].artists) == MAX_RUNS
     assert pinned_run not in model.plot_builders[0].runs
 
     view.close()
@@ -63,10 +63,10 @@ def test_decrease_max_runs():
     for run in runs[:5]:
         model.add_run(run)
     assert len(model.plot_builders[0].runs) == INITIAL_MAX_RUNS
-    assert len(model.figures[0].axes[0].lines) == INITIAL_MAX_RUNS
+    assert len(model.figures[0].axes[0].artists) == INITIAL_MAX_RUNS
     # Decrease max_runs.
     model.max_runs = MAX_RUNS
     assert len(model.plot_builders[0].runs) == MAX_RUNS
-    assert len(model.figures[0].axes[0].lines) == MAX_RUNS
+    assert len(model.figures[0].axes[0].artists) == MAX_RUNS
 
     view.close()

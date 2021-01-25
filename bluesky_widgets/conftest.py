@@ -36,26 +36,52 @@ def pytest_collection_modifyitems(session, config, items):
             if hasattr(item, "callspec") and "FigureView" in item.callspec.params:
                 if item.callspec.params["FigureView"] is QtFigure:
                     item.fixturenames.append("qtbot")
+            elif hasattr(item, "callspec") and "FigureViews" in item.callspec.params:
+                if item.callspec.params["FigureViews"] is QtFigures:
+                    item.fixturenames.append("qtbot")
 
 
-_figure_views = []
+_figure_view_params = []
 if importlib.util.find_spec("qtpy"):
 
     from bluesky_widgets.qt.figures import QtFigure
 
-    _figure_views.append(QtFigure)
+    _figure_view_params.append(QtFigure)
 if importlib.util.find_spec("ipywidgets"):
 
     from bluesky_widgets.jupyter.figures import JupyterFigure
 
-    _figure_views.append(JupyterFigure)
+    _figure_view_params.append(JupyterFigure)
 if importlib.util.find_spec("matplotlib"):
 
     from bluesky_widgets.headless.figures import HeadlessFigure
 
-    _figure_views.append(HeadlessFigure)
+    _figure_view_params.append(HeadlessFigure)
 
 
-@pytest.fixture(params=_figure_views)
+@pytest.fixture(params=_figure_view_params)
 def FigureView(request):
+    return request.param
+
+
+_figure_views_params = []
+if importlib.util.find_spec("qtpy"):
+
+    from bluesky_widgets.qt.figures import QtFigures
+
+    _figure_views_params.append(QtFigures)
+if importlib.util.find_spec("ipywidgets"):
+
+    from bluesky_widgets.jupyter.figures import JupyterFigures
+
+    _figure_views_params.append(JupyterFigures)
+if importlib.util.find_spec("matplotlib"):
+
+    from bluesky_widgets.headless.figures import HeadlessFigures
+
+    _figure_views_params.append(HeadlessFigures)
+
+
+@pytest.fixture(params=_figure_views_params)
+def FigureViews(request):
     return request.param
