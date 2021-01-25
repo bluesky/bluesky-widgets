@@ -4,6 +4,7 @@ bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
 import logging
 
+import numpy as np
 from mpl_toolkits.axisartist.parasite_axes import HostAxes, ParasiteAxes
 from .models.plot_specs import Axes, Line, Image
 from .models.utils import run_is_live_and_not_completed
@@ -13,12 +14,22 @@ def convert_axes_to_host_axes(axes):
     rect = axes._position
     return HostAxes(fig, rect)
 
+
 def init_host(host, data, label):
     host.set_ylabel(label)
     host.axis["right"].set_visible(False)
     p, = host.plot(range(len(data)), data, label=label)
     host.axis["left"].label.set_color(p.get_color())
     return (p, )
+
+def init_host_twinx(host, data, label):
+    host.set_ylabel(label)
+    host.figure.subplots_adjust(right=.75)
+    host.spines["right"].set_visible(False)
+    p, = host.plot(range(len(data)), data, c=np.random.rand(3,), label=label)
+    host.yaxis.label.set_color(p.get_color())
+    return (p, )
+	
 	
 
 def add_parasite(host, data, label, offset):
@@ -32,6 +43,27 @@ def add_parasite(host, data, label, offset):
     par.set_ylim(*par.get_ylim()) # axes don't draw until resize without this - not sure why
     par.axis["right3"].label.set_color(p.get_color())
     return (p,)
+
+def make_patch_spines_invisible(ax):
+    ax.set_frame_on(True)
+    ax.patch.set_visible(False)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+
+def add_parasite_twinx(host, data, label, axis_num):
+    par = host.twinx()
+    par.set_ylabel(label)
+    if axis_num > 0:
+        n = axis_num
+        par.spines["right"].set_position(("axes", 1+n*.1))
+        make_patch_spines_invisible(par)
+        par.spines["right"].set_visible(True)
+    p, = par.plot(range(len(data)), data, c=np.random.rand(3,), label=label)
+    par.set_ylim(*par.get_ylim()) # axes don't draw until resize without this - not sure why
+    par.yaxis.label.set_color(p.get_color())
+    return (p,)
+
+
 
 
 	
@@ -241,25 +273,29 @@ class MatplotlibAxes:
 class MatplotlibHostParasiteAxes(MatplotlibAxes):
     def __init__(self, model: AxesSpec, axes, *args, **kwargs):
         self.axis_count = 0
-        axes = convert_axes_to_host_axes(axes)
+        self.color_cycler = None
+        #axes = convert_axes_to_host_axes(axes)
         super().__init__(model, axes, *args, **kwargs)
 
     def axes_plot(self, x, y, label, *args, **kwargs):
         if self.axis_count == 0:
             self.axes.figure.clf()
-            (artist,) = init_host(self.axes, y, label)
+        if self.axis_count == 0:
             self.axes.figure.add_axes(self.axes)
+
+            (artist,) = init_host_twinx(self.axes, y, label)
         else:
             parasite_axis_count = self.axis_count - 1
-            (artist,) = add_parasite(self.axes, y, label, parasite_axis_count*40)
+            (artist,) = add_parasite_twinx(self.axes, y, label, parasite_axis_count)
         self.axes.legend()
+        self.color_cycler = self.axes._get_lines.prop_cycler
         return (artist, )
 
     def _add_line(self, line_spec):
         super()._add_line(line_spec)
         self.axis_count += 1
 
-MatplotlibAxes = MatplotlibHostParasiteAxes
+#MatplotlibAxes = MatplotlibHostParasiteAxes
 
 def _quiet_mpl_noisy_logger():
     "Do not filter or silence it, but avoid defaulting to the logger of last resort."
