@@ -187,10 +187,12 @@ class MatplotlibAxes:
             **translated_kwargs,
             **artist_spec.style
         )
+        import threading; print('add artist', threading.current_thread().name)
 
         if artist_spec.live:
 
             def update(event):
+                import threading; print('update', threading.current_thread().name)
                 translated_args, translated_kwargs = self._translate(artist_spec, translation)
                 artist.set(**translated_kwargs)
                 self.axes.relim()  # Recompute data limits.
@@ -231,7 +233,7 @@ class MatplotlibAxes:
         artist = self._artists.pop(artist_spec.uuid)
         # Remove it from the canvas.
         artist.remove()
-        print('removed')
+        import threading; print('remove artist', threading.current_thread().name)
         self._update_and_draw()
 
     def _update_and_draw(self):
