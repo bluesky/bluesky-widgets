@@ -12,6 +12,9 @@ import matplotlib.image
 from .models.plot_specs import Axes, Line, Image
 
 
+_VAR_ARGS = object()  # sentinel in translation dict
+
+
 class _PatchedAxesImage(matplotlib.image.AxesImage):
     """
     AxesImage is an unusual Artist. Patch its API to me more like other Artitsts.
@@ -46,6 +49,11 @@ class _PatchedAxesImage(matplotlib.image.AxesImage):
             super().set(**kwargs)
 
 
+def _patched_plot(*args, ax, **kwargs):
+    artist, = ax.plot(*args, **kwargs)
+    return artist
+
+
 class MatplotlibAxes:
     """
     Respond to changes in Axes by manipulating matplotlib.axes.Axes.
@@ -69,7 +77,7 @@ class MatplotlibAxes:
         # AxesImage *requires* Axes ax, so we define this mapping as an
         # instance attribute that can wrap self.axes.
         self.type_map = {
-            Line: (matplotlib.lines.Line2D, {"x": "xdata", "y": "ydata"}),
+            Line: (functools.partial(_patched_plot, ax=self.axes), {"x": _VAR_ARGS, "y": _VAR_ARGS}),
             Image: (functools.partial(_PatchedAxesImage, ax=self.axes), {}),
         }
 
@@ -156,17 +164,26 @@ class MatplotlibAxes:
         artist_spec = event.item
         self._add_artist(artist_spec)
 
+    def _translate(self, artist_spec, translation):
+        translated_args = []
+        translated_kwargs = {}
+        for k, v in artist_spec.update().items():
+            if translation[k] is _VAR_ARGS:
+                translated_args.append(v)
+                continue
+            translated_kwargs[translation.get(k, k)] = v
+        return tuple(translated_args), translated_kwargs
+
     def _add_artist(self, artist_spec):
         """
         Add an artist.
         """
         # Initialize artist with currently-available data.
         artist_class, translation = self.type_map[type(artist_spec)]
-        translated_kwargs = {}
-        for k, v in artist_spec.update().items():
-            translated_kwargs[translation.get(k, k)] = v
+        translated_args, translated_kwargs = self._translate(artist_spec, translation)
         artist = artist_class(
             label=artist_spec.label,
+            *translated_args,
             **translated_kwargs,
             **artist_spec.style
         )
@@ -174,9 +191,7 @@ class MatplotlibAxes:
         if artist_spec.live:
 
             def update(event):
-                translated_kwargs = {}
-                for k, v in artist_spec.update().items():
-                    translated_kwargs[translation.get(k, k)] = v
+                translated_args, translated_kwargs = self._translate(artist_spec, translation)
                 artist.set(**translated_kwargs)
                 self.axes.relim()  # Recompute data limits.
                 self.axes.autoscale_view()  # Rescale the view using those new limits.
@@ -196,10 +211,6 @@ class MatplotlibAxes:
         # Listen for changes to label and style.
         self.connect(artist_spec.events.label, self._on_label_changed)
         self.connect(artist_spec.events.style_updated, self._on_style_updated)
-        # Add artist to Axes.
-        # TODO What happens with AxesImage here? It requires and receives the
-        # Axes up front. Does it ignore this call?
-        self.axes.add_artist(artist)
         self._update_and_draw()
 
     def _on_label_changed(self, event):
@@ -220,6 +231,7 @@ class MatplotlibAxes:
         artist = self._artists.pop(artist_spec.uuid)
         # Remove it from the canvas.
         artist.remove()
+        print('removed')
         self._update_and_draw()
 
     def _update_and_draw(self):
