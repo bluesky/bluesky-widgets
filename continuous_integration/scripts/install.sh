@@ -5,6 +5,7 @@
 
 set -vxeuo pipefail
 
+sudo apt-get update
 sudo apt-get install qt5-default
 
 # These packages are installed in the base environment but may be older

@@ -1,7 +1,7 @@
 from warnings import warn
 
 from ..plot_builders import Lines
-from ..plot_specs import FigureSpec, AxesSpec
+from ..plot_specs import Figure, Axes
 from .._heuristics import hinted_fields
 from ._base import AutoPlotter
 
@@ -191,7 +191,7 @@ class AutoLines(AutoPlotter):
                             "".format(y_key, dtype)
                         )
                         continue
-                    axes = AxesSpec(x_label=x_key, title=y_key)
+                    axes = Axes(x_label=x_key, title=y_key)
                     axes_list.append(axes)
                     lines_kwargs = {}
                     if self.max_runs is not None:
@@ -214,7 +214,7 @@ class AutoLines(AutoPlotter):
                     short_title = title[:15] + "..."
                 else:
                     short_title = title
-                figure = FigureSpec(axes_list, title=title, short_title=short_title)
+                figure = Figure(axes_list, title=title, short_title=short_title)
                 self._lines_instances[key] = lines_instances
                 self.plot_builders.extend(lines_instances)
                 self.figures.append(figure)

@@ -111,13 +111,13 @@ class BadExpression(Exception):
     pass
 
 
-def call_or_eval(items, run, stream_names, namespace=None):
+def call_or_eval(mapping, run, stream_names, namespace=None):
     """
     Given a mix of callables and string expressions, call or eval them.
 
     Parameters
     ----------
-    items : List[String | Callable]
+    mapping : Dict[String, String | Callable]
         Each item must be a stream name, field name, a valid Python
         expression, or a callable. The signature of the callable may include
         any valid Python identifiers provideed by :func:`construct_namespace`
@@ -128,7 +128,7 @@ def call_or_eval(items, run, stream_names, namespace=None):
 
     Returns
     -------
-    results : List[Any]
+    results : Dict[String, Any]
 
     Raises
     ------
@@ -146,7 +146,7 @@ def call_or_eval(items, run, stream_names, namespace=None):
     ...     ds = run.primary.read()
     ...     return (ds["a"] - ds["b"]) / (ds["a"] + ds["b"])
     ...
-    >>> call_or_eval([f], run, ["primary"])
+    >>> call_or_eval({"x": f}, run, ["primary"])
 
     But, it also provides a more "magical" option in support of brevity.
     The signature may include parameters with the names streams or fields. The
@@ -156,18 +156,18 @@ def call_or_eval(items, run, stream_names, namespace=None):
     >>> def f(a, b):
     ...     return (a - b) / (a + b)
     ...
-    >>> call_or_eval([f], run, ["primary"])
+    >>> call_or_eval({"x": f}, run, ["primary"])
 
     Equivalently, as a lambda function:
-    >>> call_or_eval([lambda a, b: (a - b) / (a + b)], run, ["primary"])
+    >>> call_or_eval({"f": lambda a, b: (a - b) / (a + b)}, run, ["primary"])
     """
     with lock_if_live(run):
         namespace_ = construct_namespace(run, stream_names)
         # Overlay user-provided namespace.
         namespace_.update(namespace or {})
         del namespace  # Avoid conflating namespace and namespace_ below.
-        results = []
-        for item in items:
+        results = {}
+        for key, item in mapping.items():
             # If it is a callable, call it.
             if callable(item):
                 # Inspect the callable's signature. For each parameter, find an
@@ -182,13 +182,13 @@ def call_or_eval(items, run, stream_names, namespace=None):
                         if parameter.default is parameter.empty:
                             raise ValueError(f"Cannot find match for parameter {name}")
                         # Otherwise, it's an optional parameter, so skip it.
-                results.append(item(**kwargs))
+                results[key] = item(**kwargs)
             elif isinstance(item, str):
                 # If it is a key in our namespace, look it up.
                 try:
                     # This handles field or stream names that are not valid
                     # Python identifiers (e.g. ones with spaces in them).
-                    results.append(namespace_[item])
+                    results[key] = namespace_[item]
                     continue
                 except KeyError:
                     pass
@@ -202,7 +202,7 @@ def call_or_eval(items, run, stream_names, namespace=None):
                     ) from err
                 # Try to evaluate it as a Python expression in the namespace.
                 try:
-                    results.append(eval(item, namespace_))
+                    results[key] = eval(item, namespace_)
                 except Exception as err:
                     raise ValueError(
                         f"Could find {item!r} in namespace or evaluate it."
@@ -286,7 +286,7 @@ class RunManager:
         if run in self.runs:
             self.runs.remove(run)
 
-    def track_artist(self, artist):
+    def track_artist(self, artist, runs):
         """
         Track an Artist.
 
@@ -295,13 +295,18 @@ class RunManager:
         Parameters
         ----------
         artist : ArtistSpec
+        runs : List[BlueskyRun]
         """
         # TODO Someday we will need aritsts that represent data from *multiple*
         # runs, and then we will need to rethink the expected API of artist
         # (.run -> .runs?) and the cache management here. But that would be a
         # widereaching change, so we'll stay within the framework as it is
         # today.
-        run = artist.run
+        if len(runs) != 1:
+            raise NotImplementedError(
+                "We current assume a 1:1 association of aritsts and runs."
+            )
+        (run,) = runs
         run_uid = run.metadata["start"]["uid"]
         self._runs_to_artists[run_uid].append(artist)
 

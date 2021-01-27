@@ -3,7 +3,7 @@ import pytest
 import numpy
 
 from ..plot_builders import RasteredImages
-from ..plot_specs import AxesSpec, FigureSpec
+from ..plot_specs import Axes, Figure
 
 
 @pytest.fixture
@@ -35,9 +35,9 @@ def test_rastered_image(non_snaking_run, FigureView):
     run = non_snaking_run
     model = RasteredImages("ccd", shape=(2, 2))
     view = FigureView(model.figure)
-    assert not model.figure.axes[0].images
+    assert not model.figure.axes[0].artists
     model.add_run(run)
-    assert model.figure.axes[0].images
+    assert model.figure.axes[0].artists
     view.close()
 
 
@@ -61,8 +61,8 @@ def test_x_y_positive_change_x_y_limits(non_snaking_run, FigureView):
 def test_x_y_limits_change_x_y_positive(non_snaking_run, FigureView):
     "Test x_limits and y_limits change x_positive and y_positive"
     run = non_snaking_run
-    axes = AxesSpec(x_limits=(1.5, -0.5), y_limits=(1.5, -0.5))
-    FigureSpec((axes,), title="")
+    axes = Axes(x_limits=(1.5, -0.5), y_limits=(1.5, -0.5))
+    Figure((axes,), title="")
     model = RasteredImages("ccd", shape=(2, 2), axes=axes)
     view = FigureView(model.figure)
     model.add_run(run)
@@ -79,7 +79,7 @@ def test_non_snaking_image_data(non_snaking_run, FigureView):
     model = RasteredImages("ccd", shape=(2, 2))
     model.add_run(run)
     view = FigureView(model.figure)
-    actual_data = model.figure.axes[0].images[0].func(run)
+    actual_data = model.figure.axes[0].artists[0].update()["array"]
     expected_data = [[1, 2], [3, 4]]
     assert numpy.array_equal(actual_data, expected_data)
     view.close()
@@ -90,7 +90,7 @@ def test_snaking_image_data(snaking_run, FigureView):
     model = RasteredImages("ccd", shape=(2, 2))
     view = FigureView(model.figure)
     model.add_run(run)
-    actual_data = model.figure.axes[0].images[0].func(run)
+    actual_data = model.figure.axes[0].artists[0].update()["array"]
     expected_data = [[1, 2], [4, 3]]
     assert numpy.array_equal(actual_data, expected_data)
     view.close()
@@ -110,28 +110,28 @@ def test_non_snaking_image_data_positions(FigureView):
         builder.add_stream(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, numpy.nan], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Second point
         builder.add_data(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Third point
         builder.add_data(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [3, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Fourth point
         builder.add_data(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [3, 4]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
     view.close()
@@ -151,36 +151,36 @@ def test_snaking_image_data_positions(FigureView):
         builder.add_stream(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, numpy.nan], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Second point
         builder.add_data(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Third point
         builder.add_data(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [numpy.nan, 3]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Fourth point
         builder.add_data(
             "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
         )
-        actual_data = model.figure.axes[0].images[0].func(run)
+        actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [4, 3]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
     view.close()
 
 
 def test_figure_set_after_instantiation():
-    axes = AxesSpec()
+    axes = Axes()
     model = RasteredImages("ccd", shape=(2, 2), axes=axes)
     assert model.figure is None
-    figure = FigureSpec((axes,), title="")
+    figure = Figure((axes,), title="")
     assert model.figure is figure

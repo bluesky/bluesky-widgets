@@ -1,16 +1,15 @@
 """
-This joins our AxesSpec model to matplotlib.axes.Axes. It is used by
+This joins our Axes model to matplotlib.axes.Axes. It is used by
 bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
 import logging
 
-from .models.plot_specs import AxesSpec, LineSpec, ImageSpec
-from .models.utils import run_is_live_and_not_completed
+from .models.plot_specs import Axes, Line, Image
 
 
 class MatplotlibAxes:
     """
-    Respond to changes in AxesSpec by manipulating matplotlib.axes.Axes.
+    Respond to changes in Axes by manipulating matplotlib.axes.Axes.
 
     Note that while most view classes accept model as their only __init__
     parameter, this view class expects matplotlib.axes.Axes as well. If we
@@ -24,10 +23,15 @@ class MatplotlibAxes:
     receives pre-made Axes from the outside, ultimately via plt.subplots(...).
     """
 
-    def __init__(self, model: AxesSpec, axes, *args, **kwargs):
+    def __init__(self, model: Axes, axes, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
         self.axes = axes
+
+        self.type_map = {
+            Line: self._construct_line,
+            Image: self._construct_image,
+        }
 
         # If we specify data limits and axes aspect and position, we have
         # overdetermined the system. When these are incompatible, we want
@@ -47,35 +51,22 @@ class MatplotlibAxes:
             axes.set_ylim(model.y_limits)
 
         # Use matplotlib's user-configurable ID so that we can look up the
-        # AxesSpec from the axes if we need to.
+        # Axes from the axes if we need to.
         axes.set_gid(model.uuid)
 
         # Keep a reference to all types of artist here.
         self._artists = {}
-        # And keep type-specific references in type-specific caches.
-        self._lines = {}
-        self._images = {}
 
-        self.type_map = {
-            LineSpec: self._lines,
-            ImageSpec: self._images,
-        }
-
-        for line_spec in model.lines:
-            self._add_line(line_spec)
-        self.connect(model.lines.events.added, self._on_line_added)
-        self.connect(model.lines.events.removed, self._on_artist_removed)
+        for artist in model.artists:
+            self._add_artist(artist)
+        self.connect(model.artists.events.added, self._on_artist_spec_added)
+        self.connect(model.artists.events.removed, self._on_artist_spec_removed)
         self.connect(model.events.title, self._on_title_changed)
         self.connect(model.events.x_label, self._on_x_label_changed)
         self.connect(model.events.y_label, self._on_y_label_changed)
         self.connect(model.events.aspect, self._on_aspect_changed)
         self.connect(model.events.x_limits, self._on_x_limits_changed)
         self.connect(model.events.y_limits, self._on_y_limits_changed)
-
-        for image_spec in model.images:
-            self._add_image(image_spec)
-        self.connect(model.images.events.added, self._on_image_added)
-        self.connect(model.images.events.removed, self._on_artist_removed)
 
     def connect(self, emitter, callback):
         """
@@ -121,80 +112,37 @@ class MatplotlibAxes:
         self.axes.set_ylim(event.value)
         self._update_and_draw()
 
-    def _on_line_added(self, event):
-        line_spec = event.item
-        self._add_line(line_spec)
+    def _on_artist_spec_added(self, event):
+        artist_spec = event.item
+        self._add_artist(artist_spec)
 
-    def _on_image_added(self, event):
-        image_spec = event.item
-        self._add_image(image_spec)
-
-    def _add_line(self, line_spec):
-        run = line_spec.run
-        x, y = line_spec.func(run)
-
+    def _add_artist(self, artist_spec):
+        """
+        Add an artist.
+        """
         # Initialize artist with currently-available data.
-        (artist,) = self.axes.plot(x, y, label=line_spec.label, **line_spec.style)
-
-        # If this is connected to a streaming data source and is not yet
-        # complete, listen for updates.
-        if run_is_live_and_not_completed(run):
-
-            def update(event):
-                x, y = line_spec.func(run)
-                artist.set_data(x, y)
-                self.axes.relim()  # Recompute data limits.
-                self.axes.autoscale_view()  # Rescale the view using those new limits.
-                self.draw_idle()
-
-            self.connect(run.events.new_data, update)
-            self.connect(
-                run.events.completed,
-                lambda event: run.events.new_data.disconnect(update),
-            )
-
-        self._add_artist(line_spec, artist)
-
-    def _add_image(self, image_spec):
-        run = image_spec.run
-        array = image_spec.func(run)
-
-        # Initialize artist with currently-available data.
-        artist = self.axes.imshow(
-            array, label=image_spec.label, origin="lower", **image_spec.style
+        constructor = self.type_map[type(artist_spec)]
+        artist, update = constructor(
+            **artist_spec.update(),
+            label=artist_spec.label,
+            style=artist_spec.style,
         )
-        self.axes.figure.colorbar(artist)
 
-        # If this is connected to a streaming data source and is not yet
-        # complete, listen for updates.
-        if hasattr(run, "events") and (run.metadata["stop"] is None):
+        def handle_new_data(event):
+            update(**artist_spec.update())
 
-            def update(event):
-                array = image_spec.func(run)
-                artist.set_data(array)
-                self.axes.relim()  # Recompute data limits.
-                self.axes.autoscale_view()  # Rescale the view using those new limits.
-                self.draw_idle()
-
-            self.connect(run.events.new_data, update)
+        if artist_spec.live:
+            self.connect(artist_spec.events.new_data, handle_new_data)
             self.connect(
-                run.events.completed,
-                lambda event: run.events.new_data.disconnect(update),
+                artist_spec.events.completed,
+                lambda event: artist_spec.events.new_data.disconnect(handle_new_data),
             )
 
-        self._add_artist(image_spec, artist)
-
-    def _add_artist(self, artist_spec, artist):
-        """
-        This is called by methods line _add_line to perform generic setup.
-        """
         # Track it as a generic artist cache and in a type-specific cache.
         self._artists[artist_spec.uuid] = artist
-        self.type_map[type(artist_spec)][artist_spec.uuid] = artist
         # Use matplotlib's user-configurable ID so that we can look up the
         # ArtistSpec from the artist artist if we need to.
         artist.set_gid(artist_spec.uuid)
-
         # Listen for changes to label and style.
         self.connect(artist_spec.events.label, self._on_label_changed)
         self.connect(artist_spec.events.style_updated, self._on_style_updated)
@@ -212,11 +160,10 @@ class MatplotlibAxes:
         artist.set(**event.update)
         self._update_and_draw()
 
-    def _on_artist_removed(self, event):
+    def _on_artist_spec_removed(self, event):
         artist_spec = event.item
         # Remove the artist from our caches.
         artist = self._artists.pop(artist_spec.uuid)
-        self.type_map[type(artist_spec)].pop(artist_spec.uuid)
         # Remove it from the canvas.
         artist.remove()
         self._update_and_draw()
@@ -225,6 +172,39 @@ class MatplotlibAxes:
         "Update the legend and redraw the canvas."
         self.axes.legend(loc=1)  # Update the legend.
         self.draw_idle()  # Ask matplotlib to redraw the figure.
+
+    # These wrapper factory functions build various matplotlib Artist types (e.g.
+    # Line2D, AxesImage) and translate between their creation and update APIs
+    # and ours. In general matplotlib Artists are not consistent between their
+    # creation and update signatures, so we need this amount of wrapping.
+
+    def _construct_line(self, *, x, y, label, style):
+        (artist,) = self.axes.plot(x, y, label=label, **style)
+        self.axes.relim()  # Recompute data limits.
+        self.axes.autoscale_view()  # Rescale the view using those new limits.
+        self.draw_idle()
+
+        def update(*, x, y):
+            artist.set_data(x, y)
+            self.axes.relim()  # Recompute data limits.
+            self.axes.autoscale_view()  # Rescale the view using those new limits.
+            self.draw_idle()
+
+        return artist, update
+
+    def _construct_image(self, *, array, label, style):
+        artist = self.axes.imshow(array, label=label)
+        self.axes.relim()  # Recompute data limits.
+        self.axes.autoscale_view()  # Rescale the view using those new limits.
+        self.draw_idle()
+
+        def update(*, array):
+            artist.set_data(array)
+            self.axes.relim()  # Recompute data limits.
+            self.axes.autoscale_view()  # Rescale the view using those new limits.
+            self.draw_idle()
+
+        return artist, update
 
 
 def _quiet_mpl_noisy_logger():

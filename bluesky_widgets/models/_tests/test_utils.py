@@ -86,19 +86,19 @@ def test_call_or_eval_errors():
     "Test that various failrue modes raise expected errors."
     run = build_simple_run({"motor": [1, 2], "det": [10, 20]})
     with pytest.raises(ValueError, match=".*callable or string.*"):
-        call_or_eval((1,), run, ["primary"])
+        call_or_eval({"x": 1}, run, ["primary"])
     with pytest.raises(ValueError, match=".*parse.*"):
-        call_or_eval(("invalid***syntax",), run, ["primary"])
+        call_or_eval({"x": "invalid***syntax"}, run, ["primary"])
     with pytest.raises(ValueError, match=".*evaluate.*"):
-        call_or_eval(("missing_key",), run, ["primary"])
+        call_or_eval({"x": "missing_key"}, run, ["primary"])
 
 
 def test_call_or_eval_with_user_namespace():
     "Test that user-injected items in the namespace are found."
     run = build_simple_run({"motor": [1, 2], "det": [10, 20]})
     thing = object()
-    (result,) = call_or_eval(("thing",), run, [], namespace={"thing": thing})
-    assert result is thing
+    result = call_or_eval({"x": "thing"}, run, [], namespace={"thing": thing})
+    assert result["x"] is thing
 
 
 def test_call_or_eval_magical_signature_inspection():
@@ -109,27 +109,27 @@ def test_call_or_eval_magical_signature_inspection():
         "Access fields by name."
         return motor + det
 
-    (result,) = call_or_eval((func1,), run, ["primary"])
-    assert numpy.array_equal(result, [11, 22])
+    result = call_or_eval({"x": func1}, run, ["primary"])
+    assert numpy.array_equal(result["x"], [11, 22])
 
     def func2(primary):
         "Access a stream by name."
         return primary["motor"]
 
-    (result,) = call_or_eval((func2,), run, ["primary"])
-    assert numpy.array_equal(result, [1, 2])
+    result = call_or_eval({"x": func2}, run, ["primary"])
+    assert numpy.array_equal(result["x"], [1, 2])
 
     def func3(does_not_exist):
         "Test a missing variable."
         ...
 
     with pytest.raises(ValueError, match="Cannot find match for.*"):
-        call_or_eval((func3,), run, ["primary"])
+        call_or_eval({"x": func3}, run, ["primary"])
 
     def func4(thing):
         "Test an item in the user-provided namespace."
         return thing
 
     thing = object()
-    (result,) = call_or_eval((func4,), run, [], namespace={"thing": thing})
-    assert result is thing
+    result = call_or_eval({"x": func4}, run, [], namespace={"thing": thing})
+    assert result["x"] is thing

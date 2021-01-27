@@ -12,7 +12,7 @@ from matplotlib.backends.backend_qt5agg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 
-from ..models.plot_specs import FigureSpec, FigureSpecList
+from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
 from ..utils.event import Event
 from ..utils.dict_view import DictView
@@ -49,12 +49,12 @@ class ThreadsafeMatplotlibAxes(QObject, MatplotlibAxes):
 
 class QtFigures(QTabWidget):
     """
-    A Jupyter (ipywidgets) view for a FigureSpecList model.
+    A Jupyter (ipywidgets) view for a FigureList model.
     """
 
     __callback_event = Signal(object, Event)
 
-    def __init__(self, model: FigureSpecList, parent=None):
+    def __init__(self, model: FigureList, parent=None):
         _initialize_matplotlib()
         super().__init__(parent)
         self.setTabsClosable(True)
@@ -78,7 +78,7 @@ class QtFigures(QTabWidget):
 
     @property
     def figures(self):
-        "Read-only access to the mapping FigureSpec UUID -> QtFigure"
+        "Read-only access to the mapping Figure UUID -> QtFigure"
         return DictView(self._figures)
 
     def _threadsafe_connect(self, emitter, callback):
@@ -150,10 +150,10 @@ class QtFigures(QTabWidget):
 
 class QtFigure(QWidget):
     """
-    A Qt view for a FigureSpec model. This always contains one Figure.
+    A Qt view for a Figure model. This always contains one Figure.
     """
 
-    def __init__(self, model: FigureSpec, parent=None):
+    def __init__(self, model: Figure, parent=None):
         _initialize_matplotlib()
         super().__init__(parent)
         self.model = model
@@ -175,12 +175,12 @@ class QtFigure(QWidget):
         self.setLayout(layout)
 
         model.events.title.connect(self._on_title_changed)
-        # The FigureSpec model does not currently allow axes to be added or
+        # The Figure model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
 
     @property
     def axes(self):
-        "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
         return DictView(self._axes)
 
     def _on_title_changed(self, event):
@@ -204,7 +204,7 @@ def _make_figure(figure_spec):
     # for the first time.
     import matplotlib.pyplot as plt
 
-    # TODO Let FigureSpec give different options to subplots here,
+    # TODO Let Figure give different options to subplots here,
     # but verify that number of axes created matches the number of axes
     # specified.
     fig, axes = plt.subplots(len(figure_spec.axes))

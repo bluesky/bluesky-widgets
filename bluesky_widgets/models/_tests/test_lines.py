@@ -2,7 +2,7 @@ from bluesky_live.run_builder import build_simple_run
 import pytest
 
 from ..plot_builders import Lines
-from ..plot_specs import AxesSpec, FigureSpec
+from ..plot_specs import Axes, Figure
 
 
 # Make some runs to use.
@@ -36,14 +36,14 @@ def test_pinned(FigureView):
     for run in runs[6:]:
         model.add_run(run)
         assert len(model.runs) == 1 + MAX_RUNS
-        assert len(model.figure.axes[0].lines) == num_ys * (1 + MAX_RUNS)
+        assert len(model.figure.axes[0].artists) == num_ys * (1 + MAX_RUNS)
     # Check that it hasn't been bumped off.
     assert pinned_run in model.runs
 
     # Remove the pinned run.
     model.discard_run(pinned_run)
     assert len(model.runs) == MAX_RUNS
-    assert len(model.figure.axes[0].lines) == num_ys * MAX_RUNS
+    assert len(model.figure.axes[0].artists) == num_ys * MAX_RUNS
     assert pinned_run not in model.runs
 
     view.close()
@@ -73,11 +73,11 @@ def test_decrease_max_runs(FigureView):
     for run in runs[:5]:
         model.add_run(run)
     assert len(model.runs) == INITIAL_MAX_RUNS
-    assert len(model.figure.axes[0].lines) == INITIAL_MAX_RUNS
+    assert len(model.figure.axes[0].artists) == INITIAL_MAX_RUNS
     # Decrease max_runs.
     model.max_runs = MAX_RUNS
     assert len(model.runs) == MAX_RUNS
-    assert len(model.figure.axes[0].lines) == MAX_RUNS
+    assert len(model.figure.axes[0].artists) == MAX_RUNS
 
     view.close()
 
@@ -89,7 +89,7 @@ def test_expressions(expr, FigureView):
     model = Lines("motor", ys, max_runs=MAX_RUNS)
     view = FigureView(model.figure)
     model.add_run(runs[0])
-    assert len(model.figure.axes[0].lines) == 1
+    assert len(model.figure.axes[0].artists) == 1
 
     view.close()
 
@@ -109,16 +109,16 @@ def test_functions(func, FigureView):
     model = Lines("motor", ys, max_runs=MAX_RUNS)
     view = FigureView(model.figure)
     model.add_run(runs[0])
-    assert len(model.figure.axes[0].lines) == 1
+    assert len(model.figure.axes[0].artists) == 1
 
     view.close()
 
 
 def test_figure_set_after_instantiation(FigureView):
-    axes = AxesSpec()
+    axes = Axes()
     model = Lines("motor", [], axes=axes)
     assert model.figure is None
-    figure = FigureSpec((axes,), title="")
+    figure = Figure((axes,), title="")
     assert model.figure is figure
     view = FigureView(model.figure)
     view.close()

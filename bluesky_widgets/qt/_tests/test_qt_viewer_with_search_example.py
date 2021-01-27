@@ -33,5 +33,5 @@ def test_app(make_test_app):
     for _, run in catalog.items():
         app.viewer.add_run(run)
     assert app.viewer.figures
-    assert app.viewer.figures[0].axes[0].lines
+    assert app.viewer.figures[0].axes[0].artists
     app.viewer.figures.clear()

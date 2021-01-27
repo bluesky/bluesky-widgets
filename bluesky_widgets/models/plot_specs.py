@@ -28,13 +28,13 @@ class BaseSpec:
         return self._uuid
 
 
-class FigureSpec(BaseSpec):
+class Figure(BaseSpec):
     """
     Describes a Figure
 
     Parameters
     ----------
-    axes : Tuple[AxesSpec]
+    axes : Tuple[Axes]
     title : String
         Figure title text
     uuid : UUID, optional
@@ -59,7 +59,7 @@ class FigureSpec(BaseSpec):
     @property
     def axes(self):
         """
-        Tuple of AxesSpecs. Set at FigureSpec creation time and immutable.
+        Tuple of Axess. Set at Figure creation time and immutable.
 
         Why is it immutable? Because rearranging Axes to make room for a new
         one is currently painful to do in matplotlib. This constraint might be
@@ -96,15 +96,14 @@ class FigureSpec(BaseSpec):
         )
 
 
-class AxesSpec(BaseSpec):
+class Axes(BaseSpec):
     """
     Describes a set of Axes
 
     Parameters
     ----------
-    lines : List[LineSpec], optional
-    images : List[ImageSpec], optional
-    title: String, optional
+    Artists : List[Artist], optional
+    title : String, optional
         Axes title text
     x_label : String, optional
         Text label for x axis
@@ -125,41 +124,38 @@ class AxesSpec(BaseSpec):
 
     Note that plot entities like lines may be declared at init time:
 
-    >>> axes = AxesSpec(lines=[LineSpec(...)])
+    >>> axes = Axes(artists=[Line(...)])
 
     Or added later:
 
-    >>> axes = AxesSpec()
-    >>> axes.lines.append(LineSpec(...))
+    >>> axes = Axes()
+    >>> axes.artists.append(Line(...))
 
     Or a mix:
 
-    >>> axes = AxesSpec(lines=[LineSpec(...)])
-    >>> axes.lines.append(LineSpec(...))
+    >>> axes = Axes(artists=[Line(...)])
+    >>> axes.artists.append(Line(...))
 
     And they can be removed at any point:
 
-    >>> del axes.lines[0]  # Remove the first one.
-    >>> del axes.lines[-1]  # Remove the last one.
-    >>> axes.lines.clear()  # Remove them all.
+    >>> del axes.artists[0]  # Remove the first one.
+    >>> del axes.artists[-1]  # Remove the last one.
+    >>> axes.artists.clear()  # Remove them all.
 
     They may be accessed by type
 
-    >>> axes.lines  # all lines
-    [LineSpec(...), LineSpec(...), ...]
+    >>> axes.artists  # all artists
+    [Line(...), Line(...), ...]
 
     Or by label
 
     >>> axes.by_label["Scan 8"]  # list of all plot entities with this label
-    [LineSpec(...)]  # typically contains just one element
+    [Line(...)]  # typically contains just one element
     """
 
     __slots__ = (
-        "_type_map",
         "_figure",
         "_artists",
-        "_lines",
-        "_images",
         "_title",
         "_x_label",
         "_y_label",
@@ -171,8 +167,7 @@ class AxesSpec(BaseSpec):
     def __init__(
         self,
         *,
-        lines=None,
-        images=None,
+        artists=None,
         title=None,
         x_label=None,
         y_label=None,
@@ -181,11 +176,9 @@ class AxesSpec(BaseSpec):
         y_limits=None,
         uuid=None,
     ):
+        super().__init__(uuid)
         self._figure = None
-        self._lines = LineSpecList(lines or [])
-        self._images = ImageSpecList(images or [])
-        # A colleciton of all artists, mappping UUID to object
-        self._artists = {}
+        self._artists = ArtistList()
         self._title = title
         self._x_label = x_label
         self._y_label = y_label
@@ -202,19 +195,8 @@ class AxesSpec(BaseSpec):
             x_limits=Event,
             y_limits=Event,
         )
-        super().__init__(uuid)
-        for line in self._lines:
-            self._adopt_artist(line)
-        for image in self._images:
-            self._adopt_artist(image)
-        self._lines.events.added.connect(self._on_artist_added)
-        self._lines.events.removed.connect(self._on_artist_removed)
-        self._images.events.added.connect(self._on_artist_added)
-        self._images.events.removed.connect(self._on_artist_removed)
-        self._type_map = {
-            LineSpec: self._lines,
-            ImageSpec: self._images,
-        }
+        self.artists.events.adding.connect(self._on_artist_adding)
+        self.artists.extend(artists or [])
 
     @property
     def figure(self):
@@ -229,7 +211,7 @@ class AxesSpec(BaseSpec):
 
     def set_figure(self, figure):
         """
-        This is called by FigureSpec when the Axes is added to it.
+        This is called by Figure when the Axes is added to it.
 
         It may only be called once.
         """
@@ -242,14 +224,8 @@ class AxesSpec(BaseSpec):
         self.events.figure(value=figure)
 
     @property
-    def lines(self):
-        "List of LineSpecs on these Axes. Mutable."
-        return self._lines
-
-    @property
-    def images(self):
-        "List of ImageSpecs on these Axes. Mutable"
-        return self._images
+    def artists(self):
+        return self._artists
 
     @property
     def by_label(self):
@@ -268,7 +244,7 @@ class AxesSpec(BaseSpec):
         >>> spec.style.update(color="red")
         """
         mapping = collections.defaultdict(list)
-        for artist in self._artists.values():
+        for artist in self.artists:
             mapping[artist.label].append(artist)
         return DictView(dict(mapping))
 
@@ -277,19 +253,18 @@ class AxesSpec(BaseSpec):
         """
         Access artists as a read-only dict keyed by uuid.
         """
-        # Return a copy to prohibit mutation of internal bookkeeping.
-        return DictView(self._artists)
+        return DictView({artist.uuid: artist for artist in self.artists})
 
     def discard(self, artist):
         "Discard any Aritst."
         try:
-            self._type_map[type(artist)].remove(artist)
+            self.artists.remove(artist)
         except ValueError:
             pass
 
     def remove(self, artist):
         "Remove any Aritst."
-        self._type_map[type(artist)].remove(artist)
+        self.artists.remove(artist)
 
     @property
     def title(self):
@@ -351,22 +326,17 @@ class AxesSpec(BaseSpec):
         self._y_limits = value
         self.events.y_limits(value=value)
 
-    def _on_artist_added(self, event):
+    def _on_artist_adding(self, event):
+        # This is called when the artist is *about* to be added to self.artists.
+        # Set its axes to self. If it *already* has Axes this will raise and
+        # the Axes will not be added.
         artist = event.item
-        self._adopt_artist(artist)
-
-    def _adopt_artist(self, artist):
         artist.set_axes(self)
-        self._artists[artist.uuid] = artist
-
-    def _on_artist_removed(self, event):
-        artist = event.item
-        del self._artists[artist.uuid]
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(lines={self.lines!r}, "
-            f"images={self.images!r}, title={self.title!r},"
+            f"{self.__class__.__name__}(artists={self.artists!r}, "
+            f"title={self.title!r},"
             f"x_label={self.x_label!r}, y_label={self.y_label!r}, "
             f"aspect={self.aspect!r}, x_limits={self.x_limits!r}, "
             f"y_limits={self.y_limits!r}, uuid={self.uuid!r})"
@@ -377,36 +347,42 @@ class ArtistSpec(BaseSpec):
     """
     Describes the data, computation, and style for an artist (plot element)
 
-    func : callable
+    update : callable
         Expected signature::
 
-            func(run: BlueskyRun)
+            func() -> Dict
 
-        The expected return type varies by artist.
-    run : BlueskyRun
-        Contains data to be visualized.
+        Where Dict contains parameters expected by the specific Artist
     label : String
-        Label used in legend and for lookup by label on AxesSpec.
+        Label used in legend and for lookup by label on Axes.
     style : Dict, optional
         Options passed through to plotting framework, such as ``color`` or
         ``label``.
-    axes : AxesSpec, optional
+    axes : Axes, optional
         This may be specified here or set later using :meth:`set_axes`. Once
         specified, it cannot be changed.
+    live : Boolean, optional
+        Listen for future updates.
     uuid : UUID, optional
         Automatically assigned to provide a unique identifier for this Figure,
         used internally to track it.
     """
 
-    __slots__ = ("_func", "_run", "_label", "_style", "_axes")
+    __slots__ = ("_live", "_update", "_label", "_style", "_axes")
 
-    def __init__(self, func, run, label, style=None, axes=None, uuid=None):
-        self._func = func
-        self._run = run
+    def __init__(self, update, *, label, style=None, axes=None, live=True, uuid=None):
+        self._update = update
         self._label = label
         self._style = UpdateOnlyDict(style or {})
         self._axes = axes
-        self.events = EmitterGroup(source=self, label=Event, style_updated=Event)
+        self._live = live
+        self.events = EmitterGroup(
+            source=self,
+            label=Event,
+            new_data=Event,
+            completed=Event,
+            style_updated=Event,
+        )
         # Re-emit updates. It's important to re-emit (not just pass through)
         # because the consumer will need access to self.
         self._style.events.updated.connect(
@@ -416,14 +392,63 @@ class ArtistSpec(BaseSpec):
         )
         super().__init__(uuid)
 
+    @property
+    def update(self):
+        return self._update
+
+    @property
+    def live(self):
+        return self._live
+
+    def on_completed(self, event):
+        self._live = False
+
+    @classmethod
+    def from_run(cls, transform, run, label, style=None, axes=None, uuid=None):
+        """
+        Construct a line representing data from one BlueskyRun.
+
+        transform : callable
+            Expected signature::
+
+                func(run: BlueskyRun)
+
+            The expected return type varies by artist.
+        run : BlueskyRun
+            Contains data to be visualized.
+        label : String
+            Label used in legend and for lookup by label on Axes.
+        style : Dict, optional
+            Options passed through to plotting framework, such as ``color`` or
+            ``label``.
+        axes : Axes, optional
+            This may be specified here or set later using :meth:`set_axes`. Once
+            specified, it cannot be changed.
+        uuid : UUID, optional
+            Automatically assigned to provide a unique identifier for this Figure,
+            used internally to track it.
+        """
+        # Isolating bluesky-aware stuff here, including this import.
+        from .utils import run_is_live_and_not_completed
+
+        def update():
+            return transform(run)
+
+        live = run_is_live_and_not_completed(run)
+        line = cls(update, label=label, style=style, live=live)
+        if live:
+            run.events.new_data.connect(line.events.new_data)
+            run.events.completed.connect(line.events.completed)
+        return line
+
     def set_axes(self, axes):
         """
-        This is called by AxesSpec when the Artist is added to it.
+        This is called by Axes when the Artist is added to it.
 
         It may only be called once.
         """
         if self._axes is not None:
-            raise RuntimeError(
+            raise AxesAlreadySet(
                 f"Axes may only be set once. The artist {self} already belongs "
                 f"to {self.axes} and thus cannot be added to {axes}."
             )
@@ -441,18 +466,8 @@ class ArtistSpec(BaseSpec):
         return self._axes
 
     @property
-    def func(self):
-        "Function that transforms BlueskyRun to plottble data. Immutable."
-        return self._func
-
-    @property
-    def run(self):
-        "BlueskyRun that is the data source. Immutable."
-        return self._run
-
-    @property
     def label(self):
-        "Label used in legend and for lookup by label on AxesSpec. Settable."
+        "Label used in legend and for lookup by label on Axes. Settable."
         return self._label
 
     @label.setter
@@ -487,13 +502,13 @@ class ArtistSpec(BaseSpec):
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(func={self.func!r}, run={self.run!r}, "
+            f"{self.__class__.__name__}(update={self.update!r}"
             f"label={self.label!r}, style={self.style!r}, axes={self.axes!r}"
             f"uuid={self.uuid!r})"
         )
 
 
-class LineSpec(ArtistSpec):
+class Line(ArtistSpec):
     """
     Describes the data, computation, and style for a line
 
@@ -505,11 +520,11 @@ class LineSpec(ArtistSpec):
     run : BlueskyRun
         Contains data to be visualized.
     label : String
-        Label used in legend and for lookup by label on AxesSpec.
+        Label used in legend and for lookup by label on Axes.
     style : Dict, optional
         Options passed through to plotting framework, such as ``color`` or
         ``label``.
-    axes : AxesSpec, optional
+    axes : Axes, optional
         This may be specified here or set later using :meth:`set_axes`. Once
         specified, it cannot be changed.
     uuid : UUID, optional
@@ -520,7 +535,7 @@ class LineSpec(ArtistSpec):
     __slots__ = ()
 
 
-class ImageSpec(ArtistSpec):
+class Image(ArtistSpec):
     "Describes an image (both data and style)"
 
 
@@ -528,17 +543,17 @@ class ImageSpec(ArtistSpec):
 # hence a specific container for each.
 
 
-class FigureSpecList(EventedList):
+class FigureList(EventedList):
     __slots__ = ()
 
 
-class AxesSpecList(EventedList):
+class AxesList(EventedList):
     __slots__ = ()
 
 
-class LineSpecList(EventedList):
+class ArtistList(EventedList):
     __slots__ = ()
 
 
-class ImageSpecList(EventedList):
-    __slots__ = ()
+class AxesAlreadySet(RuntimeError):
+    pass

@@ -2,7 +2,7 @@ import collections.abc
 
 from ipywidgets import widgets
 
-from ..models.plot_specs import FigureSpec, FigureSpecList
+from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
 from ..utils.dict_view import DictView
 
@@ -21,10 +21,10 @@ def _initialize_mpl():
 
 class JupyterFigures(widgets.Tab):
     """
-    A Jupyter (ipywidgets) view for a FigureSpecList model.
+    A Jupyter (ipywidgets) view for a FigureList model.
     """
 
-    def __init__(self, model: FigureSpecList, *args, **kwargs):
+    def __init__(self, model: FigureList, *args, **kwargs):
         _initialize_mpl()
         super().__init__(*args, **kwargs)
         self.model = model
@@ -38,7 +38,7 @@ class JupyterFigures(widgets.Tab):
 
     @property
     def figures(self):
-        "Read-only access to the mapping FigureSpec UUID -> JupyterFigure"
+        "Read-only access to the mapping Figure UUID -> JupyterFigure"
         return DictView(self._figures)
 
     def _on_figure_added(self, event):
@@ -96,10 +96,10 @@ class JupyterFigures(widgets.Tab):
 
 class JupyterFigure(widgets.HBox):
     """
-    A Jupyter view for a FigureSpec model. This always contains one Figure.
+    A Jupyter view for a Figure model. This always contains one Figure.
     """
 
-    def __init__(self, model: FigureSpec):
+    def __init__(self, model: Figure):
         _initialize_mpl()
         super().__init__()
         self.model = model
@@ -121,12 +121,12 @@ class JupyterFigure(widgets.HBox):
         self.figure.canvas.manager.resize(width, height)
         self.figure.canvas.draw_idle()
 
-        # The FigureSpec model does not currently allow axes to be added or
+        # The Figure model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
 
     @property
     def axes(self):
-        "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
         return DictView(self._axes)
 
     def _on_title_changed(self, event):
@@ -148,7 +148,7 @@ class _JupyterFigureTab(widgets.HBox):
     This is aware of its parent in order to support tab-closing.
     """
 
-    def __init__(self, model: FigureSpec, parent):
+    def __init__(self, model: Figure, parent):
         super().__init__()
         self.model = model
         self.parent = parent
@@ -167,7 +167,7 @@ class _JupyterFigureTab(widgets.HBox):
 
     @property
     def axes(self):
-        "Read-only access to the mapping AxesSpec UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
         return DictView(self._jupyter_figure.axes)
 
 
@@ -183,7 +183,7 @@ def _make_figure(figure_spec):
     # only want to see the figures where they are placed explicitly in widgets.
     plt.ioff()
 
-    # TODO Let FigureSpec give different options to subplots here,
+    # TODO Let Figure give different options to subplots here,
     # but verify that number of axes created matches the number of axes
     # specified.
     figure, axes = plt.subplots(len(figure_spec.axes))
