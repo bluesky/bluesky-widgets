@@ -1,5 +1,5 @@
 """
-An example integration QtFigures into an "existing" Qt applicaiton. Run like:
+An example integration QtFigures into an "existing" Qt application. Run like:
 
 python -m bluesky_widgets.examples.qt_app_integration
 """
@@ -7,7 +7,7 @@ from qtpy.QtWidgets import QApplication, QVBoxLayout, QLabel, QMainWindow, QWidg
 
 
 def main():
-    # First, some boilerplace to make a super-minimal Qt application that we want
+    # First, some boilerplate to make a super-minimal Qt application that we want
     # to add some bluesky-widgets components into.
     app = QApplication(["Some App"])
     window = QMainWindow()
@@ -51,7 +51,7 @@ def main():
     view = QtFigures(model.figures)  # view is a QWidget
     central_widget.layout().addWidget(view)
 
-    # When the model received data or is otherwise updated, any changes to
+    # When the model receives data or is otherwise updated, any changes to
     # model.figures will be reflected in changes to the view.
 
     # Just for this example, generate some data before starting this app.
