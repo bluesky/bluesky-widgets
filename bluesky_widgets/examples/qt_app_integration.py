@@ -26,12 +26,12 @@ def main():
     app.aboutToQuit.connect(wait_for_workers_to_quit)
 
     # Model a list of figures.
-    from bluesky_widgets.models.auto_plot_builders import AutoLines
-
     # This will generate line plot automatically based on the structure (shape)
     # of the data and its hints. Other models could be used for more explicit
     # control of what gets plotted. See the examples in
     # http://blueskyproject.io/bluesky-widgets/reference.html#plot-builders
+    from bluesky_widgets.models.auto_plot_builders import AutoLines
+
     model = AutoLines(max_runs=3)
 
     # Feed it data from the RunEngine. In actual practice, the RunEngine should
@@ -48,8 +48,11 @@ def main():
     # Add a tabbed pane of figures to the app.
     from bluesky_widgets.qt.figures import QtFigures
 
-    view = QtFigures(model.figures)
+    view = QtFigures(model.figures)  # view is a QWidget
     central_widget.layout().addWidget(view)
+
+    # When the model received data or is otherwise updated, any changes to
+    # model.figures will be reflected in changes to the view.
 
     # Just for this example, generate some data before starting this app.
     # Again, in practice, this should happen in a separate process and send
@@ -64,6 +67,9 @@ def main():
 
     RE(plan())
 
+    # *** INTEGRATION WITH BLUESKY-WIDGETS ENDS HERE. ***
+
+    # Run the app.
     app.exec_()
 
 
