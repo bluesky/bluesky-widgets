@@ -79,7 +79,7 @@ def test_short_title_syncing(FigureViews, request):
     assert view.tabText(0) == expected_title
 
 
-def test_non_null_short_title_syncing(FigureViews):
+def test_non_null_short_title_syncing(FigureViews, request):
     QtFigures = pytest.importorskip("bluesky_widgets.qt.figures.QtFigures")
     if request.getfixturevalue("FigureViews") is not QtFigures:
         pytest.skip("This tests details of the QtFigures view.")
@@ -122,7 +122,7 @@ def test_axes_set_figure():
 
 
 artist_set_axes_params = pytest.mark.parametrize(
-    'artist_factory',
+    "artist_factory",
     # These are factories because each artist can only be assigned to Axes once
     # in its lifecycle. For each test that these params are used in, we need a
     # fresh instance.
@@ -147,7 +147,7 @@ def test_artist_set_axes_at_init(artist_factory):
     with pytest.raises(CallbackException) as exc_info:
         Axes(artists=[artist])
     exc = exc_info.value
-    assert hasattr(exc, '__cause__') and isinstance(exc.__cause__, AxesAlreadySet)
+    assert hasattr(exc, "__cause__") and isinstance(exc.__cause__, AxesAlreadySet)
 
 
 @artist_set_axes_params
@@ -164,4 +164,4 @@ def test_artist_set_axes_after_init(artist_factory):
     with pytest.raises(CallbackException) as exc_info:
         Axes(artists=[artist])
     exc = exc_info.value
-    assert hasattr(exc, '__cause__') and isinstance(exc.__cause__, AxesAlreadySet)
+    assert hasattr(exc, "__cause__") and isinstance(exc.__cause__, AxesAlreadySet)

@@ -2,56 +2,12 @@
 This joins our Axes model to matplotlib.axes.Axes. It is used by
 bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
-import functools
 import logging
-
-import matplotlib
-import matplotlib.lines
-import matplotlib.image
 
 from .models.plot_specs import Axes, Line, Image
 
 
 _VAR_ARGS = object()  # sentinel in translation dict
-
-
-class _PatchedAxesImage(matplotlib.image.AxesImage):
-    """
-    AxesImage is an unusual Artist. Patch its API to me more like other Artitsts.
-
-    - It does not accept data at __init__. Data must be added through a
-      post-init method call.
-    - Its set(...) method also does not accept data (?).
-    """
-    def __init__(self, *args, array, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.set_data(array)
-
-        # TODO This is copied from imshow. How much of it do we want?
-        # im.set_alpha(alpha)
-        # if im.get_clip_path() is None:
-        #     # image does not already have clipping set, clip to axes patch
-        #     im.set_clip_path(self.patch)
-        # im._scale_norm(norm, vmin, vmax)
-        # im.set_url(url)
-
-        # # update ax.dataLim, and, if autoscaling, set viewLim
-        # # to tightly fit the image, regardless of dataLim.
-        # im.set_extent(im.get_extent())
-
-        # self.add_image(im)
-        # return im
-
-    def set(self, *, array=None, **kwargs):
-        if array is not None:
-            self.set_data(array)
-        if kwargs:
-            super().set(**kwargs)
-
-
-def _patched_plot(*args, ax, **kwargs):
-    artist, = ax.plot(*args, **kwargs)
-    return artist
 
 
 class MatplotlibAxes:
@@ -69,6 +25,7 @@ class MatplotlibAxes:
     with a nice layout, and it creates both Figure and Axes. So, this class
     receives pre-made Axes from the outside, ultimately via plt.subplots(...).
     """
+
     def __init__(self, model: Axes, axes, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
@@ -77,8 +34,8 @@ class MatplotlibAxes:
         # AxesImage *requires* Axes ax, so we define this mapping as an
         # instance attribute that can wrap self.axes.
         self.type_map = {
-            Line: (functools.partial(_patched_plot, ax=self.axes), {"x": _VAR_ARGS, "y": _VAR_ARGS}),
-            Image: (functools.partial(_PatchedAxesImage, ax=self.axes), {}),
+            Line: self._construct_line,
+            Image: self._construct_image,
         }
 
         # If we specify data limits and axes aspect and position, we have
@@ -164,45 +121,26 @@ class MatplotlibAxes:
         artist_spec = event.item
         self._add_artist(artist_spec)
 
-    def _translate(self, artist_spec, translation):
-        translated_args = []
-        translated_kwargs = {}
-        for k, v in artist_spec.update().items():
-            if translation[k] is _VAR_ARGS:
-                translated_args.append(v)
-                continue
-            translated_kwargs[translation.get(k, k)] = v
-        return tuple(translated_args), translated_kwargs
-
     def _add_artist(self, artist_spec):
         """
         Add an artist.
         """
         # Initialize artist with currently-available data.
-        artist_class, translation = self.type_map[type(artist_spec)]
-        translated_args, translated_kwargs = self._translate(artist_spec, translation)
-        artist = artist_class(
+        constructor = self.type_map[type(artist_spec)]
+        artist, update = constructor(
+            **artist_spec.update(),
             label=artist_spec.label,
-            *translated_args,
-            **translated_kwargs,
-            **artist_spec.style
+            style=artist_spec.style,
         )
-        import threading; print('add artist', threading.current_thread().name)
+
+        def handle_new_data(event):
+            update(**artist_spec.update())
 
         if artist_spec.live:
-
-            def update(event):
-                import threading; print('update', threading.current_thread().name)
-                translated_args, translated_kwargs = self._translate(artist_spec, translation)
-                artist.set(**translated_kwargs)
-                self.axes.relim()  # Recompute data limits.
-                self.axes.autoscale_view()  # Rescale the view using those new limits.
-                self.draw_idle()
-
-            self.connect(artist_spec.events.new_data, update)
+            self.connect(artist_spec.events.new_data, handle_new_data)
             self.connect(
                 artist_spec.events.completed,
-                lambda event: artist_spec.events.new_data.disconnect(update),
+                lambda event: artist_spec.events.new_data.disconnect(handle_new_data),
             )
 
         # Track it as a generic artist cache and in a type-specific cache.
@@ -233,13 +171,45 @@ class MatplotlibAxes:
         artist = self._artists.pop(artist_spec.uuid)
         # Remove it from the canvas.
         artist.remove()
-        import threading; print('remove artist', threading.current_thread().name)
         self._update_and_draw()
 
     def _update_and_draw(self):
         "Update the legend and redraw the canvas."
         self.axes.legend(loc=1)  # Update the legend.
         self.draw_idle()  # Ask matplotlib to redraw the figure.
+
+    # These wrapper factory functions build various matplotlib Artist types (e.g.
+    # Line2D, AxesImage) and translate between their creation and update APIs
+    # and ours. In general matplotlib Artists are not consistent between their
+    # creation and update signatures, so we need this amount of wrapping.
+
+    def _construct_line(self, *, x, y, label, style):
+        (artist,) = self.axes.plot(x, y, label=label, **style)
+        self.axes.relim()  # Recompute data limits.
+        self.axes.autoscale_view()  # Rescale the view using those new limits.
+        self.draw_idle()
+
+        def update(*, x, y):
+            artist.set_data(x, y)
+            self.axes.relim()  # Recompute data limits.
+            self.axes.autoscale_view()  # Rescale the view using those new limits.
+            self.draw_idle()
+
+        return artist, update
+
+    def _construct_image(self, *, array, label, style):
+        artist = self.axes.imshow(array, label=label)
+        self.axes.relim()  # Recompute data limits.
+        self.axes.autoscale_view()  # Rescale the view using those new limits.
+        self.draw_idle()
+
+        def update(*, array):
+            artist.set_data(array)
+            self.axes.relim()  # Recompute data limits.
+            self.axes.autoscale_view()  # Rescale the view using those new limits.
+            self.draw_idle()
+
+        return artist, update
 
 
 def _quiet_mpl_noisy_logger():

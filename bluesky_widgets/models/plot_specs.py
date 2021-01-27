@@ -381,7 +381,8 @@ class ArtistSpec(BaseSpec):
             label=Event,
             new_data=Event,
             completed=Event,
-            style_updated=Event)
+            style_updated=Event,
+        )
         # Re-emit updates. It's important to re-emit (not just pass through)
         # because the consumer will need access to self.
         self._style.events.updated.connect(
