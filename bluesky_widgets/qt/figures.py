@@ -2,6 +2,7 @@ import collections.abc
 import gc
 
 from qtpy.QtWidgets import (
+    QSizePolicy,
     QTabWidget,
     QWidget,
     QVBoxLayout,
@@ -166,6 +167,8 @@ class QtFigure(QWidget):
             )
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
+        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        canvas.updateGeometry()
         canvas.setParent(self)
         toolbar = NavigationToolbar(canvas, parent=self)
 
