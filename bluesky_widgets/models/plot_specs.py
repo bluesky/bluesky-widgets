@@ -124,27 +124,27 @@ class Axes(BaseSpec):
 
     Note that plot entities like lines may be declared at init time:
 
-    >>> axes = Axes(lines=[Line(...)])
+    >>> axes = Axes(artists=[Line(...)])
 
     Or added later:
 
     >>> axes = Axes()
-    >>> axes.lines.append(Line(...))
+    >>> axes.artists.append(Line(...))
 
     Or a mix:
 
-    >>> axes = Axes(lines=[Line(...)])
-    >>> axes.lines.append(Line(...))
+    >>> axes = Axes(artists=[Line(...)])
+    >>> axes.artists.append(Line(...))
 
     And they can be removed at any point:
 
-    >>> del axes.lines[0]  # Remove the first one.
-    >>> del axes.lines[-1]  # Remove the last one.
-    >>> axes.lines.clear()  # Remove them all.
+    >>> del axes.artists[0]  # Remove the first one.
+    >>> del axes.artists[-1]  # Remove the last one.
+    >>> axes.artists.clear()  # Remove them all.
 
     They may be accessed by type
 
-    >>> axes.lines  # all lines
+    >>> axes.artists  # all artists
     [Line(...), Line(...), ...]
 
     Or by label

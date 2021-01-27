@@ -7,9 +7,6 @@ import logging
 from .models.plot_specs import Axes, Line, Image
 
 
-_VAR_ARGS = object()  # sentinel in translation dict
-
-
 class MatplotlibAxes:
     """
     Respond to changes in Axes by manipulating matplotlib.axes.Axes.
@@ -31,8 +28,6 @@ class MatplotlibAxes:
         self.model = model
         self.axes = axes
 
-        # AxesImage *requires* Axes ax, so we define this mapping as an
-        # instance attribute that can wrap self.axes.
         self.type_map = {
             Line: self._construct_line,
             Image: self._construct_image,
