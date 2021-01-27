@@ -1,5 +1,7 @@
 """
-An example of integration QtFigures into an "existing" Qt applicaiton.
+An example integration QtFigures into an "existing" Qt applicaiton. Run like:
+
+python -m bluesky_widgets.examples.qt_app_integration
 """
 from qtpy.QtWidgets import QApplication, QVBoxLayout, QLabel, QMainWindow, QWidget
 
