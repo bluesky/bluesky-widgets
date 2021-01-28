@@ -120,7 +120,21 @@ class JupyterFigure(widgets.HBox):
         for axes_spec, axes in zip(model.axes, self.axes_list):
             self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
         # This updates the Figure's internal state, setting its canvas.
-        ipympl.backend_nbagg.Canvas(self.figure)
+        canvas = ipympl.backend_nbagg.Canvas(self.figure)
+        label = "Figure"
+        manager = ipympl.backend_nbagg.FigureManager(canvas, label)
+
+        def redraw(fig, val):
+            canvas = fig.canvas
+            if val and not canvas.is_saving() and not canvas._is_idle_drawing:
+                # Some artists can mark themselves as stale in the
+                # middle of drawing (e.g. axes position & tick labels
+                # being computed at draw time), but this shouldn't
+                # trigger a redraw because the current redraw will
+                # already take them into account.
+                with fig.canvas._idle_draw_cntx():
+                    fig.canvas.draw_idle()
+        manager.canvas.figure.stale_callback = redraw
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
