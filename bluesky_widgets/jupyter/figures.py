@@ -1,6 +1,8 @@
 import collections.abc
 
 from ipywidgets import widgets
+import ipympl.backend_nbagg
+import matplotlib.figure
 
 from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
@@ -103,11 +105,22 @@ class JupyterFigure(widgets.HBox):
         _initialize_mpl()
         super().__init__()
         self.model = model
-        self.figure, self.axes_list = _make_figure(model)
+        self.figure = matplotlib.figure.Figure()
+        # TODO Let Figure give different options to subplots here,
+        # but verify that number of axes created matches the number of axes
+        # specified.
+        raw_axes = self.figure.subplots(len(model.axes))
+        # Handle return type instability in mpl_Figure.subplots.
+        if not isinstance(raw_axes, collections.abc.Iterable):
+            self.axes_list = [raw_axes]
+        else:
+            self.axes_list = raw_axes
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
             self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
+        # This updates the Figure's internal state, setting its canvas.
+        ipympl.backend_nbagg.Canvas(self.figure)
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
@@ -169,25 +182,3 @@ class _JupyterFigureTab(widgets.HBox):
     def axes(self):
         "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
         return DictView(self._jupyter_figure.axes)
-
-
-def _make_figure(figure_spec):
-    "Create a Figure and Axes."
-    # This import must be deferred until after the matplotlib backend is set,
-    # which happens when a JupyterFigure or JupyterFigures is instantiated
-    # for the first time.
-    import matplotlib.pyplot as plt
-
-    # By default, with interactive mode on, each fig.show() will be called
-    # automatically, and we'll get duplicates littering the output area. We
-    # only want to see the figures where they are placed explicitly in widgets.
-    plt.ioff()
-
-    # TODO Let Figure give different options to subplots here,
-    # but verify that number of axes created matches the number of axes
-    # specified.
-    figure, axes = plt.subplots(len(figure_spec.axes))
-    # Handle return type instability in plt.subplots.
-    if not isinstance(axes, collections.abc.Iterable):
-        axes = [axes]
-    return figure, axes
