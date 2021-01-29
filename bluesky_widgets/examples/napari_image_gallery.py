@@ -17,8 +17,8 @@ import bluesky_widgets.models.plot_specs
 
 if LooseVersion(napari.__version__) < LooseVersion("0.4.4"):
     raise Exception(
-        "This requires napari >= 0.4.4 but you have napari "
-        f"{napari.__version__}")
+        f"This requires napari >= 0.4.4 but you have napari {napari.__version__}"
+    )
 
 
 class SearchAndOpen(Search):
@@ -154,6 +154,7 @@ class ImageGallery(bluesky_widgets.models.plot_builders.Images):
 
 def main(catalog_name, field):
     import databroker
+
     catalog = databroker.catalog[catalog_name]
     with napari.gui_qt():
         viewer = napari.Viewer()
