@@ -275,7 +275,7 @@ class SearchInput:
         self._since = None
         self._until = None
         self._fields = fields or []
-        self._field_search = UpdateOnlyDict({field: None for field in self._fields})
+        self._field_search = UpdateOnlyDict(dict.fromkeys(self._fields))
         self._text = None
         self._query = {}
         self.events = EmitterGroup(
