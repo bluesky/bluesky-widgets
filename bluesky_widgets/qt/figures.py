@@ -2,6 +2,7 @@ import collections.abc
 import gc
 
 from qtpy.QtWidgets import (
+    QSizePolicy,
     QTabWidget,
     QWidget,
     QVBoxLayout,
@@ -59,6 +60,7 @@ class QtFigures(QTabWidget):
         super().__init__(parent)
         self.setTabsClosable(True)
         self.tabCloseRequested.connect(self._on_close_tab_requested)
+        self.resize(self.sizeHint())
 
         self.model = model
         # Map Figure UUID to widget with QtFigureTab
@@ -75,6 +77,12 @@ class QtFigures(QTabWidget):
             callback(event)
 
         self.__callback_event.connect(handle_callback)
+
+    def sizeHint(self):
+        size_hint = super().sizeHint()
+        size_hint.setWidth(700)
+        size_hint.setHeight(500)
+        return size_hint
 
     @property
     def figures(self):
@@ -166,6 +174,8 @@ class QtFigure(QWidget):
             )
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
+        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        canvas.updateGeometry()
         canvas.setParent(self)
         toolbar = NavigationToolbar(canvas, parent=self)
 
@@ -173,10 +183,17 @@ class QtFigure(QWidget):
         layout.addWidget(canvas)
         layout.addWidget(toolbar)
         self.setLayout(layout)
+        self.resize(self.sizeHint())
 
         model.events.title.connect(self._on_title_changed)
         # The Figure model does not currently allow axes to be added or
         # removed, so we do not need to handle changes in model.axes.
+
+    def sizeHint(self):
+        size_hint = super().sizeHint()
+        size_hint.setWidth(700)
+        size_hint.setHeight(500)
+        return size_hint
 
     @property
     def axes(self):
