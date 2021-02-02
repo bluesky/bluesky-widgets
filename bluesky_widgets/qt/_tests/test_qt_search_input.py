@@ -49,13 +49,13 @@ def test_initial_state(qtbot):
 
 def test_initial_state_with_fields(qtbot):
     "Check that QLineEdits show for each field."
-    model = SearchInput(fields=['field_1', 'field_2'])
+    model = SearchInput(fields=["field_1", "field_2"])
     view = QtSearchInput(model)
 
     assert view.field_text_edit
     assert list(view.field_text_edit.keys()) == model.fields
     for field, text_edit in view.field_text_edit.items():
-        assert text_edit.text() == ''
+        assert text_edit.text() == ""
 
 
 def test_time_input_absolute_from_model(qtbot):

@@ -289,9 +289,7 @@ class SearchInput:
             field_search_updated=Event,
         )
         self._field_search.events.updated.connect(
-            lambda event: self.events.field_search_updated(
-                update=event.update
-            )
+            lambda event: self.events.field_search_updated(update=event.update)
         )
         self._time_validator = None
         self._text_search_supported = text_search_supported

@@ -111,8 +111,12 @@ class QtSearchInput(QWidget):
         self.field_text_edit = {}
         for field in self.model.fields:
             self.field_text_edit[field] = QLineEdit("")
-            self.field_text_edit[field].textChanged.connect(self.on_field_search_view_changed)
-            self.model.events.field_search_updated.connect(self.on_field_search_model_changed)
+            self.field_text_edit[field].textChanged.connect(
+                self.on_field_search_view_changed
+            )
+            self.model.events.field_search_updated.connect(
+                self.on_field_search_model_changed
+            )
             self.layout().addRow(f"{field}:", self.field_text_edit[field])
 
         # Text Search

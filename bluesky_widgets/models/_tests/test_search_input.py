@@ -11,12 +11,12 @@ def test_instantiation():
 
 def test_instantiation_with_fields():
     "Smoke test with fields defined."
-    SearchInput(fields=['field_1', 'field_2'])
+    SearchInput(fields=["field_1", "field_2"])
 
 
 def test_field_search():
     "Check field_search can only be updated and query is updated."
-    s = SearchInput(fields=['field_1', 'field_2'])
+    s = SearchInput(fields=["field_1", "field_2"])
 
     events = []
 
@@ -25,27 +25,27 @@ def test_field_search():
 
     s.events.field_search_updated.connect(cb)
     with pytest.raises(TypeError):
-        s.field_search['field_1'] = 'a'
-    s.field_search.update({'field_1': 'a'})
-    assert s.field_search == {'field_1': 'a', 'field_2': None}
+        s.field_search["field_1"] = "a"
+    s.field_search.update({"field_1": "a"})
+    assert s.field_search == {"field_1": "a", "field_2": None}
     assert len(events) == 1
-    assert 'field_1' in s.query
-    assert 'field_2' not in s.query
-    s.field_search.update({'field_2': 'b'})
-    assert s.field_search == {'field_1': 'a', 'field_2': 'b'}
+    assert "field_1" in s.query
+    assert "field_2" not in s.query
+    s.field_search.update({"field_2": "b"})
+    assert s.field_search == {"field_1": "a", "field_2": "b"}
     assert len(events) == 2
-    assert 'field_1' in s.query
-    assert 'field_2' in s.query
-    s.field_search.update({'field_1': ''})
-    assert s.field_search == {'field_1': '', 'field_2': 'b'}
+    assert "field_1" in s.query
+    assert "field_2" in s.query
+    s.field_search.update({"field_1": ""})
+    assert s.field_search == {"field_1": "", "field_2": "b"}
     assert len(events) == 3
-    assert 'field_1' not in s.query
-    assert 'field_2' in s.query
-    s.field_search.update({'field_1': 'a', 'field_2': 'bb'})
-    assert s.field_search == {'field_1': 'a', 'field_2': 'bb'}
+    assert "field_1" not in s.query
+    assert "field_2" in s.query
+    s.field_search.update({"field_1": "a", "field_2": "bb"})
+    assert s.field_search == {"field_1": "a", "field_2": "bb"}
     assert len(events) == 4
-    assert 'field_1' in s.query
-    assert 'field_2' in s.query
+    assert "field_1" in s.query
+    assert "field_2" in s.query
 
 
 def test_since_datetime():
