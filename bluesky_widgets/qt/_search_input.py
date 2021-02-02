@@ -107,6 +107,18 @@ class QtSearchInput(QWidget):
         self.date_selection_row.addWidget(QLabel(" \u2013 ", self), 0)
         self.date_selection_row.addWidget(self.until_widget, 1)
 
+        # Field search
+        self.field_text_edit = {}
+        for field in self.model.fields:
+            self.field_text_edit[field] = QLineEdit("")
+            self.field_text_edit[field].textChanged.connect(
+                self.on_field_search_view_changed
+            )
+            self.model.events.field_search_updated.connect(
+                self.on_field_search_model_changed
+            )
+            self.layout().addRow(f"{field}:", self.field_text_edit[field])
+
         # Text Search
         if model.text_search_supported:
             self.text_search_input = QLineEdit("")
@@ -138,6 +150,16 @@ class QtSearchInput(QWidget):
         self.all_widget.toggled.connect(self.on_toggle_all)
 
         self.all_widget.setChecked(True)
+
+    def on_field_search_view_changed(self, event):
+        field_update_dict = {}
+        for key, text_edit in self.field_text_edit.items():
+            field_update_dict[key] = text_edit.text()
+        self.model.field_search.update(field_update_dict)
+
+    def on_field_search_model_changed(self, event):
+        for key, text_edit in self.field_text_edit.items():
+            text_edit.setText(self.model.field_search[key])
 
     def on_text_view_changed(self, event):
         self.model.text = self.text_search_input.text()

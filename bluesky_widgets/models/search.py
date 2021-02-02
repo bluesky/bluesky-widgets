@@ -7,6 +7,7 @@ import dateutil.tz
 
 from ..utils.list import EventedList
 from ..utils.event import EmitterGroup, Event
+from ..utils.dict_view import UpdateOnlyDict
 
 LOCAL_TIMEZONE = dateutil.tz.tzlocal()
 _epoch = datetime(1970, 1, 1, 0, 0, tzinfo=LOCAL_TIMEZONE)
@@ -270,9 +271,11 @@ def ensure_abs(*abs_or_rel_times):
 
 
 class SearchInput:
-    def __init__(self, *, text_search_supported=False):
+    def __init__(self, *, fields=None, text_search_supported=False):
         self._since = None
         self._until = None
+        self._fields = fields or []
+        self._field_search = UpdateOnlyDict(dict.fromkeys(self._fields))
         self._text = None
         self._query = {}
         self.events = EmitterGroup(
@@ -283,6 +286,10 @@ class SearchInput:
             until=Event,
             reload=Event,
             text=Event,
+            field_search_updated=Event,
+        )
+        self._field_search.events.updated.connect(
+            lambda event: self.events.field_search_updated(update=event.update)
         )
         self._time_validator = None
         self._text_search_supported = text_search_supported
@@ -294,6 +301,10 @@ class SearchInput:
     @time_validator.setter
     def time_validator(self, validator):
         self._time_validator = validator
+
+    @property
+    def fields(self):
+        return self._fields
 
     @property
     def text_search_supported(self):
@@ -359,6 +370,10 @@ class SearchInput:
         self.events.until(date=until)
 
     @property
+    def field_search(self):
+        return self._field_search
+
+    @property
     def text(self):
         """
         Text search
@@ -371,6 +386,14 @@ class SearchInput:
             raise RuntimeError("This catalog does not support text search.")
         self._text = text
         self.events.text(text=text)
+
+    def on_field_search_updated(self, event):
+        for field, text in event.update.items():
+            if not text:
+                self._query.pop(field, None)
+            else:
+                self._query.update({field: text})
+        self.events.query(query=self._query)
 
     def on_text(self, event):
         if not event.text:
