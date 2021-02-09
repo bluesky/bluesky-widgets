@@ -143,8 +143,9 @@ class JupyterFigure(widgets.HBox):
         # This updates the Figure's internal state, setting its canvas.
         canvas = ipympl.backend_nbagg.Canvas(self.figure)
         label = "Figure"
-        manager = ipympl.backend_nbagg.FigureManager(canvas, 0)
-        manager.set_window_title(label)
+        # this will stash its self on the canvas
+        ipympl.backend_nbagg.FigureManager(canvas, 0)
+        self.figure.set_label(label)
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
