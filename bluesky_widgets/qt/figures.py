@@ -162,12 +162,10 @@ class QtFigure(QWidget):
         # TODO Let Figure give different options to subplots here,
         # but verify that number of axes created matches the number of axes
         # specified.
-        raw_axes = self.figure.subplots(len(model.axes))
-        # Handle return type instability in mpl_Figure.subplots.
-        if not isinstance(raw_axes, collections.abc.Iterable):
-            self.axes_list = [raw_axes]
-        else:
-            self.axes_list = raw_axes
+        self.axes_list = list(
+            self.figure.subplots(len(model.axes), squeeze=False).ravel()
+        )
+
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
