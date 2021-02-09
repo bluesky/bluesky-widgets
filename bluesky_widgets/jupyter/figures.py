@@ -5,7 +5,7 @@ import ipympl.backend_nbagg
 import matplotlib.figure
 
 from ..models.plot_specs import Figure, FigureList
-from .._matplotlib_axes import MatplotlibAxes
+from .._matplotlib_axes import MatplotlibAxes as _MatplotilbAxes
 from ..utils.dict_view import DictView
 
 
@@ -19,6 +19,30 @@ def _initialize_mpl():
     # must import matplotlib.pyplot here because bluesky.utils.during_task
     # expects it to be imported
     import matplotlib.pyplot as plt  # noqa
+
+
+class JupyterAxes(_MatplotilbAxes):
+    # We need to turn `draw_idle` into "draw now" because they way
+    # that `draw_idle` is implemented requires a round-trip
+    # communication with the js front end (from the Python side we say
+    # "dear JS, when you want ask us for an update".  The JS then
+    # sends back a message asking for the the figure to be rendered.
+    # This means we will not over-load the frontend with more updates
+    # than it want.
+    #
+    # However, when a notebook cell is executing, the zmq loop than
+    # processes messages from the front end is blocked so we never see
+    # the request for a re-draw so it looks "dead".
+    #
+    # We do not see this problem with Qt because the default during
+    # task of the RE spins the Qt event loop while we wait on the
+    # `_run` task in a background thread so the `draw_idle`
+    # implementation throws a signal on the Qt event loop which gets
+    # promptly serviced.  In contrast, the default during task when
+    # the RE is in the notebook is event.wait which simply blocks
+    # until the `_run` task finishes, hence the "broken" behavior.
+    def draw_idle(self):
+        self.axes.figure.canvas.draw()
 
 
 class JupyterFigures(widgets.Tab):
@@ -115,23 +139,12 @@ class JupyterFigure(widgets.HBox):
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = JupyterAxes(model=axes_spec, axes=axes)
         # This updates the Figure's internal state, setting its canvas.
         canvas = ipympl.backend_nbagg.Canvas(self.figure)
         label = "Figure"
-        manager = ipympl.backend_nbagg.FigureManager(canvas, label)
-
-        def redraw(fig, val):
-            canvas = fig.canvas
-            if val and not canvas.is_saving() and not canvas._is_idle_drawing:
-                # Some artists can mark themselves as stale in the
-                # middle of drawing (e.g. axes position & tick labels
-                # being computed at draw time), but this shouldn't
-                # trigger a redraw because the current redraw will
-                # already take them into account.
-                with fig.canvas._idle_draw_cntx():
-                    fig.canvas.draw_idle()
-        manager.canvas.figure.stale_callback = redraw
+        manager = ipympl.backend_nbagg.FigureManager(canvas, 0)
+        manager.set_window_title(label)
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
@@ -150,7 +163,7 @@ class JupyterFigure(widgets.HBox):
 
     @property
     def axes(self):
-        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> JupyterAxes"
         return DictView(self._axes)
 
     def _on_title_changed(self, event):
@@ -159,7 +172,7 @@ class JupyterFigure(widgets.HBox):
 
     def _redraw(self):
         "Redraw the canvas."
-        self.figure.canvas.draw_idle()
+        self.figure.canvas.draw()
 
     def close_figure(self):
         self.figure.canvas.close()
@@ -191,5 +204,5 @@ class _JupyterFigureTab(widgets.HBox):
 
     @property
     def axes(self):
-        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> JupyterAxes"
         return DictView(self._jupyter_figure.axes)
