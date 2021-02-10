@@ -65,22 +65,24 @@ class RemoteDispatcher(QObject):
 
     def _receive_data(self):
         our_prefix = self._prefix  # local var to save an attribute lookup
-        # TODO Pull on the socket more than once here, until it blocks, to
-        # ensure we do not get more and more behind over time.
-        message = self._socket.recv()
-        prefix, name, doc = message.split(b" ", 2)
-        name = name.decode()
-        if (not our_prefix) or prefix == our_prefix:
-            if self._waiting_for_start:
-                if name == "start":
-                    self._waiting_for_start = False
-                else:
-                    # We subscribed midstream and are seeing documents for
-                    # which we do not have the full run. Wait for a 'start'
-                    # doc.
-                    return
-            doc = self._deserializer(doc)
-        return name, doc
+        # TODO Think about back pressure.
+        while True:
+            message = self._socket.recv()
+            if not message:
+                break
+            prefix, name, doc = message.split(b" ", 2)
+            name = name.decode()
+            if (not our_prefix) or prefix == our_prefix:
+                if self._waiting_for_start:
+                    if name == "start":
+                        self._waiting_for_start = False
+                    else:
+                        # We subscribed midstream and are seeing documents for
+                        # which we do not have the full run. Wait for a 'start'
+                        # doc.
+                        return
+                doc = self._deserializer(doc)
+            yield name, doc
 
     def start(self):
         if self.closed:
@@ -99,7 +101,7 @@ class RemoteDispatcher(QObject):
         worker.finished.connect(
             lambda: self._timer.singleShot(LOADING_LATENCY, self._work_loop)
         )
-        worker.returned.connect(self._process_result)
+        worker.yielded.connect(self._process_result)
         worker.start()
 
     def _process_result(self, result):
