@@ -4,6 +4,7 @@ Run like
 python -m bluesky_widgets.examples.napari_image_gallery bluesky-tutorial-RSOXS Synced_waxs_image
 """
 from distutils.version import LooseVersion
+import warnings
 
 import napari
 from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
@@ -16,8 +17,8 @@ import bluesky_widgets.models.plot_specs
 
 
 if LooseVersion(napari.__version__) < LooseVersion("0.4.4"):
-    raise Exception(
-        f"This requires napari >= 0.4.4 but you have napari {napari.__version__}"
+    warnings.warn(
+        f"This is tested on napari >= 0.4.4 but you have napari {napari.__version__}"
     )
 
 
