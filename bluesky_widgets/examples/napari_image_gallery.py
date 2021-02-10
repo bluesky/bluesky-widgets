@@ -165,7 +165,12 @@ def main(catalog_name, field):
 
         # Define our models of the search and the gallery.
         search_model = SearchAndOpen(catalog, columns=columns, field=field)
-        gallery_model = ImageGallery(field, max_runs=1)
+
+        gallery_model = ImageGallery(
+            lambda run: run.primary.to_dask()[field]
+            - run.dark.to_dask()[field].mean("time"),
+            max_runs=1,
+        )
         search_model.events.open.connect(
             lambda event: gallery_model.add_run(search_model.active_run)
         )
