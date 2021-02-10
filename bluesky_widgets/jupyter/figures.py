@@ -1,5 +1,3 @@
-import collections.abc
-
 from ipywidgets import widgets
 import ipympl.backend_nbagg
 import matplotlib.figure

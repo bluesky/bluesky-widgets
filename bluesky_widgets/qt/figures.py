@@ -1,4 +1,3 @@
-import collections.abc
 import gc
 
 from qtpy.QtWidgets import (
