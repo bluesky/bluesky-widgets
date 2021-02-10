@@ -20,20 +20,20 @@ def _initialize_mpl():
 
 
 class JupyterAxes(_MatplotilbAxes):
-    # We need to turn `draw_idle` into "draw now" because they way
+    # We need to turn `draw_idle` into "draw now" because the way
     # that `draw_idle` is implemented requires a round-trip
     # communication with the js front end (from the Python side we say
-    # "dear JS, when you want ask us for an update".  The JS then
+    # "dear JS, when you want you to ask us for an update".  The JS then
     # sends back a message asking for the the figure to be rendered.
-    # This means we will not over-load the frontend with more updates
-    # than it want.
+    # This means we will not overload the frontend with more updates
+    # than it wants.
     #
-    # However, when a notebook cell is executing, the zmq loop than
+    # However, when a notebook cell is executing, the zmq loop that
     # processes messages from the front end is blocked so we never see
-    # the request for a re-draw so it looks "dead".
+    # the request for a re-draw. The figure looks "dead".
     #
-    # We do not see this problem with Qt because the default during
-    # task of the RE spins the Qt event loop while we wait on the
+    # We do not see this problem with Qt because the default "during
+    # task" of the RunEngine spins the Qt event loop while we wait on the
     # `_run` task in a background thread so the `draw_idle`
     # implementation throws a signal on the Qt event loop which gets
     # promptly serviced.  In contrast, the default during task when
@@ -141,7 +141,7 @@ class JupyterFigure(widgets.HBox):
         # This updates the Figure's internal state, setting its canvas.
         canvas = ipympl.backend_nbagg.Canvas(self.figure)
         label = "Figure"
-        # this will stash its self on the canvas
+        # this will stash itself on the canvas
         ipympl.backend_nbagg.FigureManager(canvas, 0)
         self.figure.set_label(label)
         self.children = (self.figure.canvas,)
