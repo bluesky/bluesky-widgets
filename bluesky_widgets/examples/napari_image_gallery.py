@@ -79,7 +79,8 @@ class NapariFigureView:
             arr = artist_spec.update()["array"]
             DECIMATION = 1
             for i, plane in enumerate(arr[::DECIMATION]):
-                name = f"{artist_spec.label} {i}"
+                # coarse_plane = plane.coarsen({"dim_3": 5, "dim_4": 5, "dim_5": 5}, boundary="trim").mean()
+                name = f"{i}"
                 layer = self.napari_viewer.add_image(plane, name=name)
                 self._layers[artist_spec.uuid] = layer
             self.napari_viewer.grid.enabled = True
