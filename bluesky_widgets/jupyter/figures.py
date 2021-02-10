@@ -1,9 +1,9 @@
-import collections.abc
-
 from ipywidgets import widgets
+import ipympl.backend_nbagg
+import matplotlib.figure
 
 from ..models.plot_specs import Figure, FigureList
-from .._matplotlib_axes import MatplotlibAxes
+from .._matplotlib_axes import MatplotlibAxes as _MatplotilbAxes
 from ..utils.dict_view import DictView
 
 
@@ -17,6 +17,30 @@ def _initialize_mpl():
     # must import matplotlib.pyplot here because bluesky.utils.during_task
     # expects it to be imported
     import matplotlib.pyplot as plt  # noqa
+
+
+class JupyterAxes(_MatplotilbAxes):
+    # We need to turn `draw_idle` into "draw now" because the way
+    # that `draw_idle` is implemented requires a round-trip
+    # communication with the js front end (from the Python side we say
+    # "dear JS, when you want you to ask us for an update".  The JS then
+    # sends back a message asking for the the figure to be rendered.
+    # This means we will not overload the frontend with more updates
+    # than it wants.
+    #
+    # However, when a notebook cell is executing, the zmq loop that
+    # processes messages from the front end is blocked so we never see
+    # the request for a re-draw. The figure looks "dead".
+    #
+    # We do not see this problem with Qt because the default "during
+    # task" of the RunEngine spins the Qt event loop while we wait on the
+    # `_run` task in a background thread so the `draw_idle`
+    # implementation throws a signal on the Qt event loop which gets
+    # promptly serviced.  In contrast, the default during task when
+    # the RE is in the notebook is event.wait which simply blocks
+    # until the `_run` task finishes, hence the "broken" behavior.
+    def draw_idle(self):
+        self.axes.figure.canvas.draw()
 
 
 class JupyterFigures(widgets.Tab):
@@ -103,11 +127,23 @@ class JupyterFigure(widgets.HBox):
         _initialize_mpl()
         super().__init__()
         self.model = model
-        self.figure, self.axes_list = _make_figure(model)
+        self.figure = matplotlib.figure.Figure()
+        # TODO Let Figure give different options to subplots here,
+        # but verify that number of axes created matches the number of axes
+        # specified.
+        self.axes_list = list(
+            self.figure.subplots(len(model.axes), squeeze=False).ravel()
+        )
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = MatplotlibAxes(model=axes_spec, axes=axes)
+            self._axes[axes_spec.uuid] = JupyterAxes(model=axes_spec, axes=axes)
+        # This updates the Figure's internal state, setting its canvas.
+        canvas = ipympl.backend_nbagg.Canvas(self.figure)
+        label = "Figure"
+        # this will stash itself on the canvas
+        ipympl.backend_nbagg.FigureManager(canvas, 0)
+        self.figure.set_label(label)
         self.children = (self.figure.canvas,)
 
         model.events.title.connect(self._on_title_changed)
@@ -126,7 +162,7 @@ class JupyterFigure(widgets.HBox):
 
     @property
     def axes(self):
-        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> JupyterAxes"
         return DictView(self._axes)
 
     def _on_title_changed(self, event):
@@ -135,7 +171,7 @@ class JupyterFigure(widgets.HBox):
 
     def _redraw(self):
         "Redraw the canvas."
-        self.figure.canvas.draw_idle()
+        self.figure.canvas.draw()
 
     def close_figure(self):
         self.figure.canvas.close()
@@ -167,27 +203,5 @@ class _JupyterFigureTab(widgets.HBox):
 
     @property
     def axes(self):
-        "Read-only access to the mapping Axes UUID -> MatplotlibAxes"
+        "Read-only access to the mapping Axes UUID -> JupyterAxes"
         return DictView(self._jupyter_figure.axes)
-
-
-def _make_figure(figure_spec):
-    "Create a Figure and Axes."
-    # This import must be deferred until after the matplotlib backend is set,
-    # which happens when a JupyterFigure or JupyterFigures is instantiated
-    # for the first time.
-    import matplotlib.pyplot as plt
-
-    # By default, with interactive mode on, each fig.show() will be called
-    # automatically, and we'll get duplicates littering the output area. We
-    # only want to see the figures where they are placed explicitly in widgets.
-    plt.ioff()
-
-    # TODO Let Figure give different options to subplots here,
-    # but verify that number of axes created matches the number of axes
-    # specified.
-    figure, axes = plt.subplots(len(figure_spec.axes))
-    # Handle return type instability in plt.subplots.
-    if not isinstance(axes, collections.abc.Iterable):
-        axes = [axes]
-    return figure, axes

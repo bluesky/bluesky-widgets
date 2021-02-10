@@ -1,4 +1,3 @@
-import collections.abc
 import gc
 
 from qtpy.QtWidgets import (
@@ -12,6 +11,7 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar,
 )
+import matplotlib.figure
 
 from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
@@ -165,7 +165,14 @@ class QtFigure(QWidget):
         _initialize_matplotlib()
         super().__init__(parent)
         self.model = model
-        self.figure, self.axes_list = _make_figure(model)
+        self.figure = matplotlib.figure.Figure()
+        # TODO Let Figure give different options to subplots here,
+        # but verify that number of axes created matches the number of axes
+        # specified.
+        self.axes_list = list(
+            self.figure.subplots(len(model.axes), squeeze=False).ravel()
+        )
+
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
@@ -212,20 +219,3 @@ class QtFigure(QWidget):
 
     def close_figure(self):
         self.figure.canvas.close()
-
-
-def _make_figure(figure_spec):
-    "Create a Figure and Axes."
-    # This import must be deferred until after the matplotlib backend is set,
-    # which happens when a QtFigure or QtFigures is instantiated
-    # for the first time.
-    import matplotlib.pyplot as plt
-
-    # TODO Let Figure give different options to subplots here,
-    # but verify that number of axes created matches the number of axes
-    # specified.
-    fig, axes = plt.subplots(len(figure_spec.axes))
-    # Handle return type instability in plt.subplots.
-    if not isinstance(axes, collections.abc.Iterable):
-        axes = [axes]
-    return fig, axes
