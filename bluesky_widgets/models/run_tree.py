@@ -1,4 +1,4 @@
-from ..utils.event import Event, EmitterGroup
+from bluesky_live.event import Event, EmitterGroup
 
 
 class RunTree:

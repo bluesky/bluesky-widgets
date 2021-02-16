@@ -6,7 +6,7 @@ import inspect
 import numpy
 
 from ..utils.list import EventedList
-from ..utils.event import EmitterGroup, Event
+from bluesky_live.event import EmitterGroup, Event
 
 
 class RunList(EventedList):

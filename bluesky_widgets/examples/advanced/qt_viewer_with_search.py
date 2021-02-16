@@ -18,7 +18,7 @@ from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.models.auto_plot_builders import AutoLines
 from bluesky_widgets.qt.search import QtSearches
 from bluesky_widgets.qt.figures import QtFigures
-from bluesky_widgets.utils.event import Event
+from bluesky_live.event import Event
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.add_search_mixin import columns
 from qtpy.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout

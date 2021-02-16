@@ -6,7 +6,7 @@ import itertools
 import dateutil.tz
 
 from ..utils.list import EventedList
-from ..utils.event import EmitterGroup, Event
+from bluesky_live.event import EmitterGroup, Event
 from ..utils.dict_view import UpdateOnlyDict
 
 LOCAL_TIMEZONE = dateutil.tz.tzlocal()
