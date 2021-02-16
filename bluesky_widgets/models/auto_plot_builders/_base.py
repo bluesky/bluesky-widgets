@@ -73,6 +73,14 @@ class AutoPlotter(abc.ABC):
                 if figure is plot_builder.figure:
                     self.plot_builders.remove(plot_builder)
             elif hasattr(plot_builder, "figures"):
+                # This code looks broken, was untested, and TAC is not
+                # sure what it _should_ be doing.
+                #
+                # The only `self.figures` in the code are on subclasses
+                # of this class.  The only `def figures` are on views.
+                #
+                # This will forcibly break any usage of this code.
+                raise NotImplementedError("Fix the code below this.")
                 for figure in self.figures:
                     if figure is plot_builder.figure:
                         self.plot_builders.remove(plot_builder)
