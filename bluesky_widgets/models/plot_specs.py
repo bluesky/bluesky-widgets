@@ -61,10 +61,11 @@ class Figure(BaseSpec):
         """
         Tuple of Axess. Set at Figure creation time and immutable.
 
-        Why is it immutable? Because rearranging Axes to make room for a new
-        one is currently painful to do in matplotlib. This constraint might be
-        relaxed in the future if the situation improves in matplotlib or if
-        support for other plotting frameworks is added to bluesky-widgets.
+        Why is it immutable? Because rearranging Axes to make room for
+        a new one is currently possible but annoying to do in
+        Matplotlib. This constraint might be relaxed in the future if
+        there is a need.
+
         """
         return self._axes
 
