@@ -67,7 +67,7 @@ def main():
                 time.sleep(0.5)
 
         # Add plan to queue
-        client.send_message(
+        response = client.send_message(
             method="queue_item_add",
             params={
                 "plan": {"name": "scan", "args": [["det"], "motor", -5, 5, 11]},
@@ -75,13 +75,18 @@ def main():
                 "user_group": "admin",
             },
         )
+        if not response["success"]:
+            raise RuntimeError(f"Failed to add plan to the queue: {response['msg']}")
 
         model = Lines("motor", ["det"], max_runs=3)
         dispatcher.subscribe(stream_documents_into_runs(model.add_run))
         view = QtFigure(model.figure)
         view.show()
         dispatcher.start()
-        client.send_message(method="queue_start")
+
+        response = client.send_message(method="queue_start")
+        if not response["success"]:
+            raise RuntimeError(f"Failed to start the queue: {response['msg']}")
 
 
 if __name__ == "__main__":
