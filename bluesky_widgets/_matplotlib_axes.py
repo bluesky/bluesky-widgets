@@ -7,6 +7,9 @@ import logging
 import numpy as np
 from mpl_toolkits.axisartist.parasite_axes import HostAxes, ParasiteAxes
 from .models.plot_specs import Axes, Line, Image
+#from .models.plot_specs import Axes as AxesSpec
+#from .models.plot_specs import Line as LineSpec
+#from .models.plot_specs import Image as ImageSpec
 from .models.utils import run_is_live_and_not_completed
 
 def convert_axes_to_host_axes(axes):
@@ -271,7 +274,7 @@ class MatplotlibAxes:
         return artist, update
 
 class MatplotlibHostParasiteAxes(MatplotlibAxes):
-    def __init__(self, model: AxesSpec, axes, *args, **kwargs):
+    def __init__(self, model: Axes, axes, *args, **kwargs):
         self.axis_count = 0
         self.color_cycler = None
         #axes = convert_axes_to_host_axes(axes)
@@ -291,8 +294,8 @@ class MatplotlibHostParasiteAxes(MatplotlibAxes):
         self.color_cycler = self.axes._get_lines.prop_cycler
         return (artist, )
 
-    def _add_line(self, line_spec):
-        super()._add_line(line_spec)
+    def _add_artist(self, line_spec):
+        super()._add_artist(line_spec)
         self.axis_count += 1
 
 #MatplotlibAxes = MatplotlibHostParasiteAxes

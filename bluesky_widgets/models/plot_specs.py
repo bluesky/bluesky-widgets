@@ -45,9 +45,10 @@ class Figure(BaseSpec):
         should fall back on ``title`` if this is None.
     """
 
-    __slots__ = ("_axes", "_title", "_short_title")
+    __slots__ = ("_axes", "_title", "_short_title", "_parasite")
 
-    def __init__(self, axes, *, title, uuid=None, short_title=None):
+    def __init__(self, axes, *, title, uuid=None, short_title=None, parasite=False):
+        self._parasite = parasite
         for ax in axes:
             ax.set_figure(self)
         self._axes = tuple(axes)
@@ -55,6 +56,10 @@ class Figure(BaseSpec):
         self._short_title = short_title
         self.events = EmitterGroup(source=self, title=Event, short_title=Event)
         super().__init__(uuid)
+
+    @property
+    def parasite(self):
+        return self._parasite
 
     @property
     def axes(self):
