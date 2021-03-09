@@ -11,6 +11,7 @@ from .plot_specs import (
 )
 from .utils import auto_label, call_or_eval, RunManager, run_is_live_and_not_completed
 from ..utils.dict_view import DictView
+from ..utils.list import EventedList
 
 
 class Lines:
@@ -173,7 +174,7 @@ class Lines:
         self._x = x
         if isinstance(ys, str):
             raise ValueError("`ys` must be a list of strings, not a string")
-        self._ys = tuple(ys)
+        self._ys = EventedList(ys)
         self._label_maker = label_maker
         self._namespace = namespace
         if axes is None:
@@ -203,6 +204,8 @@ class Lines:
         self.add_run = self._run_manager.add_run
         self.discard_run = self._run_manager.discard_run
 
+        self.ys.events.added.connect(self._add_ys)
+
     def _transform(self, run, x, y):
         return call_or_eval({"x": x, "y": y}, run, self.needs_streams, self.namespace)
 
@@ -230,6 +233,32 @@ class Lines:
                 label += " (pinned)"
 
             func = functools.partial(self._transform, x=self.x, y=y)
+            line = Line.from_run(func, run, label, style)
+            self._run_manager.track_artist(line, [run])
+            self.axes.artists.append(line)
+
+    def _add_ys(self, event):
+        for run in self._run_manager.runs:
+            label = self._label_maker(run, event.item)
+            # If run is in progress, give it a special color so it stands out.
+            if run_is_live_and_not_completed(run):
+                color = "black"
+
+                def restyle_line_when_complete(event):
+                    "When run is complete, update style."
+                    line.style.update({"color": next(self._color_cycle)})
+
+                run.events.completed.connect(restyle_line_when_complete)
+            else:
+                color = next(self._color_cycle)
+            style = {"color": color}
+
+            # Style pinned runs differently.
+            if run.metadata["start"]["uid"] in self.pinned:
+                style.update(linestyle="dashed")
+                label += " (pinned)"
+
+            func = functools.partial(self._transform, x=self.x, y=event.item)
             line = Line.from_run(func, run, label, style)
             self._run_manager.track_artist(line, [run])
             self.axes.artists.append(line)
