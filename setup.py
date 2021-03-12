@@ -29,28 +29,28 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.rst"), encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-with open(path.join(here, "requirements.txt")) as requirements_file:
-    # Parse requirements.txt, ignoring any commented-out lines.
-    requirements = [
-        line
-        for line in requirements_file.read().splitlines()
-        if not line.startswith("#")
-    ]
 
+def read_requirements(requirements_filename):
+    with open(path.join(here, requirements_filename)) as requirements_file:
+        # Parse requirements.txt, ignoring any commented-out lines.
+        requirements = [
+            line
+            for line in requirements_file.read().splitlines()
+            if not line.startswith("#")
+        ]
+    return requirements
+
+
+requirements = read_requirements("requirements.txt")
+
+# TODO Some of the views do not require matplotlib. Should that get its own
+# group? Seems a little much to ask the user to manage all this, so I am
+# erring on the side of inclusion for now.
 extras_require = {
-    # TODO Some of the views do not require matplotlib. Should that get its own
-    # group? Seems a little much to ask the user to manage all this, so I am
-    # erring on the side of inclusion for now.
-    "pyside2": ["PySide2", "qtpy", "matplotlib"],
-    "pyqt5": ["PyQt5", "qtpy", "matplotlib"],
-    "jupyter": ["ipywidgets", "ipympl", "matplotlib"],
+    key: read_requirements(f"requirements-{key}.txt")
+    for key in ["examples", "jupyter", "pyside2", "pyqt5"]
 }
-with open(path.join(here, "requirements-examples.txt")) as requirements_file:
-    extras_require["examples"] = [
-        line
-        for line in requirements_file.read().splitlines()
-        if not line.startswith("#")
-    ]
+extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
 
 setup(
     name="bluesky-widgets",
