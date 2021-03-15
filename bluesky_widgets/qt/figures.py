@@ -26,6 +26,66 @@ def _initialize_matplotlib():
     matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
     import matplotlib.pyplot  # noqa
 
+def convert_axes_to_host_axes(axes):
+    fig = axes.get_figure()
+    rect = axes._position
+    return HostAxes(fig, rect)
+
+
+def init_host(host, data, label):
+    host.set_ylabel(label)
+    host.axis["right"].set_visible(False)
+    p, = host.plot(range(len(data)), data, label=label)
+    host.axis["left"].label.set_color(p.get_color())
+    return (p, )
+
+def init_host_twinx(host, label):
+    #host.set_ylabel(label)
+    host.figure.subplots_adjust(right=.75)
+    host.spines["right"].set_visible(False)
+    #p, = host.plot(range(len(data)), data, c=np.random.rand(3,), label=label)
+    #host.yaxis.label.set_color(p.get_color())
+    #return (p, )
+    return host
+	
+	
+
+def add_parasite(host, data, label, offset):
+    par = ParasiteAxes(host, sharex=host)
+    host.parasites.append(par)
+    par.set_ylabel(label)
+    offset = (offset, 0)
+    new_axisline = par.get_grid_helper().new_fixed_axis
+    par.axis["right3"] = new_axisline(loc="right", axes=par, offset=offset)
+    p, = par.plot(range(len(data)), data, label=label)
+    par.set_ylim(*par.get_ylim()) # axes don't draw until resize without this - not sure why
+    par.axis["right3"].label.set_color(p.get_color())
+    return (p,)
+
+def make_patch_spines_invisible(ax):
+    ax.set_frame_on(True)
+    ax.patch.set_visible(False)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+
+def add_parasite_twinx(host, label, axis_num):
+    par = host.twinx()
+    #par.set_ylabel(label)
+    if axis_num > 0:
+        n = axis_num
+        par.spines["right"].set_position(("axes", 1+n*.14))
+        make_patch_spines_invisible(par)
+        par.spines["right"].set_visible(True)
+    #p, = par.plot(range(len(data)), data, c=np.random.rand(3,), label=label)
+    par.set_ylim(*par.get_ylim()) # axes don't draw until resize without this - not sure why
+    #par.yaxis.label.set_color(p.get_color())
+    #print(par.lines[0], p)
+    #print(dir(par))
+    #return (p,)
+    return par
+
+
+
 
 class ThreadsafeMatplotlibAxes(QObject, MatplotlibAxes):
     """
@@ -155,7 +215,6 @@ class QtFigures(QTabWidget):
             index = self.indexOf(widget)
             self.setTabText(index, event.value)
 
-
 class QtFigure(QWidget):
     """
     A Qt view for a Figure model. This always contains one Figure.
@@ -169,13 +228,29 @@ class QtFigure(QWidget):
         # TODO Let Figure give different options to subplots here,
         # but verify that number of axes created matches the number of axes
         # specified.
-        self.axes_list = list(
-            self.figure.subplots(len(model.axes), squeeze=False).ravel()
-        )
+        #if model.parasite:
+        #   self.axes_list =  model.axes
+        #else:
+        if model.parasite:
+            #axes = *self.figure.subplots(1, squeeze=False).ravel()
+            self.axes_list = [self.figure.add_subplot() for i in range(len(model.axes))]
+            #host = init_host_twinx(self.axes_list[0], model.axes[0])
+            host = init_host_twinx(self.axes_list[0], model.axes[0].title)
+            #host = init_host_twinx(axes, model.axes[0])
+            print("model axes num"+str(len(self.model.axes)))
+            print("model axes num"+str(len(self.model.axes[0].artists)))
+            parasite_list = [add_parasite_twinx(host, axes_spec.title, i) for axes_spec, i in zip(model.axes[1:], list(range(len(model.axes)))[1:])]
+            self.axes_list = [host] + parasite_list
+        else:
+
+            self.axes_list = list(
+                self.figure.subplots(len(model.axes), squeeze=False).ravel()
+            )
 
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
+            print("get ylabel: " + axes.get_ylabel())
             self._axes[axes_spec.uuid] = ThreadsafeMatplotlibAxes(
                 model=axes_spec, axes=axes
             )

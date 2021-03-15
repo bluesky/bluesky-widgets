@@ -48,7 +48,8 @@ class Figure(BaseSpec):
     __slots__ = ("_axes", "_title", "_short_title", "_parasite")
 
     def __init__(self, axes, *, title, uuid=None, short_title=None, parasite=False):
-        self._parasite = parasite
+        #self._parasite = parasite
+        self._parasite = True
         for ax in axes:
             ax.set_figure(self)
         self._axes = tuple(axes)
