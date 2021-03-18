@@ -12,6 +12,7 @@ from .plot_specs import (
 )
 from .utils import auto_label, call_or_eval, RunManager, run_is_live_and_not_completed
 from ..utils.dict_view import DictView
+from ..utils.event import EmitterGroup, Event
 from ..utils.list import EventedList
 
 
@@ -148,6 +149,8 @@ class Lines:
         ys,
         *,
         max_runs=10,
+        title=None,
+        y_label=None,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
@@ -176,8 +179,10 @@ class Lines:
         if isinstance(ys, str):
             raise ValueError("`ys` must be a list of strings, not a string")
         self._ys = EventedList(ys)
-        # Maps ys (uid) to set of ArtistSpec.
+        # Maps ys to set of ArtistSpec.
         self._ys_to_artists = collections.defaultdict(list)
+        self._title = title
+        self._y_label = y_label
         self._label_maker = label_maker
         self._namespace = namespace
         if axes is None:
@@ -185,7 +190,7 @@ class Lines:
                 x_label=auto_label(self.x),
                 y_label=", ".join(auto_label(y) for y in self.ys),
             )
-            figure = Figure((axes,), title=f"{axes.y_label} v {axes.x_label}")
+            figure = Figure((axes,), title="")
         else:
             figure = axes.figure
         self.axes = axes
@@ -206,6 +211,11 @@ class Lines:
         self._run_manager.events.run_ready.connect(self._add_lines)
         self.add_run = self._run_manager.add_run
         self.discard_run = self._run_manager.discard_run
+        self.events = EmitterGroup(
+            source=self,
+            title=Event,
+            y_label=Event,
+        )
 
         self.ys.events.added.connect(self._add_ys)
         self.ys.events.removed.connect(self._remove_ys)
@@ -219,6 +229,9 @@ class Lines:
 
     def _add_lines(self, event):
         "Add a line."
+        # Update the title and y_label
+        self.y_label = ", ".join(auto_label(y) for y in self.ys)
+        self.title = f"{self.axes.y_label} v {self.axes.x_label}"
         run = event.run
         for y in self.ys:
             label = self._label_maker(run, y)
@@ -247,7 +260,13 @@ class Lines:
             self._map_ys_to_artists(line, y)
 
     def _add_ys(self, event):
+        # Update title and y_label when adding a new y
+        self.y_label = ", ".join(auto_label(y) for y in self.ys)
+        self.title = f"{self.axes.y_label} v {self.axes.x_label}"
         y = event.item
+        if y in self._ys_to_artists.keys():
+            # Don't plot a new line if y already exists
+            return
         for run in self._run_manager.runs:
             label = self._label_maker(run, y)
             # If run is in progress, give it a special color so it stands out.
@@ -275,6 +294,9 @@ class Lines:
             self._map_ys_to_artists(line, y)
 
     def _remove_ys(self, event):
+        # Update title and y_label when removing a y
+        self.y_label = ", ".join(auto_label(y) for y in self.ys)
+        self.title = f"{self.axes.y_label} v {self.axes.x_label}"
         y = event.item
         for artist in self._ys_to_artists.pop(y):
             artist.axes.discard(artist)
@@ -312,6 +334,26 @@ class Lines:
     @property
     def pinned(self):
         return self._run_manager._pinned
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+        self.axes.title = value
+        self.events.title(value=value)
+
+    @property
+    def y_label(self):
+        return self._y_label
+
+    @y_label.setter
+    def y_label(self, value):
+        self._y_label = value
+        self.axes.y_label = value
+        self.events.y_label(value=value)
 
 
 class Images:
