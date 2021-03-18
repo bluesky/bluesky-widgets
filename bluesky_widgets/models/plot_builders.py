@@ -220,10 +220,6 @@ class Lines:
         self.ys.events.added.connect(self._add_ys)
         self.ys.events.removed.connect(self._remove_ys)
 
-    def _map_ys_to_artists(self, artist, y):
-        "Map ys to artists."
-        self._ys_to_artists[y].append(artist)
-
     def _transform(self, run, x, y):
         return call_or_eval({"x": x, "y": y}, run, self.needs_streams, self.namespace)
 
@@ -257,7 +253,7 @@ class Lines:
             line = Line.from_run(func, run, label, style)
             self._run_manager.track_artist(line, [run])
             self.axes.artists.append(line)
-            self._map_ys_to_artists(line, y)
+            self._ys_to_artists[y].append(line)
 
     def _add_ys(self, event):
         # Update title and y_label when adding a new y
@@ -291,7 +287,7 @@ class Lines:
             line = Line.from_run(func, run, label, style)
             self._run_manager.track_artist(line, [run])
             self.axes.artists.append(line)
-            self._map_ys_to_artists(line, y)
+            self._ys_to_artists[y].append(line)
 
     def _remove_ys(self, event):
         # Update title and y_label when removing a y
