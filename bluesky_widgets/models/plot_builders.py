@@ -355,6 +355,8 @@ class Lines:
 
     @title.setter
     def title(self, value):
+        if value != self._default_title():
+            self._control_title = False
         self.axes.title = value
         self.events.title(value=value)
 
@@ -364,6 +366,8 @@ class Lines:
 
     @y_label.setter
     def y_label(self, value):
+        if value != self._default_y_label():
+            self._control_y_label = False
         self.axes.y_label = value
         self.events.y_label(value=value)
 
