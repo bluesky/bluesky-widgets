@@ -273,9 +273,6 @@ class Lines:
             self.title = self._default_title()
 
         y = event.item
-        if y in self._ys_to_artists.keys():
-            # Don't plot a new line if y already exists
-            return
         for run in self._run_manager.runs:
             label = self._label_maker(run, y)
             # If run is in progress, give it a special color so it stands out.
