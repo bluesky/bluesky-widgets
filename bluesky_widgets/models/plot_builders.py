@@ -149,8 +149,6 @@ class Lines:
         ys,
         *,
         max_runs=10,
-        title=None,
-        y_label=None,
         label_maker=None,
         needs_streams=("primary",),
         namespace=None,
@@ -173,8 +171,6 @@ class Lines:
         self._ys = EventedList(ys)
         # Maps ys to set of ArtistSpec.
         self._ys_to_artists = collections.defaultdict(list)
-        self._title = title
-        self._y_label = y_label
         self._label_maker = label_maker
         self._namespace = namespace
         if axes is None:
@@ -184,6 +180,8 @@ class Lines:
             )
             figure = Figure((axes,), title="")
         else:
+            if axes.x_label is None:
+                axes.x_label = auto_label(self.x)
             figure = axes.figure
         self.axes = axes
         self.figure = figure
@@ -196,6 +194,17 @@ class Lines:
                 self.axes.events.figure.disconnect(set_figure)
 
             self.axes.events.figure.connect(set_figure)
+
+        # Keep title up to date with self.ys or leave it as user-defined value
+        if self.axes.title is None:
+            self._control_title = True
+        else:
+            self._control_title = False
+        # Keep y_label up to date with self.ys or leave it as user-defined value
+        if self.axes.y_label is None or self.axes.y_label == self._default_y_label():
+            self._control_y_label = True
+        else:
+            self._control_y_label = False
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
 
@@ -212,14 +221,22 @@ class Lines:
         self.ys.events.added.connect(self._add_ys)
         self.ys.events.removed.connect(self._remove_ys)
 
+    def _default_y_label(self):
+        return ", ".join(auto_label(y) for y in self.ys)
+
+    def _default_title(self):
+        return f"{self._default_y_label()} v {self.axes.x_label}"
+
     def _transform(self, run, x, y):
         return call_or_eval({"x": x, "y": y}, run, self.needs_streams, self.namespace)
 
     def _add_lines(self, event):
         "Add a line."
-        # Update the title and y_label
-        self.y_label = ", ".join(auto_label(y) for y in self.ys)
-        self.title = f"{self.axes.y_label} v {self.axes.x_label}"
+        if self._control_y_label:
+            self.y_label = self._default_y_label()
+        if self._control_title:
+            self.title = self._default_title()
+
         run = event.run
         for y in self.ys:
             label = self._label_maker(run, y)
@@ -248,9 +265,13 @@ class Lines:
             self._ys_to_artists[y].append(line)
 
     def _add_ys(self, event):
+        "Add a y."
         # Update title and y_label when adding a new y
-        self.y_label = ", ".join(auto_label(y) for y in self.ys)
-        self.title = f"{self.axes.y_label} v {self.axes.x_label}"
+        if self._control_y_label:
+            self.y_label = self._default_y_label()
+        if self._control_title:
+            self.title = self._default_title()
+
         y = event.item
         if y in self._ys_to_artists.keys():
             # Don't plot a new line if y already exists
@@ -282,9 +303,12 @@ class Lines:
             self._ys_to_artists[y].append(line)
 
     def _remove_ys(self, event):
+        "Remove a y."
         # Update title and y_label when removing a y
-        self.y_label = ", ".join(auto_label(y) for y in self.ys)
-        self.title = f"{self.axes.y_label} v {self.axes.x_label}"
+        if self._control_y_label:
+            self.y_label = self._default_y_label()
+        if self._control_title:
+            self.title = self._default_title()
         y = event.item
         for artist in self._ys_to_artists.pop(y):
             artist.axes.discard(artist)
@@ -323,23 +347,23 @@ class Lines:
     def pinned(self):
         return self._run_manager._pinned
 
+    # Expose axes title and y_label
+
     @property
     def title(self):
-        return self._title
+        return self.axes.title
 
     @title.setter
     def title(self, value):
-        self._title = value
         self.axes.title = value
         self.events.title(value=value)
 
     @property
     def y_label(self):
-        return self._y_label
+        return self.axes.y_label
 
     @y_label.setter
     def y_label(self, value):
-        self._y_label = value
         self.axes.y_label = value
         self.events.y_label(value=value)
 
