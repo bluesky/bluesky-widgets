@@ -196,15 +196,9 @@ class Lines:
             self.axes.events.figure.connect(set_figure)
 
         # Keep title up to date with self.ys or leave it as user-defined value
-        if self.axes.title is None:
-            self._control_title = True
-        else:
-            self._control_title = False
+        self._control_title = self.axes.title is None
         # Keep y_label up to date with self.ys or leave it as user-defined value
-        if self.axes.y_label is None or self.axes.y_label == self._default_y_label():
-            self._control_y_label = True
-        else:
-            self._control_y_label = False
+        self._control_y_label = self.axes.y_label is None or self.axes.y_label == self._default_y_label()
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
 
