@@ -72,7 +72,7 @@ def test_properties(FigureView):
         ("extend", (["det+1"],), 2, ["det", "det+1"], 2),
         ("insert", (0, "det+1"), 2, ["det+1", "det"], 2),
         ("insert", (1, "det+1"), 2, ["det", "det+1"], 2),
-    ]
+    ],
 )
 def test_adding_ys(operation, operation_args, num_ys, ys_list, num_lines, FigureView):
     "Test that append, extend, and insert work properly"
@@ -96,11 +96,13 @@ def test_adding_ys(operation, operation_args, num_ys, ys_list, num_lines, Figure
         ("pop", (), 2, ["det", "det+1"], 2),
         ("pop", (1,), 2, ["det", "det+2"], 2),
         ("clear", (), 0, [], 0),
-    ]
+    ],
 )
 def test_removing_ys(operation, operation_args, num_ys, ys_list, num_lines, FigureView):
     "Test that remove, pop, del, and clear work properly"
-    model = Lines("c * motor", ["det", "det+1", "det+2"], namespace={"c": 3}, max_runs=MAX_RUNS)
+    model = Lines(
+        "c * motor", ["det", "det+1", "det+2"], namespace={"c": 3}, max_runs=MAX_RUNS
+    )
     view = FigureView(model.figure)
     model.add_run(runs[0])
     assert len(model.ys) == 3
@@ -177,7 +179,7 @@ def test_figure_set_after_instantiation(FigureView):
     [
         (None, "motor"),
         ("test", "test"),
-    ]
+    ],
 )
 def test_x_label(test_x_label, expected_x_label, FigureView):
     "Test that Lines properly sets the x_label."
@@ -194,13 +196,10 @@ def test_x_label(test_x_label, expected_x_label, FigureView):
 @pytest.mark.parametrize(
     "test_y_labels,expected_y_labels",
     [
-        ([None, "test"],
-         ["det", "det, det+1", "test", "test"]),
-        (["test", ""],
-         ["test", "test", "", ""]),
-        (["", None],
-         ["", "", "det, det+1", "det, det+1, det+2"]),
-    ]
+        ([None, "test"], ["det", "det, det+1", "test", "test"]),
+        (["test", ""], ["test", "test", "", ""]),
+        (["", None], ["", "", "det, det+1", "det, det+1, det+2"]),
+    ],
 )
 def test_y_label(test_y_labels, expected_y_labels, FigureView):
     "Test that Lines correctly sets and updates the y_label."
@@ -230,13 +229,10 @@ def test_y_label(test_y_labels, expected_y_labels, FigureView):
 @pytest.mark.parametrize(
     "test_titles,expected_titles",
     [
-        ([None, "test"],
-         ["det v motor", "det, det+1 v motor", "test", "test"]),
-        (["test", ""],
-         ["test", "test", "", ""]),
-        (["", None],
-         ["", "", "det, det+1 v motor", "det, det+1, det+2 v motor"]),
-    ]
+        ([None, "test"], ["det v motor", "det, det+1 v motor", "test", "test"]),
+        (["test", ""], ["test", "test", "", ""]),
+        (["", None], ["", "", "det, det+1 v motor", "det, det+1, det+2 v motor"]),
+    ],
 )
 def test_title(test_titles, expected_titles, FigureView):
     "Test that Lines correctly sets and updates the y_label."
