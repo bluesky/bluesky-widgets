@@ -180,10 +180,14 @@ class Lines:
             )
             figure = Figure((axes,), title="")
         else:
-            if axes.x_label is None:
-                axes.x_label = auto_label(self.x)
             figure = axes.figure
         self.axes = axes
+        if self.axes.x_label is None:
+            self.axes.x_label = auto_label(self.x)
+        if self.axes.y_label is None:
+            self.axes.y_label = self._default_y_label()
+        if self.axes.title is None:
+            self.axes.title = self._default_title()
         self.figure = figure
         # If the Axes' figure is not yet set, listen for it to be set.
         if figure is None:
@@ -196,9 +200,9 @@ class Lines:
             self.axes.events.figure.connect(set_figure)
 
         # Keep title up to date with self.ys or leave it as user-defined value
-        self._control_title = self.axes.title is None
+        self._control_title = self.axes.title == self._default_title()
         # Keep y_label up to date with self.ys or leave it as user-defined value
-        self._control_y_label = self.axes.y_label is None or self.axes.y_label == self._default_y_label()
+        self._control_y_label = self.axes.y_label == self._default_y_label()
 
         self._color_cycle = itertools.cycle(f"C{i}" for i in range(10))
 
