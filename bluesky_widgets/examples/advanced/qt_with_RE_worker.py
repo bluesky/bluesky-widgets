@@ -70,8 +70,12 @@ def main():
         response = client.send_message(
             method="queue_item_add",
             params={
-                "plan": {"name": "scan", "args": [["det"], "motor", -5, 5, 11]},
-                "user": "",
+                "item": {
+                    "item_type": "plan",
+                    "name": "scan",
+                    "args": [["det"], "motor", -5, 5, 11],
+                },
+                "user": "Bluesky Widgets",  # Name of the user submitting item to the queue
                 "user_group": "admin",
             },
         )
