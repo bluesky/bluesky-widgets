@@ -171,6 +171,8 @@ class MatplotlibAxes:
     def _update_and_draw(self):
         "Update the legend and redraw the canvas."
         self.axes.legend(loc=1)  # Update the legend.
+        self.axes.relim()
+        self.axes.autoscale_view()
         self.draw_idle()  # Ask matplotlib to redraw the figure.
 
     # These wrapper factory functions build various matplotlib Artist types (e.g.

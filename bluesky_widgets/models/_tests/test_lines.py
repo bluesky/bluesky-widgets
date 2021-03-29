@@ -57,11 +57,61 @@ def test_properties(FigureView):
     assert model.runs[0] is runs[0]
     assert model.max_runs == MAX_RUNS
     assert model.x == "c * motor"
-    assert model.ys == ("det",)
+    assert list(model.ys) == ["det"]
     assert dict(model.namespace) == {"c": 3}
     assert model.needs_streams == ("primary",)
     assert model.pinned == frozenset()
 
+    view.close()
+
+
+@pytest.mark.parametrize(
+    "operation,operation_args,num_ys,ys_list,num_lines",
+    [
+        ("append", ("det+1",), 2, ["det", "det+1"], 2),
+        ("extend", (["det+1"],), 2, ["det", "det+1"], 2),
+        ("insert", (0, "det+1"), 2, ["det+1", "det"], 2),
+        ("insert", (1, "det+1"), 2, ["det", "det+1"], 2),
+    ],
+)
+def test_adding_ys(operation, operation_args, num_ys, ys_list, num_lines, FigureView):
+    "Test that append, extend, and insert work properly"
+    model = Lines("c * motor", ["det"], namespace={"c": 3}, max_runs=MAX_RUNS)
+    view = FigureView(model.figure)
+    model.add_run(runs[0])
+    assert len(model.ys) == 1
+    assert list(model.ys) == ["det"]
+    assert len(model.figure.axes[0].artists) == 1
+    getattr(model.ys, operation)(*operation_args)
+    assert len(model.ys) == num_ys
+    assert list(model.ys) == ys_list
+    assert len(model.figure.axes[0].artists) == num_lines
+    view.close()
+
+
+@pytest.mark.parametrize(
+    "operation,operation_args,num_ys,ys_list,num_lines",
+    [
+        ("remove", ("det+1",), 2, ["det", "det+2"], 2),
+        ("pop", (), 2, ["det", "det+1"], 2),
+        ("pop", (1,), 2, ["det", "det+2"], 2),
+        ("clear", (), 0, [], 0),
+    ],
+)
+def test_removing_ys(operation, operation_args, num_ys, ys_list, num_lines, FigureView):
+    "Test that remove, pop, del, and clear work properly"
+    model = Lines(
+        "c * motor", ["det", "det+1", "det+2"], namespace={"c": 3}, max_runs=MAX_RUNS
+    )
+    view = FigureView(model.figure)
+    model.add_run(runs[0])
+    assert len(model.ys) == 3
+    assert list(model.ys) == ["det", "det+1", "det+2"]
+    assert len(model.figure.axes[0].artists) == 3
+    getattr(model.ys, operation)(*operation_args)
+    assert len(model.ys) == num_ys
+    assert list(model.ys) == ys_list
+    assert len(model.figure.axes[0].artists) == num_lines
     view.close()
 
 
@@ -121,4 +171,89 @@ def test_figure_set_after_instantiation(FigureView):
     figure = Figure((axes,), title="")
     assert model.figure is figure
     view = FigureView(model.figure)
+    view.close()
+
+
+@pytest.mark.parametrize(
+    "test_x_label,expected_x_label",
+    [
+        (None, "motor"),
+        ("test", "test"),
+    ],
+)
+def test_x_label(test_x_label, expected_x_label, FigureView):
+    "Test that Lines properly sets the x_label."
+    axes = Axes(x_label=test_x_label)
+    model = Lines("motor", ["det"], axes=axes)
+    figure = Figure((axes,), title="")
+    view = FigureView(model.figure)
+    assert model.axes.x_label == expected_x_label
+    assert figure.axes[0].x_label == expected_x_label
+    assert view.figure.axes[0].get_xlabel() == expected_x_label
+    view.close()
+
+
+@pytest.mark.parametrize(
+    "test_y_labels,expected_y_labels",
+    [
+        ([None, "test"], ["det", "det, det+1", "test", "test"]),
+        (["test", ""], ["test", "test", "", ""]),
+        (["", None], ["", "", "det, det+1", "det, det+1, det+2"]),
+    ],
+)
+def test_y_label(test_y_labels, expected_y_labels, FigureView):
+    "Test that Lines correctly sets and updates the y_label."
+    axes = Axes(y_label=test_y_labels[0])
+    model = Lines("motor", ["det"], axes=axes)
+    figure = Figure((axes,), title="")
+    view = FigureView(model.figure)
+    assert model.y_label == model.axes.y_label == expected_y_labels[0]
+    assert figure.axes[0].y_label == expected_y_labels[0]
+    assert view.figure.axes[0].get_ylabel() == expected_y_labels[0]
+    model.ys.append("det+1")
+    assert model.y_label == model.axes.y_label == expected_y_labels[1]
+    assert figure.axes[0].y_label == expected_y_labels[1]
+    assert view.figure.axes[0].get_ylabel() == expected_y_labels[1]
+    model.y_label = test_y_labels[1]
+    assert model.y_label == model.axes.y_label == expected_y_labels[2]
+    assert figure.axes[0].y_label == expected_y_labels[2]
+    assert view.figure.axes[0].get_ylabel() == expected_y_labels[2]
+    model.ys.append("det+2")
+    assert model.y_label == model.axes.y_label == expected_y_labels[3]
+    assert figure.axes[0].y_label == expected_y_labels[3]
+    assert view.figure.axes[0].get_ylabel() == expected_y_labels[3]
+
+    view.close()
+
+
+@pytest.mark.parametrize(
+    "test_titles,expected_titles",
+    [
+        ([None, "test"], ["det v motor", "det, det+1 v motor", "test", "test"]),
+        (["test", ""], ["test", "test", "", ""]),
+        (["", None], ["", "", "det, det+1 v motor", "det, det+1, det+2 v motor"]),
+    ],
+)
+def test_title(test_titles, expected_titles, FigureView):
+    "Test that Lines correctly sets and updates the y_label."
+    axes = Axes(title=test_titles[0])
+    model = Lines("motor", ["det"], axes=axes)
+    figure = Figure((axes,), title="")
+    view = FigureView(model.figure)
+    assert model.title == model.axes.title == expected_titles[0]
+    assert figure.axes[0].title == expected_titles[0]
+    assert view.figure.axes[0].get_title() == expected_titles[0]
+    model.ys.append("det+1")
+    assert model.title == model.axes.title == expected_titles[1]
+    assert figure.axes[0].title == expected_titles[1]
+    assert view.figure.axes[0].get_title() == expected_titles[1]
+    model.title = test_titles[1]
+    assert model.title == model.axes.title == expected_titles[2]
+    assert figure.axes[0].title == expected_titles[2]
+    assert view.figure.axes[0].get_title() == expected_titles[2]
+    model.ys.append("det+2")
+    assert model.title == model.axes.title == expected_titles[3]
+    assert figure.axes[0].title == expected_titles[3]
+    assert view.figure.axes[0].get_title() == expected_titles[3]
+
     view.close()
