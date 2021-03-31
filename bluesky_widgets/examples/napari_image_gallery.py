@@ -76,18 +76,31 @@ class NapariFigureView:
     def _on_artist_added(self, event):
         artist_spec = event.item
         if isinstance(artist_spec, bluesky_widgets.models.plot_specs.Image):
-            arr = artist_spec.update()["array"]
             DECIMATION = 1
-            for i, plane in enumerate(arr[::DECIMATION]):
-                # coarse_plane = plane.coarsen({"dim_3": 5, "dim_4": 5, "dim_5": 5}, boundary="trim").mean()
-                name = f"{i}"
-                layer = self.napari_viewer.add_image(plane, name=name)
-                self._layers[artist_spec.uuid] = layer
-            self.napari_viewer.grid.enabled = True
+
+            def process_update(update):
+                arr = update["array"]
+                # Do something with update["array"]
+                for i, plane in enumerate(arr[::DECIMATION]):
+                    # coarse_plane = plane.coarsen({"dim_3": 5, "dim_4": 5, "dim_5": 5}, boundary="trim").mean()
+                    name = f"{i}"
+                    self.napari_viewer.layers.clear()
+                    layer = self.napari_viewer.add_image(plane, name=name)
+                    self._layers[artist_spec.uuid] = layer
+                # self.napari_viewer.grid.enabled = True
+                self.napari_viewer.grid_view()
+
+            def handle_new_data(event):
+                print('handling new data')
+                process_update(artist_spec.update())
+
+            artist_spec.events.new_data.connect(handle_new_data)
+            artist_spec.events.completed.disconnect(handle_new_data)
         else:
             # Ignore anything that is not an image.
             # TODO Plot lines in a matplotlib figure in the side bar?
             pass
+
 
     def _on_artist_removed(self, event):
         artist_spec = event.item
