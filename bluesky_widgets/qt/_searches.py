@@ -93,9 +93,6 @@ class QtSearch(QWidget):
 
         selector.activated.connect(on_selection)
         self.layout().addWidget(selector)
-        # self.layout().addItem(
-        #     QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum)
-        # )
         self._vspacer.changeSize(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.layout().addItem(self._vspacer)
 
