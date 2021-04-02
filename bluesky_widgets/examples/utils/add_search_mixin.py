@@ -2,7 +2,7 @@ from bluesky_widgets.models.search import Search
 
 headings = (
     "Unique ID",
-    "Transient Scan ID",
+    "Scan ID",
     "Plan Name",
     "Start Time",
     "Duration",
