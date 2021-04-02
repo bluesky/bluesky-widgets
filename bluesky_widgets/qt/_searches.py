@@ -54,6 +54,8 @@ class QtSearch(QWidget):
         self._selector_widgets = []  # QComboBoxes
         self._run_search_widgets = []  # The SearchInput and SearchOutput widgets
 
+        self._vspacer = QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum)
+
         run_search = model.run_search
         if run_search:
             # The root catalog contains Runs, so immediately display Run Search
@@ -91,9 +93,8 @@ class QtSearch(QWidget):
 
         selector.activated.connect(on_selection)
         self.layout().addWidget(selector)
-        self.layout().addItem(
-            QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum)
-        )
+        self._vspacer.changeSize(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.layout().addItem(self._vspacer)
 
     def on_go_back(self, event):
         "Move up the tree of subcatalogs by one step."
@@ -102,6 +103,8 @@ class QtSearch(QWidget):
             widget = self._selector_widgets.pop()
             widget.close()
         self._selector_widgets[-1].setEnabled(True)
+        self._selector_widgets[-1].setCurrentIndex(-1)
+
         if not breadcrumbs:
             # This is the last widget. Disable back button.
             self._back_button.setEnabled(False)
@@ -119,12 +122,14 @@ class QtSearch(QWidget):
         )
         for w in self._run_search_widgets:
             self.layout().addWidget(w)
+        self._vspacer.changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum)
 
     def on_run_search_cleared(self, event):
         "Clear search input and output."
         for w in self._run_search_widgets:
             w.setParent(None)
         self._run_search_widgets.clear()
+        self._vspacer.changeSize(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
 
 
 class QtSearches(QTabWidget):
