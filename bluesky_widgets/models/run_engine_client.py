@@ -69,36 +69,138 @@ class RunEngineClient:
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the plan queue: {response['msg']}")
 
-    def ensure_open_environment(self):
+    def environment_open(self, timeout=0):
+        """
+        Open RE Worker environment. Blocks until operation is complete or timeout expires.
+        If ``timeout=0``, then the function blocks until operation is complete.
+
+        Parameters
+        ----------
+        timeout : float
+            maximum time for the operation. Exception is raised if timeout expires.
+            If ``timeout=0``, the function blocks until operation is complete.
+
+        Returns
+        -------
+        None
+        """
         # Check if RE Worker environment already exists and RE manager is idle.
         status = self._client.send_message(method="status")
         if status["manager_state"] != "idle":
             raise RuntimeError(
                 f"RE Manager state must be 'idle': current state: {status['manager_state']}"
             )
+        if status["worker_environment_exists"]:
+            raise RuntimeError("RE Worker environment already exists")
 
-        # Open the new environment only if it does not exist.
+        # Initiate opening of RE Worker environment
+        response = self._client.send_message(method="environment_open")
+        if not response["success"]:
+            raise RuntimeError(
+                f"Failed to open RE Worker environment: {response['msg']}"
+            )
+
+        # Wait for the environment to be created.
+        if timeout:
+            t_stop = time.time() + timeout
+        while True:
+            status2 = self._client.send_message(method="status")
+            if (
+                status2["worker_environment_exists"]
+                and status2["manager_state"] == "idle"
+            ):
+                break
+            if timeout and (time.time() > t_stop):
+                raise RuntimeError("Failed to start RE Worker: timeout occurred")
+            time.sleep(0.5)
+
+    def environment_close(self, timeout=0):
+        """
+        Close RE Worker environment. Blocks until operation is complete or timeout expires.
+        If ``timeout=0``, then the function blocks until operation is complete.
+
+        Parameters
+        ----------
+        timeout : float
+            maximum time for the operation. Exception is raised if timeout expires.
+            If ``timeout=0``, the function blocks until operation is complete.
+
+        Returns
+        -------
+        None
+        """
+        # Check if RE Worker environment already exists and RE manager is idle.
+        status = self._client.send_message(method="status")
+        if status["manager_state"] != "idle":
+            raise RuntimeError(
+                f"RE Manager state must be 'idle': current state: {status['manager_state']}"
+            )
         if not status["worker_environment_exists"]:
-            # Initiate opening of RE Worker environment
-            response = self._client.send_message(method="environment_open")
-            if not response["success"]:
-                raise RuntimeError(
-                    f"Failed to open RE Worker environment: {response['msg']}"
-                )
+            raise RuntimeError("RE Worker environment does not exist")
 
-            # Wait for the environment to be created.
-            t_timeout = 10
-            t_stop = time.time() + t_timeout
-            while True:
-                status2 = self._client.send_message(method="status")
-                if (
-                    status2["worker_environment_exists"]
-                    and status2["manager_state"] == "idle"
-                ):
-                    break
-                if time.time() > t_stop:
-                    raise RuntimeError("Failed to start RE Worker: timeout occurred")
-                time.sleep(0.5)
+        # Initiate opening of RE Worker environment
+        response = self._client.send_message(method="environment_close")
+        if not response["success"]:
+            raise RuntimeError(
+                f"Failed to close RE Worker environment: {response['msg']}"
+            )
+
+        # Wait for the environment to be created.
+        if timeout:
+            t_stop = time.time() + timeout
+        while True:
+            status2 = self._client.send_message(method="status")
+            if (
+                not status2["worker_environment_exists"]
+                and status2["manager_state"] == "idle"
+            ):
+                break
+            if timeout and (time.time() > t_stop):
+                raise RuntimeError("Failed to start RE Worker: timeout occurred")
+            time.sleep(0.5)
+
+    def environment_destroy(self, timeout=0):
+        """
+        Destroy (unresponsive) RE Worker environment. The function is intended for the cases when
+        the environment is unresponsive and can not be stopped using ``environment_close``.
+        Blocks until operation is complete or timeout expires. If ``timeout=0``, then the function
+        blocks until operation is complete.
+
+        Parameters
+        ----------
+        timeout : float
+            maximum time for the operation. Exception is raised if timeout expires.
+            If ``timeout=0``, the function blocks until operation is complete.
+
+        Returns
+        -------
+        None
+        """
+        # Check if RE Worker environment already exists and RE manager is idle.
+        status = self._client.send_message(method="status")
+        if not status["worker_environment_exists"]:
+            raise RuntimeError("RE Worker environment does not exist")
+
+        # Initiate opening of RE Worker environment
+        response = self._client.send_message(method="environment_destroy")
+        if not response["success"]:
+            raise RuntimeError(
+                f"Failed to destroy RE Worker environment: {response['msg']}"
+            )
+
+        # Wait for the environment to be created.
+        if timeout:
+            t_stop = time.time() + timeout
+        while True:
+            status2 = self._client.send_message(method="status")
+            if (
+                not status2["worker_environment_exists"]
+                and status2["manager_state"] == "idle"
+            ):
+                break
+            if timeout and (time.time() > t_stop):
+                raise RuntimeError("Failed to start RE Worker: timeout occurred")
+            time.sleep(0.5)
 
     def add(self, plan_name, plan_args):
         # Add plan to queue
