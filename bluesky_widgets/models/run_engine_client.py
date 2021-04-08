@@ -112,6 +112,9 @@ class RunEngineClient:
                 # Status changed. Initiate the updates
                 self.events.status_changed()
 
+    # ============================================================================
+    #                  Operations with RE Environment
+
     def environment_open(self, timeout=0):
         """
         Open RE Worker environment. Blocks until operation is complete or timeout expires.
@@ -250,6 +253,106 @@ class RunEngineClient:
             if timeout and (time.time() > t_stop):
                 raise RuntimeError("Failed to start RE Worker: timeout occurred")
             time.sleep(0.5)
+
+    # ============================================================================
+    #                        RE Control
+
+    def _wait_for_completion(self, *, condition, msg="complete operation", timeout=0):
+
+        if timeout:
+            t_stop = time.time() + timeout
+
+        while True:
+            self.load_re_manager_status()
+            status = self._re_manager_status
+            if condition(status):
+                break
+            if timeout and (time.time() > t_stop):
+                raise RuntimeError(f"Failed to {msg}: timeout occurred")
+            time.sleep(0.5)
+
+    def re_pause(self, timeout=0):
+        """
+        Pause execution of a plan.
+
+        Parameters
+        ----------
+        timeout : float
+            maximum time for the operation. Exception is raised if timeout expires.
+            If ``timeout=0``, the function blocks until operation is complete.
+
+        Returns
+        -------
+        None
+        """
+
+        # Initiate opening of RE Worker environment
+        response = self._client.send_message(method="re_pause")
+        if not response["success"]:
+            raise RuntimeError(f"Failed to pause the running plan: {response['msg']}")
+
+        def condition(status):
+            return status["manager_state"] in ("idle", "paused")
+
+        self._wait_for_completion(
+            condition=condition, msg="pause the running plan", timeout=timeout
+        )
+
+    def re_resume(self, timeout=0):
+        """
+        Pause execution of a plan.
+
+        Parameters
+        ----------
+        timeout : float
+            maximum time for the operation. Exception is raised if timeout expires.
+            If ``timeout=0``, the function blocks until operation is complete.
+
+        Returns
+        -------
+        None
+        """
+
+        # Initiate opening of RE Worker environment
+        response = self._client.send_message(method="re_resume")
+        if not response["success"]:
+            raise RuntimeError(f"Failed to resume the running plan: {response['msg']}")
+
+        def condition(status):
+            return status["manager_state"] in ("idle", "executing_queue")
+
+        self._wait_for_completion(
+            condition=condition, msg="resume execution of the plan", timeout=timeout
+        )
+
+    def _re_continue_plan(self, *, action, timeout=0):
+
+        if action not in ("stop", "abort", "halt"):
+            raise RuntimeError(f"Unrecognized action '{action}'")
+
+        method = f"re_{action}"
+
+        response = self._client.send_message(method=method)
+        if not response["success"]:
+            raise RuntimeError(
+                f"Failed to {action} the running plan: {response['msg']}"
+            )
+
+        def condition(status):
+            return status["manager_state"] == "idle"
+
+        self._wait_for_completion(
+            condition=condition, msg=f"{action} the plan", timeout=timeout
+        )
+
+    def re_stop(self, timeout=0):
+        self._re_continue_plan(action="stop", timeout=timeout)
+
+    def re_abort(self, timeout=0):
+        self._re_continue_plan(action="abort", timeout=timeout)
+
+    def re_halt(self, timeout=0):
+        self._re_continue_plan(action="halt", timeout=timeout)
 
     def add(self, plan_name, plan_args):
         # Add plan to queue

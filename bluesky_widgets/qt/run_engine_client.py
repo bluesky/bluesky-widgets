@@ -128,9 +128,14 @@ class QtReEnvironmentControls(QWidget):
         )  # None should be converted to False
         status = self.model.re_manager_status
         worker_exists = status.get("worker_environment_exists", False)
+        manager_state = status.get("manager_state", None)
         self._pb_env_open.setEnabled(False)
-        self._pb_env_open.setEnabled(online and not worker_exists)
-        self._pb_env_close.setEnabled(online and worker_exists)
+        self._pb_env_open.setEnabled(
+            online and not worker_exists and (manager_state == "idle")
+        )
+        self._pb_env_close.setEnabled(
+            online and worker_exists and (manager_state == "idle")
+        )
         self._pb_env_destroy.setEnabled(online and worker_exists)
 
     def _pb_env_open_clicked(self):
