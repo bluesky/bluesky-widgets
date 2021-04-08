@@ -6,6 +6,7 @@ from qtpy.QtWidgets import (
     QGroupBox,
     QPushButton,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
 )
 from qtpy.QtCore import Qt
@@ -123,13 +124,11 @@ class QtReEnvironmentControls(QWidget):
         self.model.events.status_changed.connect(self.on_update_widgets)
 
     def on_update_widgets(self, event):
-        online = bool(
-            self.model.re_manager_accessible
-        )  # None should be converted to False
+        # None should be converted to False:
+        online = bool(self.model.re_manager_accessible)
         status = self.model.re_manager_status
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
-        self._pb_env_open.setEnabled(False)
         self._pb_env_open.setEnabled(
             online and not worker_exists and (manager_state == "idle")
         )
@@ -149,6 +148,122 @@ class QtReEnvironmentControls(QWidget):
     def _pb_env_destroy_clicked(self):
         print("Button clicked: Destroy environment")
         self.model.environment_destroy()
+
+
+class QtReExecutionControls(QWidget):
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+
+        self._pb_plan_pause_deferred = QPushButton("Pause: Deferred")
+        self._pb_plan_pause_deferred.setEnabled(False)
+        self._pb_plan_pause_deferred.clicked.connect(
+            self._pb_plan_pause_deferred_clicked
+        )
+
+        self._pb_plan_pause_immediate = QPushButton("Pause: Immediate")
+        self._pb_plan_pause_immediate.setEnabled(False)
+        self._pb_plan_pause_immediate.clicked.connect(
+            self._pb_plan_pause_immediate_clicked
+        )
+
+        self._pb_plan_resume = QPushButton("Resume")
+        self._pb_plan_resume.setEnabled(False)
+        self._pb_plan_resume.clicked.connect(self._pb_plan_resume_clicked)
+
+        self._pb_plan_stop = QPushButton("Stop")
+        self._pb_plan_stop.setEnabled(False)
+        self._pb_plan_stop.clicked.connect(self._pb_plan_stop_clicked)
+
+        self._pb_plan_abort = QPushButton("Abort")
+        self._pb_plan_abort.setEnabled(False)
+        self._pb_plan_abort.clicked.connect(self._pb_plan_abort_clicked)
+
+        self._pb_plan_halt = QPushButton("Halt")
+        self._pb_plan_halt.setEnabled(False)
+        self._pb_plan_halt.clicked.connect(self._pb_plan_halt_clicked)
+
+        self._group_box = QGroupBox("Plan Execution")
+
+        vbox = QVBoxLayout()
+        hbox = QHBoxLayout()
+        hbox.addWidget(self._pb_plan_pause_deferred)
+        hbox.addWidget(self._pb_plan_pause_immediate)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self._pb_plan_resume)
+        hbox = QHBoxLayout()
+        hbox.addWidget(self._pb_plan_stop)
+        hbox.addWidget(self._pb_plan_abort)
+        hbox.addWidget(self._pb_plan_halt)
+        vbox.addLayout(hbox)
+        self._group_box.setLayout(vbox)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._group_box)
+        self.setLayout(vbox)
+
+        self.model.events.status_changed.connect(self.on_update_widgets)
+
+    def on_update_widgets(self, event):
+        # None should be converted to False:
+        online = bool(self.model.re_manager_accessible)
+        status = self.model.re_manager_status
+        worker_exists = status.get("worker_environment_exists", False)
+        manager_state = status.get("manager_state", None)
+        self._pb_plan_pause_deferred.setEnabled(
+            online and worker_exists and (manager_state == "executing_queue")
+        )
+        self._pb_plan_pause_immediate.setEnabled(
+            online and worker_exists and (manager_state == "executing_queue")
+        )
+        self._pb_plan_resume.setEnabled(
+            online and worker_exists and (manager_state == "paused")
+        )
+        self._pb_plan_stop.setEnabled(
+            online and worker_exists and (manager_state == "paused")
+        )
+        self._pb_plan_abort.setEnabled(
+            online and worker_exists and (manager_state == "paused")
+        )
+        self._pb_plan_halt.setEnabled(
+            online and worker_exists and (manager_state == "paused")
+        )
+
+    def _pb_plan_pause_deferred_clicked(self):
+        try:
+            self.model.re_pause(option="deferred")
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_plan_pause_immediate_clicked(self):
+        try:
+            self.model.re_pause(option="immediate")
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_plan_resume_clicked(self):
+        try:
+            self.model.re_resume()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_plan_stop_clicked(self):
+        try:
+            self.model.re_stop()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_plan_abort_clicked(self):
+        try:
+            self.model.re_abort()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_plan_halt_clicked(self):
+        try:
+            self.model.re_halt()
+        except Exception as ex:
+            print(f"Exception: {ex}")
 
 
 class QtPlanQueue(QListWidget):

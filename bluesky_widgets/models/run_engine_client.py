@@ -271,7 +271,7 @@ class RunEngineClient:
                 raise RuntimeError(f"Failed to {msg}: timeout occurred")
             time.sleep(0.5)
 
-    def re_pause(self, timeout=0):
+    def re_pause(self, timeout=0, *, option):
         """
         Pause execution of a plan.
 
@@ -281,13 +281,17 @@ class RunEngineClient:
             maximum time for the operation. Exception is raised if timeout expires.
             If ``timeout=0``, the function blocks until operation is complete.
 
+        option : str
+            "immediate" or "deferred"
         Returns
         -------
         None
         """
 
         # Initiate opening of RE Worker environment
-        response = self._client.send_message(method="re_pause")
+        response = self._client.send_message(
+            method="re_pause", params={"option": option}
+        )
         if not response["success"]:
             raise RuntimeError(f"Failed to pause the running plan: {response['msg']}")
 
