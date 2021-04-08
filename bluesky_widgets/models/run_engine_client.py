@@ -2,7 +2,7 @@ import time
 
 from bluesky_live.list import ListModel
 from bluesky_live.event import EmitterGroup, Event
-from bluesky_queueserver.manager.comms import ZMQCommSendThreads
+from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
 
 
 class PlanItem:
@@ -60,14 +60,57 @@ class BigModel:
 
 
 class RunEngineClient:
-    def __init__(self, worker_address):
+    def __init__(self, worker_address=None):
         self._client = ZMQCommSendThreads(zmq_server_address=worker_address)
+
+        self._re_manager_status = {}
+        self._re_manager_accessible = None
+        self._re_manager_status_time = time.time()
+        # Minimum period of status update (avoid excessive call frequency)
+        self._re_manager_status_update_period = 0.2
+
+        self.events = EmitterGroup(
+            source=self,
+            status_changed=Event,
+        )
+
+    @property
+    def re_manager_status(self):
+        return self._re_manager_status
+
+    @property
+    def re_manager_accessible(self):
+        return self._re_manager_accessible
 
     def clear(self):
         # Clear the queue.
         response = self._client.send_message(method="queue_clear")
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the plan queue: {response['msg']}")
+
+    def clear_online_status(self):
+        self._re_manager_accessible = None
+        self.events.status_changed()
+
+    def load_re_manager_status(self, *, enforce=False):
+        if enforce or (
+            time.time() - self._re_manager_status_time
+            > self._re_manager_status_update_period
+        ):
+            status = self._re_manager_status
+            accessible = self._re_manager_accessible
+            try:
+                self._re_manager_status = self._client.send_message(
+                    method="status", raise_exceptions=True
+                )
+                self._re_manager_accessible = True
+            except CommTimeoutError:
+                self._re_manager_accessible = False
+            if (status != self._re_manager_status) or (
+                accessible != self._re_manager_accessible
+            ):
+                # Status changed. Initiate the updates
+                self.events.status_changed()
 
     def environment_open(self, timeout=0):
         """
@@ -85,7 +128,8 @@ class RunEngineClient:
         None
         """
         # Check if RE Worker environment already exists and RE manager is idle.
-        status = self._client.send_message(method="status")
+        self.load_re_manager_status()
+        status = self._re_manager_status
         if status["manager_state"] != "idle":
             raise RuntimeError(
                 f"RE Manager state must be 'idle': current state: {status['manager_state']}"
@@ -104,7 +148,8 @@ class RunEngineClient:
         if timeout:
             t_stop = time.time() + timeout
         while True:
-            status2 = self._client.send_message(method="status")
+            self.load_re_manager_status()
+            status2 = self._re_manager_status
             if (
                 status2["worker_environment_exists"]
                 and status2["manager_state"] == "idle"
@@ -130,7 +175,8 @@ class RunEngineClient:
         None
         """
         # Check if RE Worker environment already exists and RE manager is idle.
-        status = self._client.send_message(method="status")
+        self.load_re_manager_status()
+        status = self._re_manager_status
         if status["manager_state"] != "idle":
             raise RuntimeError(
                 f"RE Manager state must be 'idle': current state: {status['manager_state']}"
@@ -149,7 +195,8 @@ class RunEngineClient:
         if timeout:
             t_stop = time.time() + timeout
         while True:
-            status2 = self._client.send_message(method="status")
+            self.load_re_manager_status()
+            status2 = self._re_manager_status
             if (
                 not status2["worker_environment_exists"]
                 and status2["manager_state"] == "idle"
@@ -177,7 +224,8 @@ class RunEngineClient:
         None
         """
         # Check if RE Worker environment already exists and RE manager is idle.
-        status = self._client.send_message(method="status")
+        self.load_re_manager_status()
+        status = self._re_manager_status
         if not status["worker_environment_exists"]:
             raise RuntimeError("RE Worker environment does not exist")
 
@@ -192,7 +240,8 @@ class RunEngineClient:
         if timeout:
             t_stop = time.time() + timeout
         while True:
-            status2 = self._client.send_message(method="status")
+            self.load_re_manager_status()
+            status2 = self._re_manager_status
             if (
                 not status2["worker_environment_exists"]
                 and status2["manager_state"] == "idle"
