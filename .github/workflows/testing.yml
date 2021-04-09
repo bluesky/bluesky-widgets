@@ -17,28 +17,6 @@ jobs:
         image: mongo
         ports:
         - 27017:27017
-      zookeeper:
-        image: docker.io/bitnami/zookeeper:latest
-        ports:
-          - 2181:2181
-        volumes:
-          - zookeeper_data:/bitnami
-        env:
-          ALLOW_ANONYMOUS_LOGIN: yes
-      kafka:
-        image: docker.io/bitnami/kafka:latest
-        ports:
-          - 9092:9092
-          - 29092:29092
-        volumes:
-          - kafka_data:/bitnami
-        env:
-          KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
-          ALLOW_PLAINTEXT_LISTENER: yes
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:29092,PLAINTEXT_HOST://:9092
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
 
     strategy:
       matrix:
@@ -66,6 +44,9 @@ jobs:
     - name: Install
       shell: bash -l {0}
       run: source continuous_integration/scripts/install.sh ${{ matrix.pip-selectors }}
+
+    - name: start Kafka and Zookeeper for (some) tests
+      run: docker-compose -f continuous_integration/scripts/docker-compose-kafka.yml up -d
 
     - name: Install test requirements
       shell: bash -l {0}
