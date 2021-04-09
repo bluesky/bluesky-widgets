@@ -1,6 +1,5 @@
 import time
 
-from bluesky_live.list import ListModel
 from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
 
