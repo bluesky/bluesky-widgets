@@ -2,6 +2,14 @@ import pytest
 
 from qtpy.QtWidgets import QApplication
 
+from bluesky_kafka.tests.conftest import (  # noqa
+    hw,
+    pytest_addoption,
+    kafka_bootstrap_servers,
+    publisher_factory,
+    temporary_topics,
+)
+
 
 @pytest.fixture
 def qtbot(qtbot):
