@@ -1,3 +1,4 @@
+import functools
 import logging
 
 import msgpack
@@ -8,13 +9,12 @@ import bluesky_kafka
 
 from ..qt.threading import create_worker
 
-# proposal
-logger = logging.getLogger(name="bluesky.widgets.kafka")
+logger = logging.getLogger(name="bluesky_widgets.qt.kafka_dispatcher")
 
 LOADING_LATENCY = 0.01
 
 
-class RemoteDispatcher(QObject):
+class QtRemoteDispatcher(QObject):
     """
     Dispatch documents received over the network from a Kafka broker.
 
@@ -37,6 +37,8 @@ class RemoteDispatcher(QObject):
         work_while_waiting. Default is 0.05.
     deserializer: function, optional
         optional function to deserialize data. Default is msgpack.loads.
+    parent_qobject: QObject
+        optional parent in the QT sense
 
     Example
     -------
@@ -77,61 +79,89 @@ class RemoteDispatcher(QObject):
         )
         self.subscribe = self._dispatcher.subscribe
         self._waiting_for_start = True
+        self.worker = None
 
-    def _receive_data(self):
+    def _receive_data(self, continue_polling=None):
         # TODO Think about back pressure.
-        while True:
-            msg = self.consumer.poll(self.polling_duration)
-            if msg is None:
-                # no message was delivered
-                # do some work before polling again
-                ##work_during_wait()
-                ...
-            elif msg.error():
-                logger.error("Kafka Consumer error: %s", msg.error())
-            else:
-                try:
-                    name, document = self._dispatcher._bluesky_consumer._deserializer(
-                        msg.value()
-                    )
-                    if self._waiting_for_start:
-                        if name == "start":
-                            self._waiting_for_start = False
-                        else:
-                            # We subscribed midstream and are seeing documents for
-                            # which we do not have the full run. Wait for a 'start'
-                            # doc.
-                            return
+        if continue_polling is None:
 
-                    yield name, document
-                except Exception as exc:
-                    logger.exception(exc)
+            def continue_polling_forever():
+                return True
 
-    def start(self):
+            continue_polling = continue_polling_forever
+
+        while continue_polling():
+            try:
+                # there should maybe be a poll method on the dispatcher
+                msg = self._dispatcher._bluesky_consumer.consumer.poll(
+                    self._dispatcher._bluesky_consumer.polling_duration
+                )
+                if msg is None:
+                    logger.debug("no message")
+                    break
+                elif msg.error():
+                    logger.error("Kafka Consumer error: %s", msg.error())
+                else:
+                    try:
+                        # there should be a more direct way to deserialize the message
+                        (
+                            name,
+                            document,
+                        ) = self._dispatcher._bluesky_consumer._deserializer(
+                            msg.value()
+                        )
+                        if self._waiting_for_start:
+                            if name == "start":
+                                self._waiting_for_start = False
+                            else:
+                                # We subscribed midstream and are seeing documents for
+                                # which we do not have the full run. Wait for a 'start'
+                                # doc.
+                                logger.debug("keep waiting for a start document")
+                                return
+                        yield self._dispatcher._bluesky_consumer.consumer, msg.topic(), name, document
+                    except Exception as exc:
+                        logger.exception(exc)
+            except Exception as exc:
+                logger.exception(exc)
+
+        logger.debug("polling loop has ended cleanly")
+
+    def start(self, continue_polling=None):
+        logger.debug("QtRemoteDispatcher.start")
         if self.closed:
             raise RuntimeError(
                 "This RemoteDispatcher has already been "
                 "started and interrupted. Create a fresh "
                 "instance with {}".format(repr(self))
             )
-        self._work_loop()
 
-    def _work_loop(self):
-        worker = create_worker(
+        self._work_loop(continue_polling=continue_polling)
+
+    def _work_loop(self, continue_polling=None):
+        self.worker = create_worker(
             self._receive_data,
+            continue_polling=continue_polling,
         )
         # Schedule this method to be run again after a brief wait.
-        worker.finished.connect(
-            lambda: self._timer.singleShot(LOADING_LATENCY, self._work_loop)
+        self.worker.finished.connect(
+            lambda: self._timer.singleShot(
+                int(LOADING_LATENCY),
+                functools.partial(self._work_loop, continue_polling),
+            )
         )
-        worker.yielded.connect(self._process_result)
-        worker.start()
+        self.worker.yielded.connect(self._process_result)
+
+        self.worker.start()
 
     def _process_result(self, result):
         if result is None:
             return
-        name, doc = result
-        self._dispatcher.process(DocumentNames[name], doc)
+        consumer, topic, name, document = result
+        self._dispatcher.process_document(
+            consumer=consumer, topic=topic, name=name, document=document
+        )
 
     def stop(self):
+        logger.debug("QtRemoteDispatcher.stop")
         self.closed = True
