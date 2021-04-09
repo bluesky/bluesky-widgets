@@ -340,6 +340,98 @@ class QtReExecutionControls(QWidget):
             print(f"Exception: {ex}")
 
 
+class QtReStatusMonitor(QWidget):
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+
+        self._lb_environment_exists_text = "RE Environment: "
+        self._lb_manager_state_text = "RE Manager state: "
+        self._lb_items_in_history_text = "Items in history: "
+        self._lb_queue_is_running_text = "Queue is running: "
+        self._lb_queue_stop_pending_text = "Queue STOP pending: "
+        self._lb_items_in_queue_text = "Items in queue: "
+
+        self._lb_environment_exists = QLabel(self._lb_environment_exists_text + "-")
+        self._lb_manager_state = QLabel(self._lb_manager_state_text + "-")
+        self._lb_items_in_history = QLabel(self._lb_items_in_history_text + "-")
+        self._lb_queue_is_running = QLabel(self._lb_queue_is_running_text + "-")
+        self._lb_queue_stop_pending = QLabel(self._lb_queue_stop_pending_text + "-")
+        self._lb_items_in_queue = QLabel(self._lb_items_in_queue_text + "-")
+
+        self._group_box = QGroupBox("RE Manager Status")
+
+        hbox = QHBoxLayout()
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._lb_environment_exists)
+        vbox.addWidget(self._lb_manager_state)
+        vbox.addWidget(self._lb_items_in_history)
+        hbox.addLayout(vbox)
+
+        hbox.addSpacing(10)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._lb_queue_is_running)
+        vbox.addWidget(self._lb_queue_stop_pending)
+        vbox.addWidget(self._lb_items_in_queue)
+        hbox.addLayout(vbox)
+
+        self._group_box.setLayout(hbox)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._group_box)
+        self.setLayout(vbox)
+
+        self.model.events.status_changed.connect(self.on_update_widgets)
+
+    def _set_label_text(self, label, prefix, value):
+        if value is None:
+            value = "-"
+        label.setText(f"{prefix}{value}")
+
+    def on_update_widgets(self, event):
+        status = event.status
+        worker_exists = status.get("worker_environment_exists", None)
+        manager_state = status.get("manager_state", None)
+        items_in_history = status.get("items_in_history", None)
+        items_in_queue = status.get("items_in_queue", None)
+        queue_is_running = bool(status.get("running_item_uid", False))
+        queue_stop_pending = status.get("queue_stop_pending", None)
+
+        # Capitalize state of RE Manager
+        manager_state = (
+            manager_state.upper() if isinstance(manager_state, str) else manager_state
+        )
+
+        self._set_label_text(
+            self._lb_environment_exists,
+            self._lb_environment_exists_text,
+            "OPEN" if worker_exists else "CLOSED",
+        )
+        self._set_label_text(
+            self._lb_manager_state, self._lb_manager_state_text, manager_state
+        )
+        self._set_label_text(
+            self._lb_items_in_history,
+            self._lb_items_in_history_text,
+            str(items_in_history),
+        )
+        self._set_label_text(
+            self._lb_items_in_queue, self._lb_items_in_queue_text, str(items_in_queue)
+        )
+        self._set_label_text(
+            self._lb_queue_is_running,
+            self._lb_queue_is_running_text,
+            "YES" if queue_is_running else "NO",
+        )
+        self._set_label_text(
+            self._lb_queue_stop_pending,
+            self._lb_queue_stop_pending_text,
+            "YES" if queue_stop_pending else "NO",
+        )
+
+
 # class QtPlanQueue(QListWidget):
 #     def __init__(self, model, parent=None):
 #         super().__init__(parent)
