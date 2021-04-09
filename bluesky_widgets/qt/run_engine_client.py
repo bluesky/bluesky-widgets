@@ -2,7 +2,6 @@ import time
 
 from qtpy.QtWidgets import (
     QWidget,
-    QListWidget,
     QGroupBox,
     QPushButton,
     QVBoxLayout,
@@ -48,7 +47,7 @@ class QtReManagerConnection(QWidget):
         self.update_period = 1  # Status update period in seconds
 
         self._update_widget_states()
-        self.model.events.status_changed.connect(self.on_update_online_indicator)
+        self.model.events.status_changed.connect(self.on_update_widgets)
 
     def _update_widget_states(self):
         self._pb_re_manager_connect.setEnabled(not self.updates_activated)
@@ -57,17 +56,18 @@ class QtReManagerConnection(QWidget):
         # We don't know if the server is online or offline:
         self._lb_connected.setText("-----")
 
-    def on_update_online_indicator(self, event):
+    def on_update_widgets(self, event):
+        is_connected = event.is_connected
         text = "-----"
-        if self.model.re_manager_accessible is True:
+        if is_connected is True:
             text = "ONLINE"
-        elif self.model.re_manager_accessible is False:
+        elif is_connected is False:
             text = "OFFLINE"
         self._lb_connected.setText(text)
 
     def _pb_re_manager_connect_clicked(self):
         self.updates_activated = True
-        self.model.clear_online_status()
+        self.model.clear_connection_status()
         self._update_widget_states()
         self._start_thread()
 
@@ -83,7 +83,7 @@ class QtReManagerConnection(QWidget):
         if self.updates_activated:
             self._start_thread()
         else:
-            self.model.clear_online_status()
+            self.model.clear_connection_status()
             self._update_widget_states()
 
     def _reload_status(self):
@@ -125,17 +125,17 @@ class QtReEnvironmentControls(QWidget):
 
     def on_update_widgets(self, event):
         # None should be converted to False:
-        online = bool(self.model.re_manager_accessible)
-        status = self.model.re_manager_status
+        is_connected = bool(event.is_connected)
+        status = event.status
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
         self._pb_env_open.setEnabled(
-            online and not worker_exists and (manager_state == "idle")
+            is_connected and not worker_exists and (manager_state == "idle")
         )
         self._pb_env_close.setEnabled(
-            online and worker_exists and (manager_state == "idle")
+            is_connected and worker_exists and (manager_state == "idle")
         )
-        self._pb_env_destroy.setEnabled(online and worker_exists)
+        self._pb_env_destroy.setEnabled(is_connected and worker_exists)
 
     def _pb_env_open_clicked(self):
         try:
@@ -189,8 +189,8 @@ class QtReQueueControls(QWidget):
 
     def on_update_widgets(self, event):
         # None should be converted to False:
-        online = bool(self.model.re_manager_accessible)
-        status = self.model.re_manager_status
+        is_connected = bool(event.is_connected)
+        status = event.status
         worker_exists = status.get("worker_environment_exists", False)
         running_item_uid = status.get("running_item_uid", None)
         queue_stop_pending = status.get("queue_stop_pending", False)
@@ -199,10 +199,10 @@ class QtReQueueControls(QWidget):
         self._lb_queue_state.setText(s)
 
         self._pb_queue_start.setEnabled(
-            online and worker_exists and not bool(running_item_uid)
+            is_connected and worker_exists and not bool(running_item_uid)
         )
         self._pb_queue_stop.setEnabled(
-            online and worker_exists and bool(running_item_uid)
+            is_connected and worker_exists and bool(running_item_uid)
         )
         self._pb_queue_stop.setChecked(queue_stop_pending)
 
@@ -280,27 +280,27 @@ class QtReExecutionControls(QWidget):
 
     def on_update_widgets(self, event):
         # None should be converted to False:
-        online = bool(self.model.re_manager_accessible)
-        status = self.model.re_manager_status
+        is_connected = bool(event.is_connected)
+        status = event.status
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
         self._pb_plan_pause_deferred.setEnabled(
-            online and worker_exists and (manager_state == "executing_queue")
+            is_connected and worker_exists and (manager_state == "executing_queue")
         )
         self._pb_plan_pause_immediate.setEnabled(
-            online and worker_exists and (manager_state == "executing_queue")
+            is_connected and worker_exists and (manager_state == "executing_queue")
         )
         self._pb_plan_resume.setEnabled(
-            online and worker_exists and (manager_state == "paused")
+            is_connected and worker_exists and (manager_state == "paused")
         )
         self._pb_plan_stop.setEnabled(
-            online and worker_exists and (manager_state == "paused")
+            is_connected and worker_exists and (manager_state == "paused")
         )
         self._pb_plan_abort.setEnabled(
-            online and worker_exists and (manager_state == "paused")
+            is_connected and worker_exists and (manager_state == "paused")
         )
         self._pb_plan_halt.setEnabled(
-            online and worker_exists and (manager_state == "paused")
+            is_connected and worker_exists and (manager_state == "paused")
         )
 
     def _pb_plan_pause_deferred_clicked(self):
@@ -340,20 +340,20 @@ class QtReExecutionControls(QWidget):
             print(f"Exception: {ex}")
 
 
-class QtPlanQueue(QListWidget):
-    def __init__(self, model, parent=None):
-        super().__init__(parent)
-        self.model = model
-
-        for item in self.model:
-            self.addItem(repr(item))
-
-        self.model.events.added.connect(self._on_item_added)
-        self.model.events.removed.connect(self._on_item_removed)
-
-    def _on_item_added(self, event):
-        self.insertItem(event.index, repr(event.item))
-
-    def _on_item_removed(self, event):
-        widget = self.item(event.index)
-        self.removeItemWidget(widget)
+# class QtPlanQueue(QListWidget):
+#     def __init__(self, model, parent=None):
+#         super().__init__(parent)
+#         self.model = model
+#
+#         for item in self.model:
+#             self.addItem(repr(item))
+#
+#         self.model.events.added.connect(self._on_item_added)
+#         self.model.events.removed.connect(self._on_item_removed)
+#
+#     def _on_item_added(self, event):
+#         self.insertItem(event.index, repr(event.item))
+#
+#     def _on_item_removed(self, event):
+#         widget = self.item(event.index)
+#         self.removeItemWidget(widget)

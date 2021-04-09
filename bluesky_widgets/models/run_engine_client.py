@@ -5,58 +5,46 @@ from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
 
 
-class PlanItem:
-    def __init__(self, name, args):
-        self._name = name
-        self._args = args
-        self.events = EmitterGroup(
-            source=self,
-            name=Event,
-        )
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        if value == self._name:
-            return
-        self._name = value
-        self.events.name(name=value)
-
-    @property
-    def args(self):
-        return self._args
-
-    @args.setter
-    def args(self, value):
-        # TODO Deal with *mutation* (editing) of the args the same way we deal
-        # with mutation of plot styles.
-        if value == self._args:
-            return
-        self._args = value
-        self.events.args(args=value)
-
-
-class PlanQueue(ListModel):
-    pass
-
-
-class PlanHistory(ListModel):
-    pass
-
-
-class BigModel:
-    def __init__(self):
-        self._client = RunEngineClient()
-        self.plan_queue = PlanQueue()
-        self.plan_queue.events.adding.connect(self._on_plan_added)
-        self.plan_history = PlanHistory()
-
-    def _on_plan_added(self, event):
-        plan_item = event.item
-        self._client.add(plan_item.name, plan_item.args)
+# class PlanItem:
+#     def __init__(self, name, args):
+#         self._name = name
+#         self._args = args
+#         self.events = EmitterGroup(
+#             source=self,
+#             name=Event,
+#         )
+#
+#     @property
+#     def name(self):
+#         return self._name
+#
+#     @name.setter
+#     def name(self, value):
+#         if value == self._name:
+#             return
+#         self._name = value
+#         self.events.name(name=value)
+#
+#     @property
+#     def args(self):
+#         return self._args
+#
+#     @args.setter
+#     def args(self, value):
+#         # TODO Deal with *mutation* (editing) of the args the same way we deal
+#         # with mutation of plot styles.
+#         if value == self._args:
+#             return
+#         self._args = value
+#         self.events.args(args=value)
+#
+#
+# class PlanQueue(ListModel):
+#     pass
+#
+#
+# class PlanHistory(ListModel):
+#     pass
 
 
 class RunEngineClient:
@@ -64,7 +52,7 @@ class RunEngineClient:
         self._client = ZMQCommSendThreads(zmq_server_address=worker_address)
 
         self._re_manager_status = {}
-        self._re_manager_accessible = None
+        self._re_manager_connected = None
         self._re_manager_status_time = time.time()
         # Minimum period of status update (avoid excessive call frequency)
         self._re_manager_status_update_period = 0.2
@@ -80,7 +68,7 @@ class RunEngineClient:
 
     @property
     def re_manager_accessible(self):
-        return self._re_manager_accessible
+        return self._re_manager_connected
 
     def clear(self):
         # Clear the queue.
@@ -88,29 +76,40 @@ class RunEngineClient:
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the plan queue: {response['msg']}")
 
-    def clear_online_status(self):
-        self._re_manager_accessible = None
-        self.events.status_changed()
+    def clear_connection_status(self):
+        """
+        This function is not expected to clear 'status', only 'self._re_manager_connected'.
+        """
+        self._re_manager_connected = None
+        self.events.status_changed(
+            status=self._re_manager_status,
+            is_connected=self._re_manager_connected,
+        )
 
     def load_re_manager_status(self, *, enforce=False):
         if enforce or (
             time.time() - self._re_manager_status_time
             > self._re_manager_status_update_period
         ):
-            status = self._re_manager_status
-            accessible = self._re_manager_accessible
+            status = self._re_manager_status.copy()
+            accessible = self._re_manager_connected
             try:
-                self._re_manager_status = self._client.send_message(
+                new_manager_status = self._client.send_message(
                     method="status", raise_exceptions=True
                 )
-                self._re_manager_accessible = True
+                self._re_manager_status.clear()
+                self._re_manager_status.update(new_manager_status)
+                self._re_manager_connected = True
             except CommTimeoutError:
-                self._re_manager_accessible = False
+                self._re_manager_connected = False
             if (status != self._re_manager_status) or (
-                accessible != self._re_manager_accessible
+                accessible != self._re_manager_connected
             ):
                 # Status changed. Initiate the updates
-                self.events.status_changed()
+                self.events.status_changed(
+                    status=self._re_manager_status,
+                    is_connected=self._re_manager_connected,
+                )
 
     # ============================================================================
     #                  Operations with RE Environment
