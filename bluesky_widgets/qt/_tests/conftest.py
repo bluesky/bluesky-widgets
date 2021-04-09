@@ -7,7 +7,7 @@ from bluesky_kafka.tests.conftest import (  # noqa
     pytest_addoption,
     kafka_bootstrap_servers,
     publisher_factory,
-    temporary_topics
+    temporary_topics,
 )
 
 
