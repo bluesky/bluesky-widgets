@@ -41,9 +41,8 @@ def test_publisher_and_qt_remote_dispatcher(
         )
 
         # trying to test _waiting_for_start
-        # but this seems to cause a segfault
-        # bluesky_publisher("descriptor", {})
-        # bluesky_publisher("event", {})
+        bluesky_publisher("descriptor", {})
+        bluesky_publisher("event", {})
         # bluesky_publisher("stop", {})
 
         published_bluesky_documents = []
@@ -99,7 +98,7 @@ def test_publisher_and_qt_remote_dispatcher(
                 name for name, _ in dispatched_bluesky_documents
             ]
             test_logger.debug(
-                "until_second_stop_document %s", dispatched_bluesky_document_names
+                "until_first_stop_document %s", dispatched_bluesky_document_names
             )
             if "stop" in dispatched_bluesky_document_names:
                 return False
