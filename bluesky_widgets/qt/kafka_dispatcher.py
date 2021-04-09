@@ -4,7 +4,6 @@ import logging
 import msgpack
 from qtpy.QtCore import QTimer, QObject
 
-from bluesky.run_engine import DocumentNames
 import bluesky_kafka
 
 from ..qt.threading import create_worker

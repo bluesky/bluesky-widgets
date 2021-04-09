@@ -2,15 +2,13 @@ import pytest
 
 from qtpy.QtWidgets import QApplication
 
-from bluesky_kafka.tests.conftest import (
+from bluesky_kafka.tests.conftest import (  # noqa
     hw,
     pytest_addoption,
     kafka_bootstrap_servers,
     publisher_factory,
     temporary_topics
 )
-
-from bluesky_widgets.qt.kafka_dispatcher import QtRemoteDispatcher
 
 
 @pytest.fixture
@@ -27,4 +25,3 @@ def qtbot(qtbot):
         # {matplotlib.backends.backend_qt5.MainWindow object at 0x7fdce80b7550>}
         # raise AssertionError(f"Widgets leaked!: {leaks}")
         pass
-
