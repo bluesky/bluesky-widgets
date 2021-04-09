@@ -255,10 +255,31 @@ class RunEngineClient:
             time.sleep(0.5)
 
     # ============================================================================
+    #                        Queue Control
+
+    def queue_start(self):
+        response = self._client.send_message(method="queue_start")
+        if not response["success"]:
+            raise RuntimeError(f"Failed to start the queue: {response['msg']}")
+
+    def queue_stop(self):
+        response = self._client.send_message(method="queue_stop")
+        if not response["success"]:
+            raise RuntimeError(
+                f"Failed to request stopping the queue: {response['msg']}"
+            )
+
+    def queue_stop_cancel(self):
+        response = self._client.send_message(method="queue_stop_cancel")
+        if not response["success"]:
+            raise RuntimeError(
+                f"Failed to cancel request to stop the queue: {response['msg']}"
+            )
+
+    # ============================================================================
     #                        RE Control
 
     def _wait_for_completion(self, *, condition, msg="complete operation", timeout=0):
-
         if timeout:
             t_stop = time.time() + timeout
 

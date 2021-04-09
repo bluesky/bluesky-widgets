@@ -53,9 +53,9 @@ class QtReManagerConnection(QWidget):
     def _update_widget_states(self):
         self._pb_re_manager_connect.setEnabled(not self.updates_activated)
         self._pb_re_manager_disconnect.setEnabled(self.updates_activated)
-        self._lb_connected.setText(
-            "-----"
-        )  # We don't know if the server is online or offline
+
+        # We don't know if the server is online or offline:
+        self._lb_connected.setText("-----")
 
     def on_update_online_indicator(self, event):
         text = "-----"
@@ -138,16 +138,90 @@ class QtReEnvironmentControls(QWidget):
         self._pb_env_destroy.setEnabled(online and worker_exists)
 
     def _pb_env_open_clicked(self):
-        print("Button clicked: Open environment")
-        self.model.environment_open()
+        try:
+            self.model.environment_open()
+        except Exception as ex:
+            print(f"Exception: {ex}")
 
     def _pb_env_close_clicked(self):
-        print("Button clicked: Close environment")
-        self.model.environment_close()
+        try:
+            self.model.environment_close()
+        except Exception as ex:
+            print(f"Exception: {ex}")
 
     def _pb_env_destroy_clicked(self):
-        print("Button clicked: Destroy environment")
-        self.model.environment_destroy()
+        try:
+            self.model.environment_destroy()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+
+class QtReQueueControls(QWidget):
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+
+        self._lb_queue_state = QLabel("STOPPED")
+
+        self._pb_queue_start = QPushButton("Start")
+        self._pb_queue_start.setEnabled(False)
+        self._pb_queue_start.clicked.connect(self._pb_queue_start_clicked)
+
+        self._pb_queue_stop = QPushButton("Stop")
+        self._pb_queue_stop.setEnabled(False)
+        self._pb_queue_stop.setCheckable(True)
+        self._pb_queue_stop.clicked.connect(self._pb_queue_stop_clicked)
+
+        self._group_box = QGroupBox("Queue")
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._lb_queue_state, alignment=Qt.AlignHCenter)
+        vbox.addWidget(self._pb_queue_start)
+        vbox.addWidget(self._pb_queue_stop)
+
+        self._group_box.setLayout(vbox)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._group_box)
+        self.setLayout(vbox)
+
+        self.model.events.status_changed.connect(self.on_update_widgets)
+
+    def on_update_widgets(self, event):
+        # None should be converted to False:
+        online = bool(self.model.re_manager_accessible)
+        status = self.model.re_manager_status
+        worker_exists = status.get("worker_environment_exists", False)
+        running_item_uid = status.get("running_item_uid", None)
+        queue_stop_pending = status.get("queue_stop_pending", False)
+
+        s = "RUNNING" if running_item_uid else "STOPPED"
+        self._lb_queue_state.setText(s)
+
+        self._pb_queue_start.setEnabled(
+            online and worker_exists and not bool(running_item_uid)
+        )
+        self._pb_queue_stop.setEnabled(
+            online and worker_exists and bool(running_item_uid)
+        )
+        self._pb_queue_stop.setChecked(queue_stop_pending)
+
+    def _pb_queue_start_clicked(self):
+        try:
+            self.model.queue_start()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_queue_stop_clicked(self):
+        try:
+            if self._pb_queue_stop.isChecked():
+                print("Stopping the queue")
+                self.model.queue_stop()
+            else:
+                print("Cancelling stop")
+                self.model.queue_stop_cancel()
+        except Exception as ex:
+            print(f"Exception: {ex}")
 
 
 class QtReExecutionControls(QWidget):
