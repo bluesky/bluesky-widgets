@@ -69,6 +69,7 @@ class QtReManagerConnection(QWidget):
         self.updates_activated = True
         self.model.clear_connection_status()
         self._update_widget_states()
+        self.model.manager_connecting_ops()
         self._start_thread()
 
     def _pb_re_manager_disconnect_clicked(self):

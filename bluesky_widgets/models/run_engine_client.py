@@ -50,15 +50,31 @@ class RunEngineClient:
     def __init__(self, worker_address=None):
         self._client = ZMQCommSendThreads(zmq_server_address=worker_address)
 
+        # User name and group are hard coded for now
+        self._user_name = "GUI Client"
+        self._user_group = "admin"
+
         self._re_manager_status = {}
         self._re_manager_connected = None
         self._re_manager_status_time = time.time()
         # Minimum period of status update (avoid excessive call frequency)
         self._re_manager_status_update_period = 0.2
 
+        self._allowed_devices = {}
+        self._allowed_plans = {}
+        self._plan_queue_items = []
+        self._running_item = {}
+        self._plan_queue_uid = ""
+        self._plan_history_items = []
+        self._plan_history_uid = ""
+
         self.events = EmitterGroup(
             source=self,
             status_changed=Event,
+            plan_queue_changed=Event,
+            plan_history_changed=Event,
+            allowed_devices_changed=Event,
+            allowed_plans_changed=Event,
         )
 
     @property
@@ -85,6 +101,15 @@ class RunEngineClient:
             is_connected=self._re_manager_connected,
         )
 
+    def manager_connecting_ops(self):
+        """
+        Sequence of additional operations that should be performed while connecting to RE Manager.
+        """
+        self.load_allowed_devices()
+        self.load_allowed_plans()
+        self.load_plan_queue()
+        self.load_plan_history()
+
     def load_re_manager_status(self, *, enforce=False):
         if enforce or (
             time.time() - self._re_manager_status_time
@@ -99,6 +124,14 @@ class RunEngineClient:
                 self._re_manager_status.clear()
                 self._re_manager_status.update(new_manager_status)
                 self._re_manager_connected = True
+
+                new_queue_uid = self._re_manager_status.get("plan_queue_uid", "")
+                if new_queue_uid != self._plan_queue_uid:
+                    self.load_plan_queue()
+                new_history_uid = self._re_manager_status.get("plan_history_uid", "")
+                if new_history_uid != self._plan_history_uid:
+                    self.load_plan_history()
+
             except CommTimeoutError:
                 self._re_manager_connected = False
             if (status != self._re_manager_status) or (
@@ -109,6 +142,76 @@ class RunEngineClient:
                     status=self._re_manager_status,
                     is_connected=self._re_manager_connected,
                 )
+
+    def load_allowed_devices(self):
+        try:
+            result = self._client.send_message(
+                method="devices_allowed", raise_exceptions=True
+            )
+            if result["success"] is False:
+                raise RuntimeError(
+                    f"Failed to load list of allowed devices: {result['msg']}"
+                )
+            self._allowed_devices.clear()
+            self._allowed_devices.update(result["devices_allowed"])
+            self.events.allowed_devices_changed(
+                allowed_devices=self._allowed_devices,
+            )
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def load_allowed_plans(self):
+        try:
+            result = self._client.send_message(
+                method="plans_allowed", raise_exceptions=True
+            )
+            if result["success"] is False:
+                raise RuntimeError(
+                    f"Failed to load list of allowed plans: {result['msg']}"
+                )
+            self._allowed_plans.clear()
+            self._allowed_plans.update(result["plans_allowed"])
+            self.events.allowed_plans_changed(
+                allowed_plans=self._allowed_plans,
+            )
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def load_plan_queue(self):
+        try:
+            result = self._client.send_message(
+                method="queue_get", raise_exceptions=True
+            )
+            if result["success"] is False:
+                raise RuntimeError(f"Failed to load queue: {result['msg']}")
+            self._plan_queue_items.clear()
+            self._plan_queue_items.extend(result["items"])
+            self._running_item.clear()
+            self._running_item.update(result["running_item"])
+            self._plan_queue_uid = result["plan_queue_uid"]
+            self.events.plan_queue_changed(
+                plan_queue_items=self._plan_queue_items,
+                running_item=self._running_item,
+            )
+
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def load_plan_history(self):
+        try:
+            result = self._client.send_message(
+                method="history_get", raise_exceptions=True
+            )
+            if result["success"] is False:
+                raise RuntimeError(f"Failed to load history: {result['msg']}")
+            self._plan_history_items.clear()
+            self._plan_history_items.extend(result["items"])
+            self._plan_history_uid = result["plan_history_uid"]
+            self.events.plan_history_changed(
+                plan_history_items=self._plan_history_items,
+            )
+        except Exception as ex:
+            print(f"Exception: {ex}")
 
     # ============================================================================
     #                  Operations with RE Environment
