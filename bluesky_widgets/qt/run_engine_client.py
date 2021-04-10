@@ -7,8 +7,13 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QTableWidget,
+    QTableWidgetItem,
+    QTableView,
+    QHeaderView,
+    QAbstractItemView,
 )
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, Signal, QTimer
 
 from bluesky_widgets.qt.threading import FunctionWorker
 
@@ -431,6 +436,215 @@ class QtReStatusMonitor(QWidget):
             self._lb_queue_stop_pending_text,
             "YES" if queue_stop_pending else "NO",
         )
+
+
+class QueueTableWidget(QTableWidget):
+    signal_drop_event = Signal(int, int)
+    signal_scroll = Signal(str)
+
+    def __init__(self):
+        super().__init__()
+        self._is_mouse_pressed = False
+        self._is_scroll_active = False
+        self._scroll_direction = ""
+
+        self._scroll_timer_count = 0
+        # Duration of period of the first series of events, ms
+        self._scroll_timer_period_1 = 200
+        # Duration of period of the remaining events, ms
+        self._scroll_timer_period_2 = 100
+        self._scroll_timer_n_events = 4  # The number of events in the first period
+        self._scroll_timer = QTimer()
+        self._scroll_timer.setSingleShot(True)
+        self._scroll_timer.timeout.connect(self._on_scroll_timeout)
+
+    def dropEvent(self, event):
+        self.deactivate_scroll()
+        row, col = -1, -1
+        if (event.source() == self) and self.viewport().rect().contains(event.pos()):
+            index = self.indexAt(event.pos())
+            if not index.isValid() or not self.visualRect(index).contains(event.pos()):
+                index = self.rootIndex()
+            row = index.row()
+            col = index.column()
+
+        self.signal_drop_event.emit(row, col)
+
+    def dragMoveEvent(self, event):
+        # 'rowHeight(0)' will return 0 if the table is empty,
+        #    but we don't need to scroll the empty table
+        scroll_activation_area = int(self.rowHeight(0) / 2)
+
+        y = event.pos().y()
+        if y < scroll_activation_area:
+            self.activate_scroll("up")
+        elif y > self.viewport().height() - scroll_activation_area:
+            self.activate_scroll("down")
+        else:
+            self.deactivate_scroll()
+
+    def dragLeaveEvent(self, event):
+        self.deactivate_scroll()
+
+    def activate_scroll(self, str):
+        if str not in ("up", "down"):
+            return
+
+        if not self._is_scroll_active or self._scroll_direction != str:
+            self._is_scroll_active = True
+            self._scroll_direction = str
+            self._scroll_timer_count = 0
+            # The period before the first scroll event should be very short
+            self._scroll_timer.start(20)
+
+    def deactivate_scroll(self):
+        if self._is_scroll_active:
+            self._is_scroll_active = False
+            self._scroll_direction = ""
+            self._scroll_timer.stop()
+
+    def _on_scroll_timeout(self):
+        self.signal_scroll.emit(self._scroll_direction)
+
+        self._scroll_timer_count += 1
+        timeout = (
+            self._scroll_timer_period_1
+            if self._scroll_timer_count <= self._scroll_timer_n_events
+            else self._scroll_timer_period_2
+        )
+        self._scroll_timer.start(timeout)
+
+
+class QtRePlanQueue(QWidget):
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+
+        self._table_column_labels = ("Name", "args", "kwargs", "USER", "GROUP")
+        self._table = QueueTableWidget()
+        self._table.setColumnCount(len(self._table_column_labels))
+        # self._table.verticalHeader().hide()
+        self._table.setHorizontalHeaderLabels(self._table_column_labels)
+        self._table.horizontalHeader().setSectionsMovable(True)
+
+        self._table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+
+        self._table.setSelectionBehavior(QTableView.SelectRows)
+        self._table.setSelectionMode(QTableWidget.SingleSelection)
+        self._table.setDragEnabled(False)
+        # self._table.setDragDropMode(QAbstractItemView.InternalMove)
+        self._table.setAcceptDrops(False)
+        # self._table.setDragDropOverwriteMode(False)
+        self._table.setDropIndicatorShown(True)
+        self._table.setShowGrid(True)
+
+        self._table.setAlternatingRowColors(True)
+
+        self._table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+        self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self._table.horizontalHeader().setStretchLastSection(True)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._table)
+        self.setLayout(vbox)
+
+        self.model.events.status_changed.connect(self.on_update_widgets)
+        self.model.events.plan_queue_changed.connect(self.on_plan_queue_changed)
+        self.model.events.queue_item_selection_changed.connect(
+            self.on_queue_item_selection_changed
+        )
+        self._table.signal_drop_event.connect(self.on_table_drop_event)
+        self._table.signal_scroll.connect(self.on_table_scroll_event)
+        self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
+
+    def on_update_widgets(self, event):
+        # None should be converted to False:
+        is_connected = bool(event.is_connected)
+        # status = event.status
+
+        # Disable drops if there is no connection to RE Manager
+        self._table.setDragEnabled(is_connected)
+        self._table.setAcceptDrops(is_connected)
+
+    def on_table_drop_event(self, row, col):
+        print(f"Row dropped: row={row} col={col}")
+
+    def on_table_scroll_event(self, scroll_direction):
+        v = self._table.verticalScrollBar().value()
+        v_max = self._table.verticalScrollBar().maximum()
+        if scroll_direction == "up" and v > 0:
+            v_new = v - 1
+        elif scroll_direction == "down" and v < v_max:
+            v_new = v + 1
+        else:
+            v_new = v
+        if v != v_new:
+            self._table.verticalScrollBar().setValue(v_new)
+
+    def on_plan_queue_changed(self, event):
+        plan_queue_items = event.plan_queue_items.copy()
+        # running_item = event.running_item.copy()
+
+        label_to_key = {
+            "Name": "name",
+            "args": "args",
+            "kwargs": "kwargs",
+            "USER": "user",
+            "GROUP": "user_group",
+        }
+
+        self._table.clearContents()
+        self._table.setRowCount(len(plan_queue_items))
+
+        if len(plan_queue_items):
+            resize_mode = QHeaderView.ResizeToContents
+        else:
+            # Empty table, stretch the header
+            resize_mode = QHeaderView.Stretch
+        self._table.horizontalHeader().setSectionResizeMode(resize_mode)
+
+        for nr, item in enumerate(plan_queue_items):
+            for nc, col_name in enumerate(self._table_column_labels):
+                key = label_to_key[col_name]
+                value = item.get(key, "")  # Print nothing if the key does not exist
+                s = str(value)
+                # Remove enclosing [] or {} (for arg and kwarg)
+                if s.startswith("[") or s.startswith("{"):
+                    s = s[1:-1]
+                table_item = QTableWidgetItem(s)
+                table_item.setFlags(table_item.flags() & ~Qt.ItemIsEditable)
+                self._table.setItem(nr, nc, table_item)
+
+    def on_item_selection_changed(self):
+        """
+        The handler for ``item_selection_changed`` signal emitted by QTableWidget
+        """
+        sel_rows = self._table.selectionModel().selectedRows()
+        # It is assumed that only one row may be selected at a time. If the table settings change
+        #   so that more than one row could be selected at a time, the following code will not work.
+        try:
+            if len(sel_rows) >= 1:
+                row = sel_rows[0].row()
+                selected_item_uid = self.model._plan_queue_items[row]["item_uid"]
+                self.model.selected_queue_item_uid = selected_item_uid
+            else:
+                raise Exception()
+        except Exception:
+            self.model.selected_queue_item_uid = ""
+
+    def on_queue_item_selection_changed(self, event):
+        """
+        The handler for the event generated by the model
+        """
+        selected_item_uid = event.selected_item_uid
+
+        row = -1
+        if selected_item_uid:
+            row = self.model.queue_item_uid_to_number(selected_item_uid)
+        if row < 0:
+            self._table.clearSelection()
+        else:
+            self._table.selectRow(row)
 
 
 # class QtPlanQueue(QListWidget):

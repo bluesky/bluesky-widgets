@@ -68,6 +68,9 @@ class RunEngineClient:
         self._plan_history_items = []
         self._plan_history_uid = ""
 
+        # UID of the selected queue item, "" if no items are selected
+        self._selected_queue_item_uid = ""
+
         self.events = EmitterGroup(
             source=self,
             status_changed=Event,
@@ -75,6 +78,7 @@ class RunEngineClient:
             plan_history_changed=Event,
             allowed_devices_changed=Event,
             allowed_plans_changed=Event,
+            queue_item_selection_changed=Event,
         )
 
     @property
@@ -212,6 +216,23 @@ class RunEngineClient:
             )
         except Exception as ex:
             print(f"Exception: {ex}")
+
+    @property
+    def selected_queue_item_uid(self):
+        return self._selected_queue_item_uid
+
+    @selected_queue_item_uid.setter
+    def selected_queue_item_uid(self, item_uid):
+        if self._selected_queue_item_uid != item_uid:
+            self._selected_queue_item_uid = item_uid
+            self.events.queue_item_selection_changed(selected_item_uid=item_uid)
+
+    def queue_item_uid_to_number(self, item_uid):
+        for n, item in enumerate(self._plan_queue_items):
+            if "item_uid" in item:
+                if item["item_uid"] == item_uid:
+                    return n
+        return -1  # Item was not found
 
     # ============================================================================
     #                  Operations with RE Environment
