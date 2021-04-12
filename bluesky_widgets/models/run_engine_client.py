@@ -63,6 +63,9 @@ class RunEngineClient:
         self._allowed_devices = {}
         self._allowed_plans = {}
         self._plan_queue_items = []
+        self._plan_queue_items_pos = (
+            {}
+        )  # Dictionary key: item uid, value: item pos in queue
         self._running_item = {}
         self._plan_queue_uid = ""
         self._plan_history_items = []
@@ -150,7 +153,9 @@ class RunEngineClient:
     def load_allowed_devices(self):
         try:
             result = self._client.send_message(
-                method="devices_allowed", raise_exceptions=True
+                method="devices_allowed",
+                params={"user_group": self._user_group},
+                raise_exceptions=True,
             )
             if result["success"] is False:
                 raise RuntimeError(
@@ -158,16 +163,16 @@ class RunEngineClient:
                 )
             self._allowed_devices.clear()
             self._allowed_devices.update(result["devices_allowed"])
-            self.events.allowed_devices_changed(
-                allowed_devices=self._allowed_devices,
-            )
+            self.events.allowed_devices_changed(allowed_devices=self._allowed_devices)
         except Exception as ex:
             print(f"Exception: {ex}")
 
     def load_allowed_plans(self):
         try:
             result = self._client.send_message(
-                method="plans_allowed", raise_exceptions=True
+                method="plans_allowed",
+                params={"user_group": self._user_group},
+                raise_exceptions=True,
             )
             if result["success"] is False:
                 raise RuntimeError(
@@ -175,9 +180,7 @@ class RunEngineClient:
                 )
             self._allowed_plans.clear()
             self._allowed_plans.update(result["plans_allowed"])
-            self.events.allowed_plans_changed(
-                allowed_plans=self._allowed_plans,
-            )
+            self.events.allowed_plans_changed(allowed_plans=self._allowed_plans)
         except Exception as ex:
             print(f"Exception: {ex}")
 
@@ -193,10 +196,30 @@ class RunEngineClient:
             self._running_item.clear()
             self._running_item.update(result["running_item"])
             self._plan_queue_uid = result["plan_queue_uid"]
+
+            # The dictionary that relates item uids and their positions in the queue.
+            #   Used to speed up computations during queue operations.
+            self._plan_queue_items_pos = {
+                item["item_uid"]: n
+                for n, item in enumerate(self._plan_queue_items)
+                if "item_uid" in item
+            }
+
+            # Deselect queue item if it is not present in the queue
+            #   Selection will be cleared when the table is reloaded, so save it in local variable
+            selected_uid = self.selected_queue_item_uid
+            if self.queue_item_uid_to_pos(selected_uid) < 0:
+                selected_uid = ""
+
+            # Update the representation of the queue
             self.events.plan_queue_changed(
                 plan_queue_items=self._plan_queue_items,
                 running_item=self._running_item,
             )
+
+            # Update selected item uid and emit 'queue_item_selection_changed' event
+            self._selected_queue_item_uid = selected_uid
+            self.events.queue_item_selection_changed(selected_item_uid=selected_uid)
 
         except Exception as ex:
             print(f"Exception: {ex}")
@@ -217,6 +240,9 @@ class RunEngineClient:
         except Exception as ex:
             print(f"Exception: {ex}")
 
+    # ============================================================================
+    #                         Queue operations
+
     @property
     def selected_queue_item_uid(self):
         return self._selected_queue_item_uid
@@ -227,12 +253,135 @@ class RunEngineClient:
             self._selected_queue_item_uid = item_uid
             self.events.queue_item_selection_changed(selected_item_uid=item_uid)
 
-    def queue_item_uid_to_number(self, item_uid):
-        for n, item in enumerate(self._plan_queue_items):
-            if "item_uid" in item:
-                if item["item_uid"] == item_uid:
-                    return n
-        return -1  # Item was not found
+    def queue_item_uid_to_pos(self, item_uid):
+        # Returns -1 if item was not found
+        return self._plan_queue_items_pos.get(item_uid, -1)
+
+    def queue_item_pos_to_uid(self, n_item):
+        try:
+            item_uid = self._plan_queue_items[n_item]["item_uid"]
+        except Exception:
+            item_uid = ""
+        return item_uid
+
+    def queue_item_move_up(self):
+        """
+        Move plan up in the queue by one positon
+        """
+        item_uid = self.selected_queue_item_uid
+        n_item = self.queue_item_uid_to_pos(item_uid)
+        n_items = len(self._plan_queue_items)
+        if item_uid and (n_items > 1) and (n_item > 0):
+            n_item_above = n_item - 1
+            item_uid_above = self.queue_item_pos_to_uid(n_item_above)
+            response = self._client.send_message(
+                method="queue_item_move",
+                params={"uid": item_uid, "before_uid": item_uid_above},
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+
+    def queue_item_move_down(self):
+        """
+        Move plan down in the queue by one positon
+        """
+        item_uid = self.selected_queue_item_uid
+        n_item = self.queue_item_uid_to_pos(item_uid)
+        n_items = len(self._plan_queue_items)
+        if item_uid and (n_items > 1) and (0 <= n_item < n_items - 1):
+            n_item_below = n_item + 1
+            item_uid_below = self.queue_item_pos_to_uid(n_item_below)
+            response = self._client.send_message(
+                method="queue_item_move",
+                params={"uid": item_uid, "after_uid": item_uid_below},
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+
+    def queue_item_move_in_place_of(self, item_uid_to_replace):
+        """
+        Replace plan with given UID with the selected plan
+        """
+        item_uid = self.selected_queue_item_uid
+        n_item = self.queue_item_uid_to_pos(item_uid)
+        n_item_to_replace = self.queue_item_uid_to_pos(item_uid_to_replace)
+        if (
+            item_uid
+            and item_uid_to_replace
+            and (n_item_to_replace >= 0)
+            and (item_uid != item_uid_to_replace)
+        ):
+            location = "before_uid" if (n_item_to_replace < n_item) else "after_uid"
+            response = self._client.send_message(
+                method="queue_item_move",
+                params={"uid": item_uid, location: item_uid_to_replace},
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+
+    def queue_item_move_to_top(self):
+        """
+        Move plan to top of the queue
+        """
+        item_uid = self.selected_queue_item_uid
+        if item_uid:
+            response = self._client.send_message(
+                method="queue_item_move", params={"uid": item_uid, "pos_dest": "front"}
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+
+    def queue_item_move_to_bottom(self):
+        """
+        Move plan to top of the queue
+        """
+        item_uid = self.selected_queue_item_uid
+        if item_uid:
+            response = self._client.send_message(
+                method="queue_item_move", params={"uid": item_uid, "pos_dest": "back"}
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+
+    def queue_item_remove(self):
+        """
+        Delete item from queue
+        """
+        item_uid = self.selected_queue_item_uid
+        if item_uid:
+            # Find and set UID of an item that will be selected once the current item is removed
+            n_item = self.queue_item_uid_to_pos(item_uid)
+            n_items = len(self._plan_queue_items)
+            if n_items <= 1:
+                n_sel_item_new = -1
+            elif n_item < n_items - 1:
+                n_sel_item_new = n_item + 1
+            else:
+                n_sel_item_new = n_item - 1
+            print(f"n-1 = {n_sel_item_new}")
+            self.selected_queue_item_uid = self.queue_item_pos_to_uid(n_sel_item_new)
+            print(f"n-2 = {n_sel_item_new}")
+
+            response = self._client.send_message(
+                method="queue_item_remove", params={"uid": item_uid}
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to delete item: {response['msg']}")
+
+    def queue_clear(self):
+        # Add plan to queue
+        response = self._client.send_message(
+            method="queue_clear",
+        )
+        self.load_re_manager_status(enforce=True)
+        if not response["success"]:
+            raise RuntimeError(f"Failed to clear the queue: {response['msg']}")
 
     # ============================================================================
     #                  Operations with RE Environment

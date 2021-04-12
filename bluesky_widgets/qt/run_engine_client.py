@@ -14,6 +14,7 @@ from qtpy.QtWidgets import (
     QAbstractItemView,
 )
 from qtpy.QtCore import Qt, Signal, QTimer
+from qtpy.QtGui import QFontMetrics
 
 from bluesky_widgets.qt.threading import FunctionWorker
 
@@ -515,6 +516,22 @@ class QueueTableWidget(QTableWidget):
         self._scroll_timer.start(timeout)
 
 
+class PushButtonMinimumWidth(QPushButton):
+    """
+    Push button minimum width necessary to fit the text
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        text = self.text()
+        font = self.font()
+
+        fm = QFontMetrics(font)
+        text_width = fm.width(text) + 6
+        self.setFixedWidth(text_width)
+
+
 class QtRePlanQueue(QWidget):
     def __init__(self, model, parent=None):
         super().__init__(parent)
@@ -544,8 +561,45 @@ class QtRePlanQueue(QWidget):
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self._table.horizontalHeader().setStretchLastSection(True)
 
+        # The following parameters are used only to control widget state (e.g. activate/deactivate
+        #   buttons), not to perform real operations.
+        self._n_table_items = 0  # The number of items in the table
+        self._n_selected_item = -1  # Selected item (table row)
+
+        self._pb_move_up = PushButtonMinimumWidth("Move Up")
+        self._pb_move_down = PushButtonMinimumWidth("Down")
+        self._pb_move_to_top = PushButtonMinimumWidth("Top")
+        self._pb_move_to_bottom = PushButtonMinimumWidth("Bottom")
+        self._pb_delete_plan = PushButtonMinimumWidth("Delete")
+        self._pb_new_plan = PushButtonMinimumWidth("New")
+        self._pb_clear_queue = PushButtonMinimumWidth("Clear")
+
+        self._pb_move_up.clicked.connect(self._pb_move_up_clicked)
+        self._pb_move_down.clicked.connect(self._pb_move_down_clicked)
+        self._pb_move_to_top.clicked.connect(self._pb_move_to_top_clicked)
+        self._pb_move_to_bottom.clicked.connect(self._pb_move_to_bottom_clicked)
+        self._pb_delete_plan.clicked.connect(self._pb_delete_plan_clicked)
+        self._pb_new_plan.clicked.connect(self._pb_new_plan_clicked)
+        self._pb_clear_queue.clicked.connect(self._pb_clear_queue_clicked)
+
+        self._group_box = QGroupBox("Plan Queue")
         vbox = QVBoxLayout()
+        hbox = QHBoxLayout()
+        hbox.addWidget(self._pb_move_up)
+        hbox.addWidget(self._pb_move_down)
+        hbox.addWidget(self._pb_move_to_top)
+        hbox.addWidget(self._pb_move_to_bottom)
+        hbox.addStretch(2)
+        hbox.addWidget(self._pb_clear_queue)
+        hbox.addStretch(1)
+        hbox.addWidget(self._pb_delete_plan)
+        hbox.addWidget(self._pb_new_plan)
+        vbox.addLayout(hbox)
         vbox.addWidget(self._table)
+        self._group_box.setLayout(vbox)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._group_box)
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
@@ -557,6 +611,8 @@ class QtRePlanQueue(QWidget):
         self._table.signal_scroll.connect(self.on_table_scroll_event)
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
 
+        self._update_button_states()
+
     def on_update_widgets(self, event):
         # None should be converted to False:
         is_connected = bool(event.is_connected)
@@ -566,8 +622,40 @@ class QtRePlanQueue(QWidget):
         self._table.setDragEnabled(is_connected)
         self._table.setAcceptDrops(is_connected)
 
+        self._update_button_states()
+
+    def _update_button_states(self):
+        is_connected = bool(self.model._re_manager_connected)
+        n_items = self._n_table_items
+        n_selected_item = self._n_selected_item
+
+        is_sel = n_selected_item >= 0
+        sel_top = n_selected_item == 0
+        sel_bottom = n_selected_item == n_items - 1
+
+        self._pb_move_up.setEnabled(is_connected and is_sel and not sel_top)
+        self._pb_move_down.setEnabled(is_connected and is_sel and not sel_bottom)
+        self._pb_move_to_top.setEnabled(is_connected and is_sel and not sel_top)
+        self._pb_move_to_bottom.setEnabled(is_connected and is_sel and not sel_bottom)
+
+        self._pb_clear_queue.setEnabled(is_connected and n_items)
+
+        self._pb_delete_plan.setEnabled(is_connected and is_sel)
+        self._pb_new_plan.setEnabled(is_connected)
+
     def on_table_drop_event(self, row, col):
+        # If the selected queue item is not in the table anymore (e.g. sent to execution),
+        #   then ignore the drop event, since the item can not be moved.
         print(f"Row dropped: row={row} col={col}")
+
+        if self.model.selected_queue_item_uid:
+            item_uid_to_replace = self.model.queue_item_pos_to_uid(row)
+            try:
+                self.model.queue_item_move_in_place_of(item_uid_to_replace)
+            except Exception as ex:
+                print(f"Exception: {ex}")
+
+        self._update_button_states()
 
     def on_table_scroll_event(self, scroll_direction):
         v = self._table.verticalScrollBar().value()
@@ -615,6 +703,11 @@ class QtRePlanQueue(QWidget):
                 table_item.setFlags(table_item.flags() & ~Qt.ItemIsEditable)
                 self._table.setItem(nr, nc, table_item)
 
+        # Update the number of table items
+        self._n_table_items = len(plan_queue_items)
+
+        self._update_button_states()
+
     def on_item_selection_changed(self):
         """
         The handler for ``item_selection_changed`` signal emitted by QTableWidget
@@ -625,42 +718,67 @@ class QtRePlanQueue(QWidget):
         try:
             if len(sel_rows) >= 1:
                 row = sel_rows[0].row()
-                selected_item_uid = self.model._plan_queue_items[row]["item_uid"]
+                selected_item_uid = self.model.queue_item_pos_to_uid(row)
                 self.model.selected_queue_item_uid = selected_item_uid
+                self._n_selected_item = row
             else:
                 raise Exception()
         except Exception:
             self.model.selected_queue_item_uid = ""
+            self._n_selected_item = -1
 
     def on_queue_item_selection_changed(self, event):
         """
         The handler for the event generated by the model
         """
         selected_item_uid = event.selected_item_uid
-
         row = -1
         if selected_item_uid:
-            row = self.model.queue_item_uid_to_number(selected_item_uid)
+            row = self.model.queue_item_uid_to_pos(selected_item_uid)
         if row < 0:
             self._table.clearSelection()
+            self._n_selected_item = -1
         else:
             self._table.selectRow(row)
+            self._n_selected_item = row
 
+        self._update_button_states()
 
-# class QtPlanQueue(QListWidget):
-#     def __init__(self, model, parent=None):
-#         super().__init__(parent)
-#         self.model = model
-#
-#         for item in self.model:
-#             self.addItem(repr(item))
-#
-#         self.model.events.added.connect(self._on_item_added)
-#         self.model.events.removed.connect(self._on_item_removed)
-#
-#     def _on_item_added(self, event):
-#         self.insertItem(event.index, repr(event.item))
-#
-#     def _on_item_removed(self, event):
-#         widget = self.item(event.index)
-#         self.removeItemWidget(widget)
+    def _pb_move_up_clicked(self):
+        try:
+            self.model.queue_item_move_up()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_move_down_clicked(self):
+        try:
+            self.model.queue_item_move_down()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_move_to_top_clicked(self):
+        try:
+            self.model.queue_item_move_to_top()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_move_to_bottom_clicked(self):
+        try:
+            self.model.queue_item_move_to_bottom()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_delete_plan_clicked(self):
+        try:
+            self.model.queue_item_remove()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_clear_queue_clicked(self):
+        try:
+            self.model.queue_clear()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_new_plan_clicked(self):
+        print("Create new plan (to be implemented)")
