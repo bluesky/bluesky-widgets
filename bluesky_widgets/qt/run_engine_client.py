@@ -537,7 +537,7 @@ class QtRePlanQueue(QWidget):
         super().__init__(parent)
         self.model = model
 
-        self._table_column_labels = ("Name", "args", "kwargs", "USER", "GROUP")
+        self._table_column_labels = ("", "Name", "args", "Parameters", "USER", "GROUP")
         self._table = QueueTableWidget()
         self._table.setColumnCount(len(self._table_column_labels))
         # self._table.verticalHeader().hide()
@@ -549,9 +549,7 @@ class QtRePlanQueue(QWidget):
         self._table.setSelectionBehavior(QTableView.SelectRows)
         self._table.setSelectionMode(QTableWidget.SingleSelection)
         self._table.setDragEnabled(False)
-        # self._table.setDragDropMode(QAbstractItemView.InternalMove)
         self._table.setAcceptDrops(False)
-        # self._table.setDragDropOverwriteMode(False)
         self._table.setDropIndicatorShown(True)
         self._table.setShowGrid(True)
 
@@ -560,6 +558,7 @@ class QtRePlanQueue(QWidget):
         self._table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self._table.horizontalHeader().setStretchLastSection(True)
+        self._table.horizontalHeader().setMinimumSectionSize(5)
 
         # The following parameters are used only to control widget state (e.g. activate/deactivate
         #   buttons), not to perform real operations.
@@ -646,8 +645,6 @@ class QtRePlanQueue(QWidget):
     def on_table_drop_event(self, row, col):
         # If the selected queue item is not in the table anymore (e.g. sent to execution),
         #   then ignore the drop event, since the item can not be moved.
-        print(f"Row dropped: row={row} col={col}")
-
         if self.model.selected_queue_item_uid:
             item_uid_to_replace = self.model.queue_item_pos_to_uid(row)
             try:
@@ -674,9 +671,10 @@ class QtRePlanQueue(QWidget):
         # running_item = event.running_item.copy()
 
         label_to_key = {
+            "": "item_type",
             "Name": "name",
             "args": "args",
-            "kwargs": "kwargs",
+            "Parameters": "kwargs",
             "USER": "user",
             "GROUP": "user_group",
         }
@@ -696,8 +694,15 @@ class QtRePlanQueue(QWidget):
                 key = label_to_key[col_name]
                 value = item.get(key, "")  # Print nothing if the key does not exist
                 s = str(value)
+
+                # Print capitalized first letter of the item type ('P' or 'I')
+                if (key == "item_type") and s:
+                    s = s[0].upper()
+
                 # Remove enclosing [] or {} (for arg and kwarg)
-                if s.startswith("[") or s.startswith("{"):
+                if (key == "args" and s.startswith("[")) or (
+                    key == "kwargs" and s.startswith("{")
+                ):
                     s = s[1:-1]
                 table_item = QTableWidgetItem(s)
                 table_item.setFlags(table_item.flags() & ~Qt.ItemIsEditable)
