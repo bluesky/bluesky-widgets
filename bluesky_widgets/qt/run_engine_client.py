@@ -795,21 +795,18 @@ class QtRePlanHistory(QWidget):
         self.model = model
 
         self._table_column_labels = ("", "Name", "args", "Parameters", "USER", "GROUP")
-        self._table = QueueTableWidget()
+        self._table = QTableWidget()
         self._table.setColumnCount(len(self._table_column_labels))
         # self._table.verticalHeader().hide()
         self._table.setHorizontalHeaderLabels(self._table_column_labels)
         self._table.horizontalHeader().setSectionsMovable(True)
 
+        # self._table.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self._table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
 
         self._table.setSelectionBehavior(QTableView.SelectRows)
         self._table.setSelectionMode(QTableWidget.SingleSelection)
-        self._table.setDragEnabled(False)
-        self._table.setAcceptDrops(False)
-        self._table.setDropIndicatorShown(True)
         self._table.setShowGrid(True)
-
         self._table.setAlternatingRowColors(True)
 
         self._table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
@@ -822,34 +819,18 @@ class QtRePlanHistory(QWidget):
         self._n_table_items = 0  # The number of items in the table
         self._n_selected_item = -1  # Selected item (table row)
 
-        self._pb_move_up = PushButtonMinimumWidth("Move Up")
-        self._pb_move_down = PushButtonMinimumWidth("Down")
-        self._pb_move_to_top = PushButtonMinimumWidth("Top")
-        self._pb_move_to_bottom = PushButtonMinimumWidth("Bottom")
-        self._pb_delete_plan = PushButtonMinimumWidth("Delete")
-        self._pb_new_plan = PushButtonMinimumWidth("New")
-        self._pb_clear_queue = PushButtonMinimumWidth("Clear")
+        self._pb_add_to_queue = PushButtonMinimumWidth("Add to Queue")
+        self._pb_clear_history = PushButtonMinimumWidth("Clear")
 
-        self._pb_move_up.clicked.connect(self._pb_move_up_clicked)
-        self._pb_move_down.clicked.connect(self._pb_move_down_clicked)
-        self._pb_move_to_top.clicked.connect(self._pb_move_to_top_clicked)
-        self._pb_move_to_bottom.clicked.connect(self._pb_move_to_bottom_clicked)
-        self._pb_delete_plan.clicked.connect(self._pb_delete_plan_clicked)
-        self._pb_new_plan.clicked.connect(self._pb_new_plan_clicked)
-        self._pb_clear_queue.clicked.connect(self._pb_clear_queue_clicked)
+        self._pb_add_to_queue.clicked.connect(self._pb_add_to_queue_clicked)
+        self._pb_clear_history.clicked.connect(self._pb_clear_history_clicked)
 
         self._group_box = QGroupBox("Plan History")
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
-        hbox.addWidget(self._pb_move_up)
-        hbox.addWidget(self._pb_move_down)
-        hbox.addWidget(self._pb_move_to_top)
-        hbox.addWidget(self._pb_move_to_bottom)
-        hbox.addStretch(2)
-        hbox.addWidget(self._pb_clear_queue)
+        hbox.addWidget(self._pb_add_to_queue)
         hbox.addStretch(1)
-        hbox.addWidget(self._pb_delete_plan)
-        hbox.addWidget(self._pb_new_plan)
+        hbox.addWidget(self._pb_clear_history)
         vbox.addLayout(hbox)
         vbox.addWidget(self._table)
         self._group_box.setLayout(vbox)
@@ -859,24 +840,18 @@ class QtRePlanHistory(QWidget):
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
-        self.model.events.plan_queue_changed.connect(self.on_plan_queue_changed)
-        self.model.events.queue_item_selection_changed.connect(
-            self.on_queue_item_selection_changed
+        self.model.events.plan_history_changed.connect(self.on_plan_history_changed)
+        self.model.events.history_item_selection_changed.connect(
+            self.on_history_item_selection_changed
         )
-        self._table.signal_drop_event.connect(self.on_table_drop_event)
-        self._table.signal_scroll.connect(self.on_table_scroll_event)
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
 
         self._update_button_states()
 
     def on_update_widgets(self, event):
         # None should be converted to False:
-        is_connected = bool(event.is_connected)
+        # is_connected = bool(event.is_connected)
         # status = event.status
-
-        # Disable drops if there is no connection to RE Manager
-        self._table.setDragEnabled(is_connected)
-        self._table.setAcceptDrops(is_connected)
 
         self._update_button_states()
 
@@ -886,45 +861,12 @@ class QtRePlanHistory(QWidget):
         n_selected_item = self._n_selected_item
 
         is_sel = n_selected_item >= 0
-        sel_top = n_selected_item == 0
-        sel_bottom = n_selected_item == n_items - 1
 
-        self._pb_move_up.setEnabled(is_connected and is_sel and not sel_top)
-        self._pb_move_down.setEnabled(is_connected and is_sel and not sel_bottom)
-        self._pb_move_to_top.setEnabled(is_connected and is_sel and not sel_top)
-        self._pb_move_to_bottom.setEnabled(is_connected and is_sel and not sel_bottom)
+        self._pb_add_to_queue.setEnabled(is_connected and is_sel)
+        self._pb_clear_history.setEnabled(is_connected and n_items)
 
-        self._pb_clear_queue.setEnabled(is_connected and n_items)
-
-        self._pb_delete_plan.setEnabled(is_connected and is_sel)
-        self._pb_new_plan.setEnabled(is_connected)
-
-    def on_table_drop_event(self, row, col):
-        # If the selected queue item is not in the table anymore (e.g. sent to execution),
-        #   then ignore the drop event, since the item can not be moved.
-        if self.model.selected_queue_item_uid:
-            item_uid_to_replace = self.model.queue_item_pos_to_uid(row)
-            try:
-                self.model.queue_item_move_in_place_of(item_uid_to_replace)
-            except Exception as ex:
-                print(f"Exception: {ex}")
-
-        self._update_button_states()
-
-    def on_table_scroll_event(self, scroll_direction):
-        v = self._table.verticalScrollBar().value()
-        v_max = self._table.verticalScrollBar().maximum()
-        if scroll_direction == "up" and v > 0:
-            v_new = v - 1
-        elif scroll_direction == "down" and v < v_max:
-            v_new = v + 1
-        else:
-            v_new = v
-        if v != v_new:
-            self._table.verticalScrollBar().setValue(v_new)
-
-    def on_plan_queue_changed(self, event):
-        plan_queue_items = event.plan_queue_items.copy()
+    def on_plan_history_changed(self, event):
+        plan_history_items = event.plan_history_items.copy()
         # running_item = event.running_item.copy()
 
         label_to_key = {
@@ -936,17 +878,24 @@ class QtRePlanHistory(QWidget):
             "GROUP": "user_group",
         }
 
-        self._table.clearContents()
-        self._table.setRowCount(len(plan_queue_items))
+        # Decide if the history is scrolled all the way to the bottom.
+        #  (This is part of the code for advancing the history as plans are executed.)
+        scroll_value = self._table.verticalScrollBar().value()
+        scroll_maximum = self._table.verticalScrollBar().maximum()
+        n_table_rows = self._n_table_items
+        advance_scrollbar = scroll_value == scroll_maximum
 
-        if len(plan_queue_items):
+        self._table.clearContents()
+        self._table.setRowCount(len(plan_history_items))
+
+        if len(plan_history_items):
             resize_mode = QHeaderView.ResizeToContents
         else:
             # Empty table, stretch the header
             resize_mode = QHeaderView.Stretch
         self._table.horizontalHeader().setSectionResizeMode(resize_mode)
 
-        for nr, item in enumerate(plan_queue_items):
+        for nr, item in enumerate(plan_history_items):
             for nc, col_name in enumerate(self._table_column_labels):
                 key = label_to_key[col_name]
                 value = item.get(key, "")  # Print nothing if the key does not exist
@@ -966,7 +915,16 @@ class QtRePlanHistory(QWidget):
                 self._table.setItem(nr, nc, table_item)
 
         # Update the number of table items
-        self._n_table_items = len(plan_queue_items)
+        self._n_table_items = len(plan_history_items)
+
+        # Advance scrollbar if the table is scrolled all the way down.
+        if advance_scrollbar:
+            n_advance = self._n_table_items - n_table_rows
+            scroll_max_new = scroll_maximum + n_advance
+            # The maximum is supposed to be set automatically (and it is set later),
+            #   but in order for advance the scroller in this code we need to set max value manually.
+            self._table.verticalScrollBar().setMaximum(scroll_max_new)
+            self._table.verticalScrollBar().setValue(scroll_maximum + n_advance)
 
         self._update_button_states()
 
@@ -979,24 +937,20 @@ class QtRePlanHistory(QWidget):
         #   so that more than one row could be selected at a time, the following code will not work.
         try:
             if len(sel_rows) >= 1:
-                row = sel_rows[0].row()
-                selected_item_uid = self.model.queue_item_pos_to_uid(row)
-                self.model.selected_queue_item_uid = selected_item_uid
-                self._n_selected_item = row
+                selected_item_pos = sel_rows[0].row()
+                self.model.selected_history_item_pos = selected_item_pos
+                self._n_selected_item = selected_item_pos
             else:
                 raise Exception()
         except Exception:
-            self.model.selected_queue_item_uid = ""
+            self.model.selected_history_item_pos = -1
             self._n_selected_item = -1
 
-    def on_queue_item_selection_changed(self, event):
+    def on_history_item_selection_changed(self, event):
         """
         The handler for the event generated by the model
         """
-        selected_item_uid = event.selected_item_uid
-        row = -1
-        if selected_item_uid:
-            row = self.model.queue_item_uid_to_pos(selected_item_uid)
+        row = event.selected_item_pos
         if row < 0:
             self._table.clearSelection()
             self._n_selected_item = -1
@@ -1006,41 +960,14 @@ class QtRePlanHistory(QWidget):
 
         self._update_button_states()
 
-    def _pb_move_up_clicked(self):
+    def _pb_add_to_queue_clicked(self):
         try:
-            self.model.queue_item_move_up()
+            self.model.history_item_add_to_queue()
         except Exception as ex:
             print(f"Exception: {ex}")
 
-    def _pb_move_down_clicked(self):
+    def _pb_clear_history_clicked(self):
         try:
-            self.model.queue_item_move_down()
+            self.model.history_clear()
         except Exception as ex:
             print(f"Exception: {ex}")
-
-    def _pb_move_to_top_clicked(self):
-        try:
-            self.model.queue_item_move_to_top()
-        except Exception as ex:
-            print(f"Exception: {ex}")
-
-    def _pb_move_to_bottom_clicked(self):
-        try:
-            self.model.queue_item_move_to_bottom()
-        except Exception as ex:
-            print(f"Exception: {ex}")
-
-    def _pb_delete_plan_clicked(self):
-        try:
-            self.model.queue_item_remove()
-        except Exception as ex:
-            print(f"Exception: {ex}")
-
-    def _pb_clear_queue_clicked(self):
-        try:
-            self.model.queue_clear()
-        except Exception as ex:
-            print(f"Exception: {ex}")
-
-    def _pb_new_plan_clicked(self):
-        print("Create new plan (to be implemented)")

@@ -73,6 +73,10 @@ class RunEngineClient:
 
         # UID of the selected queue item, "" if no items are selected
         self._selected_queue_item_uid = ""
+        # History items are addressed by position (there could be repeated UIDs in the history)
+        #   Items in the history can not be moved or deleted, only added to the bottom, so
+        #   using positions is consistent.
+        self._selected_history_item_pos = -1
 
         self.events = EmitterGroup(
             source=self,
@@ -82,6 +86,7 @@ class RunEngineClient:
             allowed_devices_changed=Event,
             allowed_plans_changed=Event,
             queue_item_selection_changed=Event,
+            history_item_selection_changed=Event,
         )
 
     @property
@@ -234,9 +239,23 @@ class RunEngineClient:
             self._plan_history_items.clear()
             self._plan_history_items.extend(result["items"])
             self._plan_history_uid = result["plan_history_uid"]
+
+            # Deselect queue history if it does not exist in the queue
+            #   Selection will be cleared when the table is reloaded, so save it in local variable
+            selected_item_pos = self.selected_history_item_pos
+            if selected_item_pos >= len(self._plan_history_items):
+                selected_item_pos = -1
+
             self.events.plan_history_changed(
                 plan_history_items=self._plan_history_items,
             )
+
+            # Update selected item uid and emit 'queue_item_selection_changed' event
+            self._selected_history_item_pos = selected_item_pos
+            self.events.history_item_selection_changed(
+                selected_item_pos=selected_item_pos
+            )
+
         except Exception as ex:
             print(f"Exception: {ex}")
 
@@ -382,6 +401,49 @@ class RunEngineClient:
         self.load_re_manager_status(enforce=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the queue: {response['msg']}")
+
+    # ============================================================================
+    #                         History operations
+
+    @property
+    def selected_history_item_pos(self):
+        return self._selected_history_item_pos
+
+    @selected_history_item_pos.setter
+    def selected_history_item_pos(self, item_pos):
+        if self._selected_history_item_pos != item_pos:
+            self._selected_history_item_pos = item_pos
+            self.events.history_item_selection_changed(selected_item_pos=item_pos)
+
+    def history_item_add_to_queue(self):
+        """Copy the selected plan from history to the end of the queue"""
+        selected_item_pos = self.selected_history_item_pos
+        if selected_item_pos >= 0:
+            history_item = self._plan_history_items[selected_item_pos]
+            # We are submitting a plan as a new plan, so all unnecessary data will be stripped
+            #   and new item UID will be assigned.
+            response = self._client.send_message(
+                method="queue_item_add",
+                params={
+                    "item": history_item,
+                    "user": self._user_name,
+                    "user_group": self._user_group,
+                },
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to clear the history: {response['msg']}")
+
+    def history_clear(self):
+        """
+        Clear history
+        """
+        response = self._client.send_message(
+            method="history_clear",
+        )
+        self.load_re_manager_status(enforce=True)
+        if not response["success"]:
+            raise RuntimeError(f"Failed to clear the history: {response['msg']}")
 
     # ============================================================================
     #                  Operations with RE Environment
