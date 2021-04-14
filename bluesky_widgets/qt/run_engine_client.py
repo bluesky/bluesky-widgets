@@ -1,4 +1,5 @@
 import time
+import pprint
 
 from qtpy.QtWidgets import (
     QWidget,
@@ -12,9 +13,10 @@ from qtpy.QtWidgets import (
     QTableView,
     QHeaderView,
     QAbstractItemView,
+    QTextEdit,
 )
 from qtpy.QtCore import Qt, Signal, Slot, QTimer
-from qtpy.QtGui import QFontMetrics
+from qtpy.QtGui import QFontMetrics, QPalette
 
 from bluesky_widgets.qt.threading import FunctionWorker
 
@@ -550,10 +552,6 @@ class QueueTableWidget(QTableWidget):
         )
         self._scroll_timer.start(timeout)
 
-    # def resizeEvent(self, event):
-    #     super().resizeEvent(event)
-    #     self.signal_resized.emit()
-
 
 class PushButtonMinimumWidth(QPushButton):
     """
@@ -581,7 +579,14 @@ class QtRePlanQueue(QWidget):
         super().__init__(parent)
         self.model = model
 
-        self._table_column_labels = ("", "Name", "args", "Parameters", "USER", "GROUP")
+        self._table_column_labels = (
+            "",
+            "Name",
+            "Args",
+            "Parameters",
+            "USER",
+            "GROUP",
+        )
         self._table = QueueTableWidget()
         self._table.setColumnCount(len(self._table_column_labels))
         # self._table.verticalHeader().hide()
@@ -744,15 +749,6 @@ class QtRePlanQueue(QWidget):
     @Slot(object, str)
     def slot_plan_queue_changed(self, plan_queue_items, selected_item_uid):
 
-        label_to_key = {
-            "": "item_type",
-            "Name": "name",
-            "args": "args",
-            "Parameters": "kwargs",
-            "USER": "user",
-            "GROUP": "user_group",
-        }
-
         # Check if the vertical scroll bar is scrolled to the bottom. Ignore the case
         #   when 'scroll_value==0': if the top plan is visible, it should remain visible
         #   even if additional plans are added to the queue.
@@ -774,20 +770,13 @@ class QtRePlanQueue(QWidget):
 
         for nr, item in enumerate(plan_queue_items):
             for nc, col_name in enumerate(self._table_column_labels):
-                key = label_to_key[col_name]
-                value = item.get(key, "")  # Print nothing if the key does not exist
-                s = str(value)
-
-                # Print capitalized first letter of the item type ('P' or 'I')
-                if (key == "item_type") and s:
-                    s = s[0].upper()
-
-                # Remove enclosing [] or {} (for arg and kwarg)
-                if (key == "args" and s.startswith("[")) or (
-                    key == "kwargs" and s.startswith("{")
-                ):
-                    s = s[1:-1]
-                table_item = QTableWidgetItem(s)
+                try:
+                    value = self.model.get_item_value_for_label(
+                        item=item, label=col_name
+                    )
+                except KeyError:
+                    value = ""
+                table_item = QTableWidgetItem(value)
                 table_item.setFlags(table_item.flags() & ~Qt.ItemIsEditable)
                 self._table.setItem(nr, nc, table_item)
 
@@ -897,7 +886,15 @@ class QtRePlanHistory(QWidget):
         super().__init__(parent)
         self.model = model
 
-        self._table_column_labels = ("", "Name", "args", "Parameters", "USER", "GROUP")
+        self._table_column_labels = (
+            "",
+            "Name",
+            "STATUS",
+            "Args",
+            "Parameters",
+            "USER",
+            "GROUP",
+        )
         self._table = QueueTableWidget()
         self._table.setColumnCount(len(self._table_column_labels))
         # self._table.verticalHeader().hide()
@@ -925,11 +922,11 @@ class QtRePlanHistory(QWidget):
         self._n_table_items = 0  # The number of items in the table
         self._n_selected_item = -1  # Selected item (table row)
 
-        self._pb_add_to_queue = PushButtonMinimumWidth("Add to Queue")
+        self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
         self._pb_deselect_all = PushButtonMinimumWidth("Deselect All")
         self._pb_clear_history = PushButtonMinimumWidth("Clear History")
 
-        self._pb_add_to_queue.clicked.connect(self._pb_add_to_queue_clicked)
+        self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
         self._pb_deselect_all.clicked.connect(self._pb_deselect_all_clicked)
         self._pb_clear_history.clicked.connect(self._pb_clear_history_clicked)
 
@@ -937,7 +934,7 @@ class QtRePlanHistory(QWidget):
         hbox = QHBoxLayout()
         hbox.addWidget(QLabel("HISTORY"))
         hbox.addStretch(1)
-        hbox.addWidget(self._pb_add_to_queue)
+        hbox.addWidget(self._pb_copy_to_queue)
         hbox.addStretch(3)
         hbox.addWidget(self._pb_deselect_all)
         hbox.addWidget(self._pb_clear_history)
@@ -988,7 +985,7 @@ class QtRePlanHistory(QWidget):
 
         is_sel = n_selected_item >= 0
 
-        self._pb_add_to_queue.setEnabled(is_connected and is_sel)
+        self._pb_copy_to_queue.setEnabled(is_connected and is_sel)
         self._pb_deselect_all.setEnabled(is_sel)
         self._pb_clear_history.setEnabled(is_connected and n_items)
 
@@ -999,15 +996,6 @@ class QtRePlanHistory(QWidget):
 
     @Slot(object, int)
     def slot_plan_history_changed(self, plan_history_items, selected_item_pos):
-        label_to_key = {
-            "": "item_type",
-            "Name": "name",
-            "args": "args",
-            "Parameters": "kwargs",
-            "USER": "user",
-            "GROUP": "user_group",
-        }
-
         # Check if the vertical scroll bar is scrolled to the bottom.
         scroll_value = self._table.verticalScrollBar().value()
         scroll_maximum = self._table.verticalScrollBar().maximum()
@@ -1025,20 +1013,13 @@ class QtRePlanHistory(QWidget):
 
         for nr, item in enumerate(plan_history_items):
             for nc, col_name in enumerate(self._table_column_labels):
-                key = label_to_key[col_name]
-                value = item.get(key, "")  # Print nothing if the key does not exist
-                s = str(value)
-
-                # Print capitalized first letter of the item type ('P' or 'I')
-                if (key == "item_type") and s:
-                    s = s[0].upper()
-
-                # Remove enclosing [] or {} (for arg and kwarg)
-                if (key == "args" and s.startswith("[")) or (
-                    key == "kwargs" and s.startswith("{")
-                ):
-                    s = s[1:-1]
-                table_item = QTableWidgetItem(s)
+                try:
+                    value = self.model.get_item_value_for_label(
+                        item=item, label=col_name
+                    )
+                except KeyError:
+                    value = ""
+                table_item = QTableWidgetItem(value)
                 table_item.setFlags(table_item.flags() & ~Qt.ItemIsEditable)
                 self._table.setItem(nr, nc, table_item)
 
@@ -1093,7 +1074,7 @@ class QtRePlanHistory(QWidget):
 
         self._update_button_states()
 
-    def _pb_add_to_queue_clicked(self):
+    def _pb_copy_to_queue_clicked(self):
         try:
             self.model.history_item_add_to_queue()
         except Exception as ex:
@@ -1107,5 +1088,130 @@ class QtRePlanHistory(QWidget):
     def _pb_clear_history_clicked(self):
         try:
             self.model.history_clear()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+
+class QtReRunningPlan(QWidget):
+    signal_update_widgets = Signal()
+    signal_running_item_changed = Signal(object, object)
+
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+        self._text_edit = QTextEdit()
+        self._text_edit.setReadOnly(True)
+        # Set background color the same as for disabled window.
+        p = self._text_edit.palette()
+        p.setColor(QPalette.Base, p.color(QPalette.Disabled, QPalette.Base))
+        self._text_edit.setPalette(p)
+
+        self._pb_view = PushButtonMinimumWidth("View")
+        self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
+
+        self._pb_view.clicked.connect(self._pb_view_clicked)
+        self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
+
+        vbox = QVBoxLayout()
+        hbox = QHBoxLayout()
+        hbox.addWidget(QLabel("RUNNING PLAN"))
+        hbox.addStretch(1)
+        hbox.addWidget(self._pb_view)
+        hbox.addWidget(self._pb_copy_to_queue)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self._text_edit)
+        self.setLayout(vbox)
+
+        self._is_item_running = False
+        self._running_item_uid = ""
+        self._update_button_states()
+
+        self.model.events.running_item_changed.connect(self.on_running_item_changed)
+        self.signal_running_item_changed.connect(self.slot_running_item_changed)
+
+        self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widgets.connect(self.slot_update_widgets)
+
+    def on_running_item_changed(self, event):
+        running_item = event.running_item
+        run_list = event.run_list
+        self.signal_running_item_changed.emit(running_item, run_list)
+
+    @Slot(object, object)
+    def slot_running_item_changed(self, running_item, run_list):
+
+        running_item_uid = running_item.get("item_uid", "")
+        is_new_item = running_item_uid != self._running_item_uid
+        self._running_item_uid = running_item_uid
+
+        s_running_item = ""
+        indent = "&nbsp;&nbsp;&nbsp;&nbsp;"
+
+        if running_item:
+            s_running_item += f"<b>Plan Name:</b> {running_item.get('name', '')}<br>"
+            if ("args" in running_item) and running_item["args"]:
+                s_running_item += (
+                    f"<b>Arguments:</b> {str(running_item['args'])[1:-1]}<br>"
+                )
+            if ("kwargs" in running_item) and running_item["kwargs"]:
+                s_running_item += "<b>Parameters:</b><br>"
+                for k, v in running_item["kwargs"].items():
+                    s_running_item += indent + f"<b>{k}:</b> {v}<br>"
+            if ("meta" in running_item) and running_item["meta"]:
+                s_running_item += (
+                    f"<b>Metadata:</b><br>{pprint.pformat(running_item['meta'])}<br>"
+                )
+
+        s_run_list = "<b>Runs:</b><br>" if run_list else ""
+        for run_info in run_list:
+            run_uid = run_info["uid"]
+            run_is_open = run_info["is_open"]
+            run_exit_status = run_info["exit_status"]
+            s_run = indent + f"{run_uid}  "
+            if run_is_open:
+                s_run += "In progress ..."
+            else:
+                s_run += f"Exit status: {run_exit_status}"
+            s_run_list += s_run + "<br>"
+
+        # The following logic is implemented:
+        #   - always scroll to the top of the edit box when the new plan is started.
+        #   - don't scroll if contents are changed during execution of a plan unless scroll bar
+        #     is all the way down (contents may be changed e.g. during execution of multirun plans)
+        #   - if the scroll bar is in the lowest position, then continue scrolling down as text
+        #     is added (e.g. UIDs may be added to the list of Run UIDs as multirun plan is executed).
+        scroll_value = 0 if is_new_item else self._text_edit.verticalScrollBar().value()
+        scroll_maximum = self._text_edit.verticalScrollBar().maximum()
+        tb_scrolled_to_bottom = scroll_value and (scroll_value == scroll_maximum)
+
+        self._text_edit.setHtml(s_running_item + s_run_list)
+
+        self._is_item_running = bool(running_item)
+        self._update_button_states()
+
+        scroll_maximum_new = self._text_edit.verticalScrollBar().maximum()
+        scroll_value_new = scroll_maximum_new if tb_scrolled_to_bottom else scroll_value
+        self._text_edit.verticalScrollBar().setValue(scroll_value_new)
+
+    def on_update_widgets(self, event):
+        self.signal_update_widgets.emit()
+
+    @Slot()
+    def slot_update_widgets(self):
+        self._update_button_states()
+
+    def _update_button_states(self):
+        is_connected = bool(self.model._re_manager_connected)
+        is_plan_running = self._is_item_running
+
+        self._pb_copy_to_queue.setEnabled(is_connected and is_plan_running)
+        self._pb_view.setEnabled(is_connected and is_plan_running)
+
+    def _pb_view_clicked(self):
+        print("Open the running item in the plan viewer")
+
+    def _pb_copy_to_queue_clicked(self):
+        try:
+            self.model.running_item_add_to_queue()
         except Exception as ex:
             print(f"Exception: {ex}")

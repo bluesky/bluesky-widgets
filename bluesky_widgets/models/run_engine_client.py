@@ -7,6 +7,7 @@ from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutErr
 class RunEngineClient:
     def __init__(self, worker_address=None):
         self._client = ZMQCommSendThreads(zmq_server_address=worker_address)
+        self.set_map_param_labels_to_keys()
 
         # User name and group are hard coded for now
         self._user_name = "GUI Client"
@@ -21,11 +22,12 @@ class RunEngineClient:
         self._allowed_devices = {}
         self._allowed_plans = {}
         self._plan_queue_items = []
-        self._plan_queue_items_pos = (
-            {}
-        )  # Dictionary key: item uid, value: item pos in queue
+        # Dictionary key: item uid, value: item pos in queue:
+        self._plan_queue_items_pos = {}
         self._running_item = {}
         self._plan_queue_uid = ""
+        self._run_list = []
+        self._run_list_uid = ""
         self._plan_history_items = []
         self._plan_history_uid = ""
 
@@ -40,6 +42,7 @@ class RunEngineClient:
             source=self,
             status_changed=Event,
             plan_queue_changed=Event,
+            running_item_changed=Event,
             plan_history_changed=Event,
             allowed_devices_changed=Event,
             allowed_plans_changed=Event,
@@ -98,6 +101,9 @@ class RunEngineClient:
                 new_queue_uid = self._re_manager_status.get("plan_queue_uid", "")
                 if new_queue_uid != self._plan_queue_uid:
                     self.load_plan_queue()
+                new_run_list_uid = self._re_manager_status.get("run_list_uid", "")
+                if new_run_list_uid != self._run_list_uid:
+                    self.load_run_list()
                 new_history_uid = self._re_manager_status.get("plan_history_uid", "")
                 if new_history_uid != self._plan_history_uid:
                     self.load_plan_history()
@@ -179,6 +185,27 @@ class RunEngineClient:
                 plan_queue_items=self._plan_queue_items,
                 selected_item_uid=selected_uid,
             )
+            self.events.running_item_changed(
+                running_item=self._running_item,
+                run_list=self._run_list,
+            )
+
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def load_run_list(self):
+        try:
+            result = self._client.send_message(method="re_runs", raise_exceptions=True)
+            if result["success"] is False:
+                raise RuntimeError(f"Failed to load run_list: {result['msg']}")
+            self._run_list.clear()
+            self._run_list.extend(result["run_list"])
+            self._run_list_uid = result["run_list_uid"]
+
+            self.events.running_item_changed(
+                running_item=self._running_item,
+                run_list=self._run_list,
+            )
 
         except Exception as ex:
             print(f"Exception: {ex}")
@@ -207,6 +234,103 @@ class RunEngineClient:
 
         except Exception as ex:
             print(f"Exception: {ex}")
+
+    # ============================================================================
+    #                         Item representation
+
+    def set_map_param_labels_to_keys(self, *, map_dict=None):
+        """
+        Set mapping between labels and item dictionary keys. Map is a dictionary where
+        keys are label names (e.g. names of the columns of a table) and dictionaries are
+        tuples of keys that show the location of the parameter in item dictionary, e.g.
+        ``{"STATUS": ("result", "exit_status")}``. In most practical cases this function
+        should not be called at all.
+
+        Parameters
+        ----------
+        map_dict : dict or None
+            Map dictionary or None to use the default dictionary
+
+        Returns
+        -------
+        None
+        """
+        if (map_dict is not None) and not isinstance(map_dict, dict):
+            raise ValueError(
+                f"Incorrect type ('{type(map_dict)}') of the parameter 'map'. 'None' or 'dict' is expected"
+            )
+
+        _default_map = {
+            "": ("item_type",),
+            "Name": ("name",),
+            "Args": ("args",),
+            "Parameters": ("kwargs",),
+            "USER": ("user",),
+            "GROUP": ("user_group",),
+            "STATUS": ("result", "exit_status"),
+        }
+        map_dict = map_dict if (map_dict is not None) else _default_map
+        self._map_column_labels_to_keys = map_dict
+
+    def get_item_value_for_label(self, *, item, label, as_str=True):
+        """
+        Returns parameter value of the item for given label (e.g. table column name). Returns
+        value represented as a string if `as_str=True`, otherwise returns value itself. Raises
+        `KeyError` if the label or parameter is not found. It is not guaranteed that item
+        dictionaries always contain all parameters, so exception does not indicate an error
+        and should be processed by application.
+
+        Parameters
+        ----------
+        item : dict
+            Dictionary containing item parameters
+        label : str
+            Label (e.g. table column name)
+        as_str : boolean
+            ``True`` - return string representation of the value, otherwise return the value
+
+        Returns
+        -------
+        str
+            column value represented as a string
+
+        Raises
+        ------
+        KeyError
+            label or parameter is not found in the dictionary
+        """
+        try:
+            key_seq = self._map_column_labels_to_keys[label]
+        except KeyError:
+            raise KeyError("Label 'label' is not found in the map dictionary")
+
+        # Follow the path in the dictionary. 'KeyError' exception is raised if a key does not exist
+        try:
+            value = item
+            for key in key_seq:
+                value = value[key]
+        except KeyError:
+            raise KeyError(
+                f"Parameter with keys {key_seq} is not found in the item dictionary"
+            )
+
+        if as_str:
+            s = str(value)
+            key = key_seq[-1]
+
+            # Print capitalized first letter of the item type ('P' or 'I')
+            if (key == "item_type") and s:
+                s = s[0].upper()
+
+            # Remove enclosing [] or {} (for arg and kwarg)
+            if (key == "args" and s.startswith("[")) or (
+                key == "kwargs" and s.startswith("{")
+            ):
+                s = s[1:-1]
+        else:
+            s = value
+
+        return s
 
     # ============================================================================
     #                         Queue operations
@@ -381,7 +505,9 @@ class RunEngineClient:
             )
             self.load_re_manager_status(enforce=True)
             if not response["success"]:
-                raise RuntimeError(f"Failed to clear the history: {response['msg']}")
+                raise RuntimeError(
+                    f"Copy selected history item to queue: {response['msg']}"
+                )
 
     def history_clear(self):
         """
@@ -393,6 +519,29 @@ class RunEngineClient:
         self.load_re_manager_status(enforce=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the history: {response['msg']}")
+
+    # ============================================================================
+    #                     Operations with running item
+
+    def running_item_add_to_queue(self):
+        """Copy the selected plan from history to the end of the queue"""
+        if self._running_item:
+            running_item = self._running_item.copy()
+            # We are submitting a plan as a new plan, so all unnecessary data will be stripped
+            #   and new item UID will be assigned.
+            response = self._client.send_message(
+                method="queue_item_add",
+                params={
+                    "item": running_item,
+                    "user": self._user_name,
+                    "user_group": self._user_group,
+                },
+            )
+            self.load_re_manager_status(enforce=True)
+            if not response["success"]:
+                raise RuntimeError(
+                    f"Failed to copy currently running item to queue: {response['msg']}"
+                )
 
     # ============================================================================
     #                  Operations with RE Environment
