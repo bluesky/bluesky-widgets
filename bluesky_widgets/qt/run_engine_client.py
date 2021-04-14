@@ -13,13 +13,15 @@ from qtpy.QtWidgets import (
     QHeaderView,
     QAbstractItemView,
 )
-from qtpy.QtCore import Qt, Signal, QTimer
+from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics
 
 from bluesky_widgets.qt.threading import FunctionWorker
 
 
 class QtReManagerConnection(QWidget):
+    signal_update_widget = Signal(object)
+
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
@@ -54,6 +56,7 @@ class QtReManagerConnection(QWidget):
 
         self._update_widget_states()
         self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widget.connect(self.slot_update_widgets)
 
     def _update_widget_states(self):
         self._pb_re_manager_connect.setEnabled(not self.updates_activated)
@@ -64,6 +67,11 @@ class QtReManagerConnection(QWidget):
 
     def on_update_widgets(self, event):
         is_connected = event.is_connected
+        self.signal_update_widget.emit(is_connected)
+
+    @Slot(object)
+    def slot_update_widgets(self, is_connected):
+        # 'is_connected' may take values None, True and False
         text = "-----"
         if is_connected is True:
             text = "ONLINE"
@@ -99,6 +107,8 @@ class QtReManagerConnection(QWidget):
 
 
 class QtReEnvironmentControls(QWidget):
+    signal_update_widget = Signal(bool, object)
+
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
@@ -129,11 +139,16 @@ class QtReEnvironmentControls(QWidget):
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widget.connect(self.slot_update_widgets)
 
     def on_update_widgets(self, event):
-        # None should be converted to False:
         is_connected = bool(event.is_connected)
         status = event.status
+        self.signal_update_widget.emit(is_connected, status)
+
+    @Slot(bool, object)
+    def slot_update_widgets(self, is_connected, status):
+        # 'is_connected' takes values True, False
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
         self._pb_env_open.setEnabled(
@@ -164,6 +179,8 @@ class QtReEnvironmentControls(QWidget):
 
 
 class QtReQueueControls(QWidget):
+    signal_update_widget = Signal(bool, object)
+
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
@@ -193,11 +210,16 @@ class QtReQueueControls(QWidget):
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widget.connect(self.slot_update_widgets)
 
     def on_update_widgets(self, event):
-        # None should be converted to False:
         is_connected = bool(event.is_connected)
         status = event.status
+        self.signal_update_widget.emit(is_connected, status)
+
+    @Slot(bool, object)
+    def slot_update_widgets(self, is_connected, status):
+        # 'is_connected' takes values True, False
         worker_exists = status.get("worker_environment_exists", False)
         running_item_uid = status.get("running_item_uid", None)
         queue_stop_pending = status.get("queue_stop_pending", False)
@@ -222,16 +244,16 @@ class QtReQueueControls(QWidget):
     def _pb_queue_stop_clicked(self):
         try:
             if self._pb_queue_stop.isChecked():
-                print("Stopping the queue")
                 self.model.queue_stop()
             else:
-                print("Cancelling stop")
                 self.model.queue_stop_cancel()
         except Exception as ex:
             print(f"Exception: {ex}")
 
 
 class QtReExecutionControls(QWidget):
+    signal_update_widget = Signal(bool, object)
+
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
@@ -284,11 +306,16 @@ class QtReExecutionControls(QWidget):
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widget.connect(self.slot_update_widgets)
 
     def on_update_widgets(self, event):
-        # None should be converted to False:
         is_connected = bool(event.is_connected)
         status = event.status
+        self.signal_update_widget.emit(is_connected, status)
+
+    @Slot(bool, object)
+    def slot_update_widgets(self, is_connected, status):
+        # 'is_connected' takes values True, False
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
         self._pb_plan_pause_deferred.setEnabled(
@@ -348,6 +375,8 @@ class QtReExecutionControls(QWidget):
 
 
 class QtReStatusMonitor(QWidget):
+    signal_update_widget = Signal(object)
+
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
@@ -391,6 +420,7 @@ class QtReStatusMonitor(QWidget):
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widget.connect(self.slot_update_widgets)
 
     def _set_label_text(self, label, prefix, value):
         if value is None:
@@ -399,6 +429,10 @@ class QtReStatusMonitor(QWidget):
 
     def on_update_widgets(self, event):
         status = event.status
+        self.signal_update_widget.emit(status)
+
+    @Slot(object)
+    def slot_update_widgets(self, status):
         worker_exists = status.get("worker_environment_exists", None)
         manager_state = status.get("manager_state", None)
         items_in_history = status.get("items_in_history", None)
@@ -442,6 +476,7 @@ class QtReStatusMonitor(QWidget):
 class QueueTableWidget(QTableWidget):
     signal_drop_event = Signal(int, int)
     signal_scroll = Signal(str)
+    signal_resized = Signal()
 
     def __init__(self):
         super().__init__()
@@ -515,6 +550,10 @@ class QueueTableWidget(QTableWidget):
         )
         self._scroll_timer.start(timeout)
 
+    # def resizeEvent(self, event):
+    #     super().resizeEvent(event)
+    #     self.signal_resized.emit()
+
 
 class PushButtonMinimumWidth(QPushButton):
     """
@@ -533,6 +572,11 @@ class PushButtonMinimumWidth(QPushButton):
 
 
 class QtRePlanQueue(QWidget):
+
+    signal_update_widgets = Signal(bool)
+    signal_update_selection = Signal(str)
+    signal_plan_queue_changed = Signal(object, str)
+
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
@@ -560,6 +604,8 @@ class QtRePlanQueue(QWidget):
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.horizontalHeader().setMinimumSectionSize(5)
 
+        self._table_scrolled_to_bottom = False
+
         # The following parameters are used only to control widget state (e.g. activate/deactivate
         #   buttons), not to perform real operations.
         self._n_table_items = 0  # The number of items in the table
@@ -572,6 +618,7 @@ class QtRePlanQueue(QWidget):
         self._pb_delete_plan = PushButtonMinimumWidth("Delete")
         self._pb_new_plan = PushButtonMinimumWidth("New")
         self._pb_clear_queue = PushButtonMinimumWidth("Clear")
+        self._pb_deselect = PushButtonMinimumWidth("Deselect")
 
         self._pb_move_up.clicked.connect(self._pb_move_up_clicked)
         self._pb_move_down.clicked.connect(self._pb_move_down_clicked)
@@ -580,43 +627,58 @@ class QtRePlanQueue(QWidget):
         self._pb_delete_plan.clicked.connect(self._pb_delete_plan_clicked)
         self._pb_new_plan.clicked.connect(self._pb_new_plan_clicked)
         self._pb_clear_queue.clicked.connect(self._pb_clear_queue_clicked)
+        self._pb_deselect.clicked.connect(self._pb_deselect_clicked)
 
         self._group_box = QGroupBox("Plan Queue")
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
+        hbox.addWidget(QLabel("QUEUE"))
+        hbox.addStretch(1)
         hbox.addWidget(self._pb_move_up)
         hbox.addWidget(self._pb_move_down)
         hbox.addWidget(self._pb_move_to_top)
         hbox.addWidget(self._pb_move_to_bottom)
         hbox.addStretch(2)
+        hbox.addWidget(self._pb_deselect)
         hbox.addWidget(self._pb_clear_queue)
         hbox.addStretch(1)
         hbox.addWidget(self._pb_delete_plan)
         hbox.addWidget(self._pb_new_plan)
         vbox.addLayout(hbox)
         vbox.addWidget(self._table)
-        self._group_box.setLayout(vbox)
-
-        vbox = QVBoxLayout()
-        vbox.addWidget(self._group_box)
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widgets.connect(self.slot_update_widgets)
+
         self.model.events.plan_queue_changed.connect(self.on_plan_queue_changed)
+        self.signal_plan_queue_changed.connect(self.slot_plan_queue_changed)
+
         self.model.events.queue_item_selection_changed.connect(
             self.on_queue_item_selection_changed
         )
+        self.signal_update_selection.connect(self.slot_change_selection)
+
         self._table.signal_drop_event.connect(self.on_table_drop_event)
         self._table.signal_scroll.connect(self.on_table_scroll_event)
+
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
+        self._table.verticalScrollBar().valueChanged.connect(
+            self.on_vertical_scrollbar_value_changed
+        )
+        self._table.verticalScrollBar().rangeChanged.connect(
+            self.on_vertical_scrollbar_range_changed
+        )
 
         self._update_button_states()
 
     def on_update_widgets(self, event):
         # None should be converted to False:
         is_connected = bool(event.is_connected)
-        # status = event.status
+        self.signal_update_widgets.emit(is_connected)
 
+    @Slot(bool)
+    def slot_update_widgets(self, is_connected):
         # Disable drops if there is no connection to RE Manager
         self._table.setDragEnabled(is_connected)
         self._table.setAcceptDrops(is_connected)
@@ -641,6 +703,14 @@ class QtRePlanQueue(QWidget):
 
         self._pb_delete_plan.setEnabled(is_connected and is_sel)
         self._pb_new_plan.setEnabled(is_connected)
+
+    def on_vertical_scrollbar_value_changed(self, value):
+        max = self._table.verticalScrollBar().maximum()
+        self._table_scrolled_to_bottom = value == max
+
+    def on_vertical_scrollbar_range_changed(self, min, max):
+        if self._table_scrolled_to_bottom:
+            self._table.verticalScrollBar().setValue(max)
 
     def on_table_drop_event(self, row, col):
         # If the selected queue item is not in the table anymore (e.g. sent to execution),
@@ -667,8 +737,12 @@ class QtRePlanQueue(QWidget):
             self._table.verticalScrollBar().setValue(v_new)
 
     def on_plan_queue_changed(self, event):
-        plan_queue_items = event.plan_queue_items.copy()
-        # running_item = event.running_item.copy()
+        plan_queue_items = event.plan_queue_items
+        selected_item_uid = event.selected_item_uid
+        self.signal_plan_queue_changed.emit(plan_queue_items, selected_item_uid)
+
+    @Slot(object, str)
+    def slot_plan_queue_changed(self, plan_queue_items, selected_item_uid):
 
         label_to_key = {
             "": "item_type",
@@ -678,6 +752,15 @@ class QtRePlanQueue(QWidget):
             "USER": "user",
             "GROUP": "user_group",
         }
+
+        # Check if the vertical scroll bar is scrolled to the bottom. Ignore the case
+        #   when 'scroll_value==0': if the top plan is visible, it should remain visible
+        #   even if additional plans are added to the queue.
+        scroll_value = self._table.verticalScrollBar().value()
+        scroll_maximum = self._table.verticalScrollBar().maximum()
+        self._table_scrolled_to_bottom = scroll_value and (
+            scroll_value == scroll_maximum
+        )
 
         self._table.clearContents()
         self._table.setRowCount(len(plan_queue_items))
@@ -711,6 +794,15 @@ class QtRePlanQueue(QWidget):
         # Update the number of table items
         self._n_table_items = len(plan_queue_items)
 
+        # Advance scrollbar if the table is scrolled all the way down.
+        if self._table_scrolled_to_bottom:
+            print(
+                f"scrolling ... {scroll_maximum} {self._table.verticalScrollBar().maximum()}"
+            )
+            scroll_maximum_new = self._table.verticalScrollBar().maximum()
+            self._table.verticalScrollBar().setValue(scroll_maximum_new)
+
+        self.slot_change_selection(selected_item_uid)
         self._update_button_states()
 
     def on_item_selection_changed(self):
@@ -737,6 +829,10 @@ class QtRePlanQueue(QWidget):
         The handler for the event generated by the model
         """
         selected_item_uid = event.selected_item_uid
+        self.signal_update_selection.emit(selected_item_uid)
+
+    @Slot(str)
+    def slot_change_selection(self, selected_item_uid):
         row = -1
         if selected_item_uid:
             row = self.model.queue_item_uid_to_pos(selected_item_uid)
@@ -785,17 +881,24 @@ class QtRePlanQueue(QWidget):
         except Exception as ex:
             print(f"Exception: {ex}")
 
+    def _pb_deselect_clicked(self):
+        self._table.clearSelection()
+
     def _pb_new_plan_clicked(self):
         print("Create new plan (to be implemented)")
 
 
 class QtRePlanHistory(QWidget):
+    signal_update_widgets = Signal()
+    signal_update_selection = Signal(int)
+    signal_plan_history_changed = Signal(object, int)
+
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
 
         self._table_column_labels = ("", "Name", "args", "Parameters", "USER", "GROUP")
-        self._table = QTableWidget()
+        self._table = QueueTableWidget()
         self._table.setColumnCount(len(self._table_column_labels))
         # self._table.verticalHeader().hide()
         self._table.setHorizontalHeaderLabels(self._table_column_labels)
@@ -814,45 +917,68 @@ class QtRePlanHistory(QWidget):
         self._table.horizontalHeader().setStretchLastSection(True)
         self._table.horizontalHeader().setMinimumSectionSize(5)
 
+        self._table_scrolled_to_bottom = False
+        # self._table_slider_is_pressed = False
+
         # The following parameters are used only to control widget state (e.g. activate/deactivate
         #   buttons), not to perform real operations.
         self._n_table_items = 0  # The number of items in the table
         self._n_selected_item = -1  # Selected item (table row)
 
         self._pb_add_to_queue = PushButtonMinimumWidth("Add to Queue")
-        self._pb_clear_history = PushButtonMinimumWidth("Clear")
+        self._pb_deselect_all = PushButtonMinimumWidth("Deselect All")
+        self._pb_clear_history = PushButtonMinimumWidth("Clear History")
 
         self._pb_add_to_queue.clicked.connect(self._pb_add_to_queue_clicked)
+        self._pb_deselect_all.clicked.connect(self._pb_deselect_all_clicked)
         self._pb_clear_history.clicked.connect(self._pb_clear_history_clicked)
 
-        self._group_box = QGroupBox("Plan History")
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
-        hbox.addWidget(self._pb_add_to_queue)
+        hbox.addWidget(QLabel("HISTORY"))
         hbox.addStretch(1)
+        hbox.addWidget(self._pb_add_to_queue)
+        hbox.addStretch(3)
+        hbox.addWidget(self._pb_deselect_all)
         hbox.addWidget(self._pb_clear_history)
         vbox.addLayout(hbox)
         vbox.addWidget(self._table)
-        self._group_box.setLayout(vbox)
-
-        vbox = QVBoxLayout()
-        vbox.addWidget(self._group_box)
         self.setLayout(vbox)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widgets.connect(self.slot_update_widgets)
+
         self.model.events.plan_history_changed.connect(self.on_plan_history_changed)
+        self.signal_plan_history_changed.connect(self.slot_plan_history_changed)
+
         self.model.events.history_item_selection_changed.connect(
             self.on_history_item_selection_changed
         )
+        self.signal_update_selection.connect(self.slot_change_selection)
+
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
+        self._table.verticalScrollBar().valueChanged.connect(
+            self.on_vertical_scrollbar_value_changed
+        )
+        self._table.verticalScrollBar().rangeChanged.connect(
+            self.on_vertical_scrollbar_range_changed
+        )
 
         self._update_button_states()
 
-    def on_update_widgets(self, event):
-        # None should be converted to False:
-        # is_connected = bool(event.is_connected)
-        # status = event.status
+    def on_vertical_scrollbar_value_changed(self, value):
+        max = self._table.verticalScrollBar().maximum()
+        self._table_scrolled_to_bottom = value == max
 
+    def on_vertical_scrollbar_range_changed(self, min, max):
+        if self._table_scrolled_to_bottom:
+            self._table.verticalScrollBar().setValue(max)
+
+    def on_update_widgets(self, event):
+        self.signal_update_widgets.emit()
+
+    @Slot()
+    def slot_update_widgets(self):
         self._update_button_states()
 
     def _update_button_states(self):
@@ -863,12 +989,16 @@ class QtRePlanHistory(QWidget):
         is_sel = n_selected_item >= 0
 
         self._pb_add_to_queue.setEnabled(is_connected and is_sel)
+        self._pb_deselect_all.setEnabled(is_sel)
         self._pb_clear_history.setEnabled(is_connected and n_items)
 
     def on_plan_history_changed(self, event):
-        plan_history_items = event.plan_history_items.copy()
-        # running_item = event.running_item.copy()
+        plan_history_items = event.plan_history_items
+        selected_item_pos = event.selected_item_pos
+        self.signal_plan_history_changed.emit(plan_history_items, selected_item_pos)
 
+    @Slot(object, int)
+    def slot_plan_history_changed(self, plan_history_items, selected_item_pos):
         label_to_key = {
             "": "item_type",
             "Name": "name",
@@ -878,12 +1008,10 @@ class QtRePlanHistory(QWidget):
             "GROUP": "user_group",
         }
 
-        # Decide if the history is scrolled all the way to the bottom.
-        #  (This is part of the code for advancing the history as plans are executed.)
+        # Check if the vertical scroll bar is scrolled to the bottom.
         scroll_value = self._table.verticalScrollBar().value()
         scroll_maximum = self._table.verticalScrollBar().maximum()
-        n_table_rows = self._n_table_items
-        advance_scrollbar = scroll_value == scroll_maximum
+        self._table_scrolled_to_bottom = scroll_value == scroll_maximum
 
         self._table.clearContents()
         self._table.setRowCount(len(plan_history_items))
@@ -918,13 +1046,12 @@ class QtRePlanHistory(QWidget):
         self._n_table_items = len(plan_history_items)
 
         # Advance scrollbar if the table is scrolled all the way down.
-        if advance_scrollbar:
-            n_advance = self._n_table_items - n_table_rows
-            scroll_max_new = scroll_maximum + n_advance
-            # The maximum is supposed to be set automatically (and it is set later),
-            #   but in order for advance the scroller in this code we need to set max value manually.
-            self._table.verticalScrollBar().setMaximum(scroll_max_new)
-            self._table.verticalScrollBar().setValue(scroll_maximum + n_advance)
+        if self._table_scrolled_to_bottom:
+            scroll_maximum_new = self._table.verticalScrollBar().maximum()
+            self._table.verticalScrollBar().setValue(scroll_maximum_new)
+
+        # Call function directly
+        self.slot_change_selection(selected_item_pos)
 
         self._update_button_states()
 
@@ -951,6 +1078,12 @@ class QtRePlanHistory(QWidget):
         The handler for the event generated by the model
         """
         row = event.selected_item_pos
+        self.signal_update_selection.emit(row)
+
+    @Slot(int)
+    def slot_change_selection(self, selected_item_pos):
+        row = selected_item_pos
+
         if row < 0:
             self._table.clearSelection()
             self._n_selected_item = -1
@@ -965,6 +1098,11 @@ class QtRePlanHistory(QWidget):
             self.model.history_item_add_to_queue()
         except Exception as ex:
             print(f"Exception: {ex}")
+
+    def _pb_deselect_all_clicked(self):
+        self._table.clearSelection()
+        self._n_selected_item = -1
+        self._update_button_states()
 
     def _pb_clear_history_clicked(self):
         try:

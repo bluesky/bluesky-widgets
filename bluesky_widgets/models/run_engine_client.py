@@ -4,48 +4,6 @@ from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
 
 
-# class PlanItem:
-#     def __init__(self, name, args):
-#         self._name = name
-#         self._args = args
-#         self.events = EmitterGroup(
-#             source=self,
-#             name=Event,
-#         )
-#
-#     @property
-#     def name(self):
-#         return self._name
-#
-#     @name.setter
-#     def name(self, value):
-#         if value == self._name:
-#             return
-#         self._name = value
-#         self.events.name(name=value)
-#
-#     @property
-#     def args(self):
-#         return self._args
-#
-#     @args.setter
-#     def args(self, value):
-#         # TODO Deal with *mutation* (editing) of the args the same way we deal
-#         # with mutation of plot styles.
-#         if value == self._args:
-#             return
-#         self._args = value
-#         self.events.args(args=value)
-#
-#
-# class PlanQueue(ListModel):
-#     pass
-#
-#
-# class PlanHistory(ListModel):
-#     pass
-
-
 class RunEngineClient:
     def __init__(self, worker_address=None):
         self._client = ZMQCommSendThreads(zmq_server_address=worker_address)
@@ -219,12 +177,8 @@ class RunEngineClient:
             # Update the representation of the queue
             self.events.plan_queue_changed(
                 plan_queue_items=self._plan_queue_items,
-                running_item=self._running_item,
+                selected_item_uid=selected_uid,
             )
-
-            # Update selected item uid and emit 'queue_item_selection_changed' event
-            self._selected_queue_item_uid = selected_uid
-            self.events.queue_item_selection_changed(selected_item_uid=selected_uid)
 
         except Exception as ex:
             print(f"Exception: {ex}")
@@ -247,13 +201,8 @@ class RunEngineClient:
                 selected_item_pos = -1
 
             self.events.plan_history_changed(
-                plan_history_items=self._plan_history_items,
-            )
-
-            # Update selected item uid and emit 'queue_item_selection_changed' event
-            self._selected_history_item_pos = selected_item_pos
-            self.events.history_item_selection_changed(
-                selected_item_pos=selected_item_pos
+                plan_history_items=self._plan_history_items.copy(),
+                selected_item_pos=selected_item_pos,
             )
 
         except Exception as ex:
