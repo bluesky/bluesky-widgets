@@ -10,7 +10,7 @@ import collections
 import uuid as uuid_module
 
 from bluesky_live.event import EmitterGroup, Event
-from ..utils.list import EventedList
+from bluesky_live.list import ListModel as EventedList
 from ..utils.dict_view import UpdateOnlyDict, DictView
 
 
@@ -66,7 +66,41 @@ class Container(BaseSpec):
 
 
 class TableContainer(Container):
-    ...
+    __slots__ = ("_tables",)
+
+
+class Table(BaseSpec):
+    __slots__ = (
+        "_live",
+        "_label",
+        "_parent",
+        "_fields"
+    )
+
+    def __init__(self, *, label, fields, live=True, uuid=None, parent=None):
+        self._label = label
+        self._live = live
+        self._fields = tuple(fields)
+        self.events = EmitterGroup(
+            source=self,
+            label=Event,
+            new_data=Event,
+            completed=Event,
+            style_updated=Event,
+        )
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        self._label = value
+        self.events.label(value=value)
+
+    @property
+    def fields(self, value):
+        return self._fields
 
 
 class Figure(Container):
