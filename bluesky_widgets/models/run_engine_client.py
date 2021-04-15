@@ -1,9 +1,12 @@
 import collections
-import time
+import copy
+import inspect
 import pprint
+import time
 
 from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
+from bluesky_queueserver.manager.profile_ops import bind_plan_arguments
 
 
 class RunEngineClient:
@@ -283,7 +286,6 @@ class RunEngineClient:
         _default_map = {
             "": ("item_type",),
             "Name": ("name",),
-            "Args": ("args",),
             "Parameters": ("kwargs",),
             "USER": ("user",),
             "GROUP": ("user_group",),
@@ -327,8 +329,16 @@ class RunEngineClient:
         # Follow the path in the dictionary. 'KeyError' exception is raised if a key does not exist
         try:
             value = item
-            for key in key_seq:
-                value = value[key]
+            item_name, item_type = item.get("name", ""), item.get("item_type", "")
+            if (len(key_seq) == 1) and (key_seq[-1] in ("args", "kwargs")):
+                # Special case: combine args and kwargs to be displayed in one column
+                value = {
+                    "args": value.get("args", []),
+                    "kwargs": value.get("kwargs", {}),
+                }
+            else:
+                for key in key_seq:
+                    value = value[key]
         except KeyError:
             raise KeyError(
                 f"Parameter with keys {key_seq} is not found in the item dictionary"
@@ -338,9 +348,40 @@ class RunEngineClient:
             key = key_seq[-1]
 
             s = ""
-            if key == "kwargs":
-                if value and isinstance(value, collections.abc.Mapping):
-                    s = ", ".join(f"{k}: {v}" for k, v in value.items())
+            if key in ("args", "kwargs"):
+                try:
+                    if item_type == "plan":
+                        plan_parameters = self._allowed_plans.get(item_name, None)
+                        if plan_parameters is None:
+                            raise RuntimeError(
+                                f"Plan '{item_name}' is not in the list of allowed plans"
+                            )
+                        bound_arguments = bind_plan_arguments(
+                            plan_args=value["args"],
+                            plan_kwargs=value["kwargs"],
+                            plan_parameters=plan_parameters,
+                        )
+                        # If the arguments were bound successfully, then replace 'args' and 'kwargs'.
+                        value["args"] = []
+                        value["kwargs"] = bound_arguments.arguments
+                except Exception as ex:
+                    print(
+                        f"Failed to bind arguments (item_type='{item_type}', "
+                        f"item_name='{item_name}'). Exception: {ex}"
+                    )
+
+                s_args, s_kwargs = "", ""
+                if value["args"] and isinstance(
+                    value["args"], collections.abc.Iterable
+                ):
+                    s_args = ", ".join(f"{v}" for v in value["args"])
+                if value["kwargs"] and isinstance(
+                    value["kwargs"], collections.abc.Mapping
+                ):
+                    s_kwargs = ", ".join(
+                        f"{k}: {v}" for k, v in value["kwargs"].items()
+                    )
+                s = ", ".join([_ for _ in [s_args, s_kwargs] if _])
             elif key == "args":
                 if value and isinstance(value, collections.abc.Iterable):
                     s = ", ".join(f"{v}" for v in value)

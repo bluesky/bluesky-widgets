@@ -582,7 +582,6 @@ class QtRePlanQueue(QWidget):
         self._table_column_labels = (
             "",
             "Name",
-            "Args",
             "Parameters",
             "USER",
             "GROUP",
@@ -890,7 +889,6 @@ class QtRePlanHistory(QWidget):
             "",
             "Name",
             "STATUS",
-            "Args",
             "Parameters",
             "USER",
             "GROUP",
