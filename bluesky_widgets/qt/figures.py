@@ -78,6 +78,8 @@ class QtFigures(QTabWidget):
 
         self.__callback_event.connect(handle_callback)
 
+        self.currentChanged.connect(self._on_tab_changed)
+
     def sizeHint(self):
         size_hint = super().sizeHint()
         size_hint.setWidth(700)
@@ -154,6 +156,13 @@ class QtFigures(QTabWidget):
             widget = self._figures[figure_spec.uuid]
             index = self.indexOf(widget)
             self.setTabText(index, event.value)
+
+    def _on_tab_changed(self, event):
+        for i, figure in enumerate(self.model):
+            if i == event:
+                figure.active = True
+            else:
+                figure.active = False
 
 
 class QtFigure(QWidget):
