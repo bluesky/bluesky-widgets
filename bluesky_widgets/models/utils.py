@@ -166,53 +166,81 @@ def call_or_eval(mapping, run, stream_names, namespace=None):
         # Overlay user-provided namespace.
         namespace_.update(namespace or {})
         del namespace  # Avoid conflating namespace and namespace_ below.
-        results = {}
-        for key, item in mapping.items():
-            # If it is a callable, call it.
-            if callable(item):
-                # Inspect the callable's signature. For each parameter, find an
-                # item in our namespace with a matching name. This is similar
-                # to the "magic" of pytest fixtures.
-                parameters = inspect.signature(item).parameters
-                kwargs = {}
-                for name, parameter in parameters.items():
-                    try:
-                        kwargs[name] = namespace_[name]
-                    except KeyError:
-                        if parameter.default is parameter.empty:
-                            raise ValueError(f"Cannot find match for parameter {name}")
-                        # Otherwise, it's an optional parameter, so skip it.
-                results[key] = item(**kwargs)
-            elif isinstance(item, str):
-                # If it is a key in our namespace, look it up.
-                try:
-                    # This handles field or stream names that are not valid
-                    # Python identifiers (e.g. ones with spaces in them).
-                    results[key] = namespace_[item]
-                    continue
-                except KeyError:
-                    pass
-                # Check whether it is valid Python syntax.
-                try:
-                    ast.parse(item)
-                except SyntaxError as err:
-                    raise ValueError(
-                        f"Could find {item!r} in namespace or parse it as "
-                        "a Python expression."
-                    ) from err
-                # Try to evaluate it as a Python expression in the namespace.
-                try:
-                    results[key] = eval(item, namespace_)
-                except Exception as err:
-                    raise ValueError(
-                        f"Could find {item!r} in namespace or evaluate it."
-                    ) from err
-            else:
-                raise ValueError(
-                    f"expected callable or string, received {item!r} of "
-                    f"type {type(item).__name__}"
-                )
-    return results
+
+        return {
+            key: call_or_eval_one(item, namespace_) for key, item in mapping.items()
+        }
+
+
+def call_or_eval_one(item, namespace):
+    """
+    Given a mix of callables and string expressions, call or eval them.
+
+    Parameters
+    ----------
+    item : String | Callable
+        Each item must be a stream name, field name, a valid Python
+        expression, or a callable. The signature of the callable may include
+        any valid Python identifiers provideed in the namespace.
+
+    namespace : Dict
+        The namespace that the item is evaluated against.
+
+    Returns
+    -------
+    result : Any
+
+    Raises
+    ------
+    ValueError
+        If input is not String or Callable
+    BadExpression
+        If input is String and eval(...) raises an error
+
+    """
+    # If it is a callable, call it.
+    if callable(item):
+        # Inspect the callable's signature. For each parameter, find an
+        # item in our namespace with a matching name. This is similar
+        # to the "magic" of pytest fixtures.
+        parameters = inspect.signature(item).parameters
+        kwargs = {}
+        for name, parameter in parameters.items():
+            try:
+                kwargs[name] = namespace[name]
+            except KeyError:
+                if parameter.default is parameter.empty:
+                    raise ValueError(f"Cannot find match for parameter {name}")
+                # Otherwise, it's an optional parameter, so skip it.
+        return item(**kwargs)
+    elif isinstance(item, str):
+        # If it is a key in our namespace, look it up.
+        try:
+            # This handles field or stream names that are not valid
+            # Python identifiers (e.g. ones with spaces in them).
+            return namespace[item]
+        except KeyError:
+            pass
+        # Check whether it is valid Python syntax.
+        try:
+            ast.parse(item)
+        except SyntaxError as err:
+            raise ValueError(
+                f"Could find {item!r} in namespace or parse it as "
+                "a Python expression."
+            ) from err
+        # Try to evaluate it as a Python expression in the namespace.
+        try:
+            return eval(item, namespace)
+        except Exception as err:
+            raise ValueError(
+                f"Could find {item!r} in namespace or evaluate it."
+            ) from err
+    else:
+        raise ValueError(
+            f"expected callable or string, received {item!r} of "
+            f"type {type(item).__name__}"
+        )
 
 
 def auto_label(callable_or_expr):
