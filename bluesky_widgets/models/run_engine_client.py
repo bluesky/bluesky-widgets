@@ -74,7 +74,7 @@ class RunEngineClient:
         return self._re_manager_status
 
     @property
-    def re_manager_accessible(self):
+    def re_manager_connected(self):
         return self._re_manager_connected
 
     def clear(self):

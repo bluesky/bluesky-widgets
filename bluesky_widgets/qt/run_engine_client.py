@@ -691,7 +691,7 @@ class QtRePlanQueue(QWidget):
         self._update_button_states()
 
     def _update_button_states(self):
-        is_connected = bool(self.model._re_manager_connected)
+        is_connected = bool(self.model.re_manager_connected)
         n_items = self._n_table_items
         n_selected_item = self._n_selected_item
 
@@ -979,7 +979,7 @@ class QtRePlanHistory(QWidget):
         self._update_button_states()
 
     def _update_button_states(self):
-        is_connected = bool(self.model._re_manager_connected)
+        is_connected = bool(self.model.re_manager_connected)
         n_items = self._n_table_items
         n_selected_item = self._n_selected_item
 
@@ -1206,7 +1206,7 @@ class QtReRunningPlan(QWidget):
         self._update_button_states()
 
     def _update_button_states(self):
-        is_connected = bool(self.model._re_manager_connected)
+        is_connected = bool(self.model.re_manager_connected)
         is_plan_running = self._is_item_running
 
         self._pb_copy_to_queue.setEnabled(is_connected and is_plan_running)
