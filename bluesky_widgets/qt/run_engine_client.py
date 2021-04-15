@@ -1147,6 +1147,11 @@ class QtReRunningPlan(QWidget):
         s_running_item = ""
         indent = "&nbsp;&nbsp;&nbsp;&nbsp;"
 
+        def _to_html(s):
+            """Formats text as a sequence indented html lines"""
+            new_line = "<br>" + indent
+            return indent + s.replace("\n", new_line)
+
         if running_item:
             s_running_item += f"<b>Plan Name:</b> {running_item.get('name', '')}<br>"
             if ("args" in running_item) and running_item["args"]:
@@ -1157,10 +1162,13 @@ class QtReRunningPlan(QWidget):
                 s_running_item += "<b>Parameters:</b><br>"
                 for k, v in running_item["kwargs"].items():
                     s_running_item += indent + f"<b>{k}:</b> {v}<br>"
+
             if ("meta" in running_item) and running_item["meta"]:
-                s_running_item += (
-                    f"<b>Metadata:</b><br>{pprint.pformat(running_item['meta'])}<br>"
-                )
+                # This representation of metadata may not be the best, but it is still reasonable.
+                #   Note, that metadata may be a dictionary or a list of dictionaries.
+                s_meta = pprint.pformat(running_item["meta"])
+                s_meta = _to_html(s_meta)
+                s_running_item += f"<b>Metadata:</b><br>{s_meta}<br>"
 
         s_run_list = "<b>Runs:</b><br>" if run_list else ""
         for run_info in run_list:
