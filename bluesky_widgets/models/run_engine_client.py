@@ -1,3 +1,4 @@
+import collections
 import time
 import pprint
 
@@ -102,8 +103,8 @@ class RunEngineClient:
         self.load_plan_queue()
         self.load_plan_history()
 
-    def load_re_manager_status(self, *, enforce=False):
-        if enforce or (
+    def load_re_manager_status(self, *, unbuffered=False):
+        if unbuffered or (
             time.time() - self._re_manager_status_time
             > self._re_manager_status_update_period
         ):
@@ -274,7 +275,7 @@ class RunEngineClient:
         -------
         None
         """
-        if (map_dict is not None) and not isinstance(map_dict, dict):
+        if (map_dict is not None) and not isinstance(map_dict, collections.abc.Mapping):
             raise ValueError(
                 f"Incorrect type ('{type(map_dict)}') of the parameter 'map'. 'None' or 'dict' is expected"
             )
@@ -334,18 +335,22 @@ class RunEngineClient:
             )
 
         if as_str:
-            s = str(value)
             key = key_seq[-1]
 
-            # Print capitalized first letter of the item type ('P' or 'I')
-            if (key == "item_type") and s:
-                s = s[0].upper()
-
-            # Remove enclosing [] or {} (for arg and kwarg)
-            if (key == "args" and s.startswith("[")) or (
-                key == "kwargs" and s.startswith("{")
-            ):
-                s = s[1:-1]
+            s = ""
+            if key == "kwargs":
+                if value and isinstance(value, collections.abc.Mapping):
+                    s = ", ".join(f"{k}: {v}" for k, v in value.items())
+            elif key == "args":
+                if value and isinstance(value, collections.abc.Iterable):
+                    s = ", ".join(f"{v}" for v in value)
+            elif key == "item_type":
+                # Print capitalized first letter of the item type ('P' or 'I')
+                s_tmp = str(value)
+                if s_tmp:
+                    s = s_tmp[0].upper()
+            else:
+                s = str(value)
         else:
             s = value
 
@@ -389,7 +394,7 @@ class RunEngineClient:
                 method="queue_item_move",
                 params={"uid": item_uid, "before_uid": item_uid_above},
             )
-            self.load_re_manager_status(enforce=True)
+            self.load_re_manager_status(unbuffered=True)
             if not response["success"]:
                 raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
@@ -407,7 +412,7 @@ class RunEngineClient:
                 method="queue_item_move",
                 params={"uid": item_uid, "after_uid": item_uid_below},
             )
-            self.load_re_manager_status(enforce=True)
+            self.load_re_manager_status(unbuffered=True)
             if not response["success"]:
                 raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
@@ -429,7 +434,7 @@ class RunEngineClient:
                 method="queue_item_move",
                 params={"uid": item_uid, location: item_uid_to_replace},
             )
-            self.load_re_manager_status(enforce=True)
+            self.load_re_manager_status(unbuffered=True)
             if not response["success"]:
                 raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
@@ -442,7 +447,7 @@ class RunEngineClient:
             response = self._client.send_message(
                 method="queue_item_move", params={"uid": item_uid, "pos_dest": "front"}
             )
-            self.load_re_manager_status(enforce=True)
+            self.load_re_manager_status(unbuffered=True)
             if not response["success"]:
                 raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
@@ -455,7 +460,7 @@ class RunEngineClient:
             response = self._client.send_message(
                 method="queue_item_move", params={"uid": item_uid, "pos_dest": "back"}
             )
-            self.load_re_manager_status(enforce=True)
+            self.load_re_manager_status(unbuffered=True)
             if not response["success"]:
                 raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
@@ -474,14 +479,12 @@ class RunEngineClient:
                 n_sel_item_new = n_item + 1
             else:
                 n_sel_item_new = n_item - 1
-            print(f"n-1 = {n_sel_item_new}")
             self.selected_queue_item_uid = self.queue_item_pos_to_uid(n_sel_item_new)
-            print(f"n-2 = {n_sel_item_new}")
 
             response = self._client.send_message(
                 method="queue_item_remove", params={"uid": item_uid}
             )
-            self.load_re_manager_status(enforce=True)
+            self.load_re_manager_status(unbuffered=True)
             if not response["success"]:
                 raise RuntimeError(f"Failed to delete item: {response['msg']}")
 
@@ -490,7 +493,7 @@ class RunEngineClient:
         response = self._client.send_message(
             method="queue_clear",
         )
-        self.load_re_manager_status(enforce=True)
+        self.load_re_manager_status(unbuffered=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the queue: {response['msg']}")
 
@@ -533,7 +536,7 @@ class RunEngineClient:
         response = self._client.send_message(
             method="queue_item_add", params=request_params
         )
-        self.load_re_manager_status(enforce=True)
+        self.load_re_manager_status(unbuffered=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to add item to the queue: {response['msg']}")
         else:
@@ -574,7 +577,7 @@ class RunEngineClient:
         response = self._client.send_message(
             method="history_clear",
         )
-        self.load_re_manager_status(enforce=True)
+        self.load_re_manager_status(unbuffered=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the history: {response['msg']}")
 
