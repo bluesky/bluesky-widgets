@@ -45,7 +45,7 @@ class Figure(BaseSpec):
         should fall back on ``title`` if this is None.
     """
 
-    __slots__ = ("_axes", "_title", "_short_title")
+    __slots__ = ("_axes", "_title", "_short_title", "_active")
 
     def __init__(self, axes, *, title, uuid=None, short_title=None):
         for ax in axes:
@@ -53,7 +53,9 @@ class Figure(BaseSpec):
         self._axes = tuple(axes)
         self._title = title
         self._short_title = short_title
-        self.events = EmitterGroup(source=self, title=Event, short_title=Event)
+        self._active = None
+        self.events = EmitterGroup(source=self, title=Event, short_title=Event,
+                                   active=Event)
         super().__init__(uuid)
 
     @property
@@ -87,6 +89,15 @@ class Figure(BaseSpec):
     def short_title(self, value):
         self._short_title = value
         self.events.short_title(value=value, figure_spec=self)
+
+    @property
+    def active(self):
+        return self._active
+
+    @active.setter
+    def active(self, value):
+        self._active = value
+        self.events.active(value=value)
 
     def __repr__(self):
         return (
@@ -544,7 +555,22 @@ class Image(ArtistSpec):
 
 
 class FigureList(EventedList):
-    __slots__ = ()
+    __slots__ = ("_active_index")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # TODO: maybe this should be active_uuid?
+        self._active_index = None
+
+    @property
+    def active_index(self):
+        "Return the index of the active figure."
+        for i, figure in enumerate(self):
+            if figure.active:
+                return i
+
+    @active_index.setter
+    def active_index(self, value):
+        self._active_index = value
 
 
 class AxesList(EventedList):
