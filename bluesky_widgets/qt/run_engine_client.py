@@ -1144,10 +1144,19 @@ class QtReRunningPlan(QWidget):
         s_running_item = ""
         indent = "&nbsp;&nbsp;&nbsp;&nbsp;"
 
-        def _to_html(s):
-            """Formats text as a sequence indented html lines"""
-            new_line = "<br>" + indent
-            return indent + s.replace("\n", new_line)
+        def _to_html(text, *, nindent=4):
+            """Formats text as a sequence indented html lines. Lines are indented by `nindent` spaces"""
+            lines = text.split("\n")
+            lines_modified = []
+            for line in lines:
+                line_no_leading_spaces = line.lstrip(" ")
+                n_leading_spaces = len(line) - len(line_no_leading_spaces)
+                lines_modified.append(
+                    "&nbsp;" * (n_leading_spaces + nindent) + line_no_leading_spaces
+                )
+            text_modified = "<br>".join(lines_modified)
+
+            return text_modified
 
         if running_item:
             s_running_item += f"<b>Plan Name:</b> {running_item.get('name', '')}<br>"
