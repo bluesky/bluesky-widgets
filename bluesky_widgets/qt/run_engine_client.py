@@ -621,7 +621,7 @@ class QtRePlanQueue(QWidget):
         self._pb_move_to_top = PushButtonMinimumWidth("Top")
         self._pb_move_to_bottom = PushButtonMinimumWidth("Bottom")
         self._pb_delete_plan = PushButtonMinimumWidth("Delete")
-        self._pb_new_plan = PushButtonMinimumWidth("New")
+        self._pb_duplicate_plan = PushButtonMinimumWidth("Duplicate")
         self._pb_clear_queue = PushButtonMinimumWidth("Clear")
         self._pb_deselect = PushButtonMinimumWidth("Deselect")
 
@@ -630,7 +630,7 @@ class QtRePlanQueue(QWidget):
         self._pb_move_to_top.clicked.connect(self._pb_move_to_top_clicked)
         self._pb_move_to_bottom.clicked.connect(self._pb_move_to_bottom_clicked)
         self._pb_delete_plan.clicked.connect(self._pb_delete_plan_clicked)
-        self._pb_new_plan.clicked.connect(self._pb_new_plan_clicked)
+        self._pb_duplicate_plan.clicked.connect(self._pb_duplicate_plan_clicked)
         self._pb_clear_queue.clicked.connect(self._pb_clear_queue_clicked)
         self._pb_deselect.clicked.connect(self._pb_deselect_clicked)
 
@@ -648,7 +648,7 @@ class QtRePlanQueue(QWidget):
         hbox.addWidget(self._pb_clear_queue)
         hbox.addStretch(1)
         hbox.addWidget(self._pb_delete_plan)
-        hbox.addWidget(self._pb_new_plan)
+        hbox.addWidget(self._pb_duplicate_plan)
         vbox.addLayout(hbox)
         vbox.addWidget(self._table)
         self.setLayout(vbox)
@@ -707,7 +707,7 @@ class QtRePlanQueue(QWidget):
         self._pb_clear_queue.setEnabled(is_connected and n_items)
 
         self._pb_delete_plan.setEnabled(is_connected and is_sel)
-        self._pb_new_plan.setEnabled(is_connected)
+        self._pb_duplicate_plan.setEnabled(is_connected and is_sel)
 
     def on_vertical_scrollbar_value_changed(self, value):
         max = self._table.verticalScrollBar().maximum()
@@ -785,9 +785,6 @@ class QtRePlanQueue(QWidget):
 
         # Advance scrollbar if the table is scrolled all the way down.
         if self._table_scrolled_to_bottom:
-            print(
-                f"scrolling ... {scroll_maximum} {self._table.verticalScrollBar().maximum()}"
-            )
             scroll_maximum_new = self._table.verticalScrollBar().maximum()
             self._table.verticalScrollBar().setValue(scroll_maximum_new)
 
@@ -873,8 +870,11 @@ class QtRePlanQueue(QWidget):
     def _pb_deselect_clicked(self):
         self._table.clearSelection()
 
-    def _pb_new_plan_clicked(self):
-        print("Create new plan (to be implemented)")
+    def _pb_duplicate_plan_clicked(self):
+        try:
+            self.model.queue_item_copy_to_queue()
+        except Exception as ex:
+            print(f"Exception: {ex}")
 
 
 class QtRePlanHistory(QWidget):
@@ -1106,17 +1106,14 @@ class QtReRunningPlan(QWidget):
         p.setColor(QPalette.Base, p.color(QPalette.Disabled, QPalette.Base))
         self._text_edit.setPalette(p)
 
-        self._pb_view = PushButtonMinimumWidth("View")
         self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
 
-        self._pb_view.clicked.connect(self._pb_view_clicked)
         self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
 
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
         hbox.addWidget(QLabel("RUNNING PLAN"))
         hbox.addStretch(1)
-        hbox.addWidget(self._pb_view)
         hbox.addWidget(self._pb_copy_to_queue)
         vbox.addLayout(hbox)
         vbox.addWidget(self._text_edit)
@@ -1213,10 +1210,6 @@ class QtReRunningPlan(QWidget):
         is_plan_running = self._is_item_running
 
         self._pb_copy_to_queue.setEnabled(is_connected and is_plan_running)
-        self._pb_view.setEnabled(is_connected and is_plan_running)
-
-    def _pb_view_clicked(self):
-        print("Open the running item in the plan viewer")
 
     def _pb_copy_to_queue_clicked(self):
         try:

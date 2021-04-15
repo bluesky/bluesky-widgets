@@ -1,4 +1,5 @@
 import time
+import pprint
 
 from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
@@ -493,6 +494,59 @@ class RunEngineClient:
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the queue: {response['msg']}")
 
+    def queue_item_copy_to_queue(self):
+        """
+        Copy currently selected item to queue. Item is supposed to be selected in the plan queue.
+        """
+        sel_item_uid = self._selected_queue_item_uid
+        sel_item_pos = self.queue_item_uid_to_pos(sel_item_uid)
+        if sel_item_uid and (sel_item_pos >= 0):
+            item = self._plan_queue_items[sel_item_pos]
+            self.queue_item_add(item=item)
+
+    def queue_item_add(self, *, item, params=None):
+        """
+        Add item to queue. This function should be called by all widgets that add items to queue.
+        The new item is inserted after the selected item or to the back of the queue in case
+        no item is selected. Optional dictionary `params` may be used to override the default
+        behavior. E.g. ``params={"pos": "front"}`` will add the item to the font of the queue.
+        See the documentation for ``queue_item_add`` 0MQ API of Queue Server.
+        The new item becomes the selected item.
+        """
+        sel_item_uid = self._selected_queue_item_uid
+        queue_is_empty = not len(self._plan_queue_items)
+        if not params:
+            if queue_is_empty or not sel_item_uid:
+                # Push button to the back of the queue
+                params = {}
+            else:
+                params = {"after_uid": sel_item_uid}
+
+        # We are submitting a plan as a new plan, so all unnecessary data will be stripped
+        #   and new item UID will be assigned.
+        request_params = {
+            "item": item,
+            "user": self._user_name,
+            "user_group": self._user_group,
+        }
+        request_params.update(params)
+        response = self._client.send_message(
+            method="queue_item_add", params=request_params
+        )
+        self.load_re_manager_status(enforce=True)
+        if not response["success"]:
+            raise RuntimeError(f"Failed to add item to the queue: {response['msg']}")
+        else:
+            try:
+                # The 'item' and 'item_uid' should always be included in the returned item in case of success.
+                sel_item_uid = response["item"]["item_uid"]
+            except KeyError as ex:
+                print(
+                    f"Item or item UID is not found in the server response {pprint.pformat(response)}. "
+                    f"Can not update item selection in the queue table. Exception: {ex}"
+                )
+            self.selected_queue_item_uid = sel_item_uid
+
     # ============================================================================
     #                         History operations
 
@@ -511,21 +565,7 @@ class RunEngineClient:
         selected_item_pos = self.selected_history_item_pos
         if selected_item_pos >= 0:
             history_item = self._plan_history_items[selected_item_pos]
-            # We are submitting a plan as a new plan, so all unnecessary data will be stripped
-            #   and new item UID will be assigned.
-            response = self._client.send_message(
-                method="queue_item_add",
-                params={
-                    "item": history_item,
-                    "user": self._user_name,
-                    "user_group": self._user_group,
-                },
-            )
-            self.load_re_manager_status(enforce=True)
-            if not response["success"]:
-                raise RuntimeError(
-                    f"Copy selected history item to queue: {response['msg']}"
-                )
+            self.queue_item_add(item=history_item)
 
     def history_clear(self):
         """
@@ -545,21 +585,7 @@ class RunEngineClient:
         """Copy the selected plan from history to the end of the queue"""
         if self._running_item:
             running_item = self._running_item.copy()
-            # We are submitting a plan as a new plan, so all unnecessary data will be stripped
-            #   and new item UID will be assigned.
-            response = self._client.send_message(
-                method="queue_item_add",
-                params={
-                    "item": running_item,
-                    "user": self._user_name,
-                    "user_group": self._user_group,
-                },
-            )
-            self.load_re_manager_status(enforce=True)
-            if not response["success"]:
-                raise RuntimeError(
-                    f"Failed to copy currently running item to queue: {response['msg']}"
-                )
+            self.queue_item_add(item=running_item)
 
     # ============================================================================
     #                  Operations with RE Environment
