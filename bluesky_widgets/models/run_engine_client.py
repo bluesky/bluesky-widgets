@@ -5,8 +5,15 @@ from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutErr
 
 
 class RunEngineClient:
-    def __init__(self, worker_address=None):
-        self._client = ZMQCommSendThreads(zmq_server_address=worker_address)
+    """
+    Parameters
+    ----------
+    zmq_server_address : str or None
+        Address of ZMQ server. If None, then the default address ``tcp://localhost:60615``
+        is used.
+    """
+    def __init__(self, zmq_server_address=None):
+        self._client = ZMQCommSendThreads(zmq_server_address=zmq_server_address)
         self.set_map_param_labels_to_keys()
 
         # User name and group are hard coded for now
