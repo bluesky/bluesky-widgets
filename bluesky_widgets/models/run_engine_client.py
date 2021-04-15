@@ -9,16 +9,27 @@ class RunEngineClient:
     Parameters
     ----------
     zmq_server_address : str or None
-        Address of ZMQ server. If None, then the default address ``tcp://localhost:60615``
-        is used.
+        Address of ZMQ server (Run Engine Manager). If None, then the default address defined
+        in RE Manager code is used. (Default address is ``tcp://localhost:60615``).
+    user_name : str
+        Name of the user submitting the plan. The name is saved as a parameter of the queue item
+        and identifies the user submitting the plan (may be important in multiuser systems).
+    user_group : str
+        Name of the user group. User group is saved as a parameter of a queue item. Each user group
+        can be assigned permissions to use a restricted set of plans and pass a restricted set of
+        devices as plan parameters. Groups and group permissions are defined in the file
+        ``user_group_permissions.yaml`` (see documentation for RE Manager).
     """
-    def __init__(self, zmq_server_address=None):
+
+    def __init__(
+        self, zmq_server_address=None, user_name="GUI Client", user_group="admin"
+    ):
         self._client = ZMQCommSendThreads(zmq_server_address=zmq_server_address)
         self.set_map_param_labels_to_keys()
 
         # User name and group are hard coded for now
-        self._user_name = "GUI Client"
-        self._user_group = "admin"
+        self._user_name = user_name
+        self._user_group = user_group
 
         self._re_manager_status = {}
         self._re_manager_connected = None
