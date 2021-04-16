@@ -158,11 +158,8 @@ class QtFigures(QTabWidget):
             self.setTabText(index, event.value)
 
     def _on_tab_changed(self, event):
-        for i, figure in enumerate(self.model):
-            if i == event:
-                figure.active = True
-            else:
-                figure.active = False
+        "Update the active_index in the FigureList."
+        self.model.active_index = event
 
 
 class QtFigure(QWidget):
