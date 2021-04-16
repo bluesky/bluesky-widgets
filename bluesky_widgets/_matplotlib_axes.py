@@ -4,8 +4,18 @@ bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
 import logging
 
+import numpy as np
+from mpl_toolkits.axisartist.parasite_axes import HostAxes, ParasiteAxes
 from .models.plot_specs import Axes, Line, Image
+#from .models.plot_specs import Axes as AxesSpec
+#from .models.plot_specs import Line as LineSpec
+#from .models.plot_specs import Image as ImageSpec
+from .models.utils import run_is_live_and_not_completed
 
+
+
+
+	
 
 class MatplotlibAxes:
     """
@@ -116,6 +126,9 @@ class MatplotlibAxes:
         artist_spec = event.item
         self._add_artist(artist_spec)
 
+    def axes_plot(self, x, y, label, *args, **kwargs):
+        return self.axes.plot(x, y, label=label, **kwargs)
+
     def _add_artist(self, artist_spec):
         """
         Add an artist.
@@ -181,7 +194,7 @@ class MatplotlibAxes:
     # creation and update signatures, so we need this amount of wrapping.
 
     def _construct_line(self, *, x, y, label, style):
-        (artist,) = self.axes.plot(x, y, label=label, **style)
+        (artist,) = self.axes_plot(x, y, label=label, **style)
         self.axes.relim()  # Recompute data limits.
         self.axes.autoscale_view()  # Rescale the view using those new limits.
         self.draw_idle()
@@ -208,6 +221,33 @@ class MatplotlibAxes:
 
         return artist, update
 
+class MatplotlibHostParasiteAxes(MatplotlibAxes):
+    def __init__(self, model: Axes, axes, *args, **kwargs):
+        self.axis_count = 0
+        self.color_cycler = None
+        #axes = convert_axes_to_host_axes(axes)
+        super().__init__(model, axes, *args, **kwargs)
+
+    def axes_plot(self, x, y, label, *args, **kwargs):
+        if self.axis_count == 0:
+            self.axes.figure.clf()
+        if self.axis_count == 0:
+            self.axes.figure.add_axes(self.axes)
+
+            #(artist,) = init_host_twinx(self.axes, y, label).lines
+        else:
+            parasite_axis_count = self.axis_count - 1
+            #(artist,) = add_parasite_twinx(self.axes, y, label, parasite_axis_count).lines
+        self.axes.plot(x, y, label=label, **kwargs)
+        self.axes.legend()
+        self.color_cycler = self.axes._get_lines.prop_cycler
+        return (artist, )
+
+    def _add_artist(self, line_spec):
+        super()._add_artist(line_spec)
+        self.axis_count += 1
+
+#MatplotlibAxes = MatplotlibHostParasiteAxes
 
 def _quiet_mpl_noisy_logger():
     "Do not filter or silence it, but avoid defaulting to the logger of last resort."
