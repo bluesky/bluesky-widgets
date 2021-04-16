@@ -544,7 +544,7 @@ class Image(ArtistSpec):
 
 
 class FigureList(EventedList):
-    __slots__ = ("_active_index")
+    __slots__ = ("_active_index",)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._active_index = None
