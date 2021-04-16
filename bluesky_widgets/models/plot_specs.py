@@ -544,7 +544,22 @@ class Image(ArtistSpec):
 
 
 class FigureList(EventedList):
-    __slots__ = ()
+    __slots__ = ("_active_index",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._active_index = None
+        self.events.add(active_index=Event)
+
+    @property
+    def active_index(self):
+        "Return the index of the active figure."
+        return self._active_index
+
+    @active_index.setter
+    def active_index(self, value):
+        self._active_index = value
+        self.events.active_index(value=value)
 
 
 class AxesList(EventedList):
