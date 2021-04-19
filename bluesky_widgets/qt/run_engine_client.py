@@ -466,9 +466,7 @@ class QtReStatusMonitor(QWidget):
         self._set_label_text(
             self._lb_manager_state, self._lb_manager_state_text, manager_state
         )
-        self._set_label_text(
-            self._lb_re_state, self._lb_re_state_text, re_state
-        )
+        self._set_label_text(self._lb_re_state, self._lb_re_state_text, re_state)
         self._set_label_text(
             self._lb_items_in_history,
             self._lb_items_in_history_text,
