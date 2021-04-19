@@ -384,18 +384,22 @@ class QtReStatusMonitor(QWidget):
         self.model = model
 
         self._lb_environment_exists_text = "RE Environment: "
-        self._lb_manager_state_text = "RE Manager state: "
+        self._lb_manager_state_text = "Manager state: "
+        self._lb_re_state_text = "RE state: "
         self._lb_items_in_history_text = "Items in history: "
         self._lb_queue_is_running_text = "Queue is running: "
         self._lb_queue_stop_pending_text = "Queue STOP pending: "
         self._lb_items_in_queue_text = "Items in queue: "
+        self._lb_queue_loop_mode_text = "Queue LOOP mode: "
 
         self._lb_environment_exists = QLabel(self._lb_environment_exists_text + "-")
         self._lb_manager_state = QLabel(self._lb_manager_state_text + "-")
+        self._lb_re_state = QLabel(self._lb_re_state_text + "-")
         self._lb_items_in_history = QLabel(self._lb_items_in_history_text + "-")
         self._lb_queue_is_running = QLabel(self._lb_queue_is_running_text + "-")
         self._lb_queue_stop_pending = QLabel(self._lb_queue_stop_pending_text + "-")
         self._lb_items_in_queue = QLabel(self._lb_items_in_queue_text + "-")
+        self._lb_queue_loop_mode = QLabel(self._lb_queue_loop_mode_text + "-")
 
         self._group_box = QGroupBox("RE Manager Status")
 
@@ -404,6 +408,7 @@ class QtReStatusMonitor(QWidget):
         vbox = QVBoxLayout()
         vbox.addWidget(self._lb_environment_exists)
         vbox.addWidget(self._lb_manager_state)
+        vbox.addWidget(self._lb_re_state)
         vbox.addWidget(self._lb_items_in_history)
         hbox.addLayout(vbox)
 
@@ -412,6 +417,7 @@ class QtReStatusMonitor(QWidget):
         vbox = QVBoxLayout()
         vbox.addWidget(self._lb_queue_is_running)
         vbox.addWidget(self._lb_queue_stop_pending)
+        vbox.addWidget(self._lb_queue_loop_mode)
         vbox.addWidget(self._lb_items_in_queue)
         hbox.addLayout(vbox)
 
@@ -437,15 +443,20 @@ class QtReStatusMonitor(QWidget):
     def slot_update_widgets(self, status):
         worker_exists = status.get("worker_environment_exists", None)
         manager_state = status.get("manager_state", None)
+        re_state = status.get("re_state", None)
         items_in_history = status.get("items_in_history", None)
         items_in_queue = status.get("items_in_queue", None)
         queue_is_running = bool(status.get("running_item_uid", False))
         queue_stop_pending = status.get("queue_stop_pending", None)
 
+        queue_mode = status.get("plan_queue_mode", None)
+        queue_loop_enabled = queue_mode.get("loop", None) if queue_mode else None
+
         # Capitalize state of RE Manager
         manager_state = (
             manager_state.upper() if isinstance(manager_state, str) else manager_state
         )
+        re_state = re_state.upper() if isinstance(re_state, str) else re_state
 
         self._set_label_text(
             self._lb_environment_exists,
@@ -454,6 +465,9 @@ class QtReStatusMonitor(QWidget):
         )
         self._set_label_text(
             self._lb_manager_state, self._lb_manager_state_text, manager_state
+        )
+        self._set_label_text(
+            self._lb_re_state, self._lb_re_state_text, re_state
         )
         self._set_label_text(
             self._lb_items_in_history,
@@ -472,6 +486,12 @@ class QtReStatusMonitor(QWidget):
             self._lb_queue_stop_pending,
             self._lb_queue_stop_pending_text,
             "YES" if queue_stop_pending else "NO",
+        )
+
+        self._set_label_text(
+            self._lb_queue_loop_mode,
+            self._lb_queue_loop_mode_text,
+            "ON" if queue_loop_enabled else "OFF",
         )
 
 
@@ -623,6 +643,8 @@ class QtRePlanQueue(QWidget):
         self._pb_duplicate_plan = PushButtonMinimumWidth("Duplicate")
         self._pb_clear_queue = PushButtonMinimumWidth("Clear")
         self._pb_deselect = PushButtonMinimumWidth("Deselect")
+        self._pb_loop_on = PushButtonMinimumWidth("Loop")
+        self._pb_loop_on.setCheckable(True)
 
         self._pb_move_up.clicked.connect(self._pb_move_up_clicked)
         self._pb_move_down.clicked.connect(self._pb_move_down_clicked)
@@ -632,6 +654,7 @@ class QtRePlanQueue(QWidget):
         self._pb_duplicate_plan.clicked.connect(self._pb_duplicate_plan_clicked)
         self._pb_clear_queue.clicked.connect(self._pb_clear_queue_clicked)
         self._pb_deselect.clicked.connect(self._pb_deselect_clicked)
+        self._pb_loop_on.clicked.connect(self._pb_loop_on_clicked)
 
         self._group_box = QGroupBox("Plan Queue")
         vbox = QVBoxLayout()
@@ -642,9 +665,11 @@ class QtRePlanQueue(QWidget):
         hbox.addWidget(self._pb_move_down)
         hbox.addWidget(self._pb_move_to_top)
         hbox.addWidget(self._pb_move_to_bottom)
-        hbox.addStretch(2)
+        hbox.addStretch(1)
         hbox.addWidget(self._pb_deselect)
         hbox.addWidget(self._pb_clear_queue)
+        hbox.addStretch(1)
+        hbox.addWidget(self._pb_loop_on)
         hbox.addStretch(1)
         hbox.addWidget(self._pb_delete_plan)
         hbox.addWidget(self._pb_duplicate_plan)
@@ -691,6 +716,9 @@ class QtRePlanQueue(QWidget):
 
     def _update_button_states(self):
         is_connected = bool(self.model.re_manager_connected)
+        status = self.model.re_manager_status
+        loop_mode_on = status["plan_queue_mode"]["loop"] if status else False
+
         n_items = self._n_table_items
         n_selected_item = self._n_selected_item
 
@@ -704,6 +732,10 @@ class QtRePlanQueue(QWidget):
         self._pb_move_to_bottom.setEnabled(is_connected and is_sel and not sel_bottom)
 
         self._pb_clear_queue.setEnabled(is_connected and n_items)
+        self._pb_deselect.setEnabled(is_sel)
+
+        self._pb_loop_on.setEnabled(is_connected)
+        self._pb_loop_on.setChecked(loop_mode_on)
 
         self._pb_delete_plan.setEnabled(is_connected and is_sel)
         self._pb_duplicate_plan.setEnabled(is_connected and is_sel)
@@ -868,6 +900,13 @@ class QtRePlanQueue(QWidget):
 
     def _pb_deselect_clicked(self):
         self._table.clearSelection()
+
+    def _pb_loop_on_clicked(self):
+        loop_enable = self._pb_loop_on.isChecked()
+        try:
+            self.model.queue_mode_loop_enable(loop_enable)
+        except Exception as ex:
+            print(f"Exception: {ex}")
 
     def _pb_duplicate_plan_clicked(self):
         try:
