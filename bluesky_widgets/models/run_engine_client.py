@@ -530,13 +530,26 @@ class RunEngineClient:
                 raise RuntimeError(f"Failed to delete item: {response['msg']}")
 
     def queue_clear(self):
-        # Add plan to queue
+        """
+        Clear the plan queue
+        """
         response = self._client.send_message(
             method="queue_clear",
         )
         self.load_re_manager_status(unbuffered=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to clear the queue: {response['msg']}")
+
+    def queue_mode_loop_enable(self, enable):
+        """
+        Enable or disable LOOP mode of the queue
+        """
+        response = self._client.send_message(
+            method="queue_mode_set", params={"mode": {"loop": enable}}
+        )
+        self.load_re_manager_status(unbuffered=True)
+        if not response["success"]:
+            raise RuntimeError(f"Failed to change plan queue mode: {response['msg']}")
 
     def queue_item_copy_to_queue(self):
         """
