@@ -322,7 +322,7 @@ class RunEngineClient:
         try:
             key_seq = self._map_column_labels_to_keys[label]
         except KeyError:
-            raise KeyError("Label 'label' is not found in the map dictionary")
+            raise KeyError(f"Label {label} is not found in the map dictionary")
 
         # Follow the path in the dictionary. 'KeyError' exception is raised if a key does not exist
         try:
@@ -921,3 +921,28 @@ class RunEngineClient:
         )
         if not response["success"]:
             raise RuntimeError(f"Failed to add plan to the queue: {response['msg']}")
+
+    # ============================================================================
+    #                     Operations with new scan item
+
+    def new_item_add_to_queue(self, scan_name, item_args, item_params=None):
+        """
+        item:
+        {'name': 'daq_dscan', 'args': [[], 'motor1', 0, 10, 5],
+         'kwargs': {'events': 120, 'record': True},
+         'item_type': 'plan', 'user': 'qserver-cli',
+         'user_group': 'admin', 'item_uid': 'd6068aa5-b1f4-4f91-b743-189c3ac83205',
+         'result': {'exit_status': 'error', 'run_uids': ''}}
+        """
+        item = {'name': scan_name, 'args': item_args,
+                'item_type': 'plan', 'user': '',
+                'user_group': '', 'item_uid': '', 'result': {}}
+        if item_params:
+            item.update({'kwargs': item_params})
+        self.queue_item_add(item=item)
+
+    def show_allowed_plans(self):
+        return self._allowed_plans
+
+    def show_allowed_devices(self):
+        return self._allowed_devices

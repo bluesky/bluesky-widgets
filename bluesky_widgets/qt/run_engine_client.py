@@ -7,6 +7,7 @@ from qtpy.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QHBoxLayout,
+    QGridLayout,
     QLabel,
     QTableWidget,
     QTableWidgetItem,
@@ -14,6 +15,11 @@ from qtpy.QtWidgets import (
     QHeaderView,
     QAbstractItemView,
     QTextEdit,
+    QComboBox,
+    QLineEdit,
+    QCheckBox,
+    QSizePolicy,
+    QSpacerItem,
 )
 from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette
@@ -1260,3 +1266,487 @@ class QtReRunningPlan(QWidget):
             self.model.running_item_add_to_queue()
         except Exception as ex:
             print(f"Exception: {ex}")
+
+
+class QtReAddingSimpleScan(QWidget):
+    """
+    Custom Addition of the `scan` plan and its option of using daq.
+    This should not become part of the Bluesky Widgets package...!!
+    """
+    signal_update_widget = Signal(object)
+
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+        self.signal_update_widget.connect(self.slot_update_widgets)
+
+        # dictionary to hold all the widget objects for the scan
+        self._one_dim_scan_widgets = {}
+        # scan arguments
+        self._one_dim_scan_args = {
+            "start": 0,
+            "end": 0,
+            "nsteps": 0,
+            "motor": 'motor1',
+            "detectors": 'det1'
+        }
+        # daq_dscan arguments
+        self._daq_args = {
+            "events": 120,
+            "duration": '',
+            "per_step": '',
+            "record": True,
+            "use_l3t": False
+        }
+        # TODO have a map where you store all the info
+        # find a better solution here...
+        # and re-populate it ....
+        self._previous_widgets_info = {}
+
+        self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widget.connect(self.slot_update_widgets)
+
+        self.spacer = (QSpacerItem(
+            20, 20, QSizePolicy.Preferred, QSizePolicy.Maximum))
+
+        self._plan_widgets_area = QGroupBox()
+        self._cb_allowed_devices = QComboBox()
+
+        self._cb_allowed_devices.setMaxVisibleItems(5)
+        self._widgets_grid = QGridLayout()
+        self._check_box_daq = QCheckBox("use DAQ")
+        self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
+        self._available_devices = QLabel("Allowed devices:")
+
+        self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
+        self._check_box_daq.clicked.connect(self._daq_check_box_changed)
+
+        self._pb_copy_to_queue.setEnabled(False)
+        self._check_box_daq.setEnabled(False)
+
+        vbox = QVBoxLayout()
+        hbox = QHBoxLayout()
+
+        hbox.addWidget(QLabel("ADD PLAN"))
+        hbox.layout().addItem(self.spacer)
+        hbox.addWidget(self._check_box_daq)
+        hbox.layout().addItem(self.spacer)
+        hbox.addWidget(self._available_devices)
+        hbox.addWidget(self._cb_allowed_devices)
+        hbox.addWidget(self._pb_copy_to_queue)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self._plan_widgets_area)
+        self.setLayout(vbox)
+
+    def on_update_widgets(self, event):
+        is_connected = event.is_connected
+        self.signal_update_widget.emit(is_connected)
+
+    @Slot()
+    def slot_update_widgets(self):
+        self._update_button_states()
+
+    def _update_button_states(self):
+        is_connected = bool(self.model.re_manager_connected)
+        self._pb_copy_to_queue.setEnabled(is_connected)
+        self._check_box_daq.setEnabled(is_connected)
+        self._load_1d_scan()
+
+        # to make sure we only add them once
+        if is_connected and self._cb_allowed_devices.count() == 0:
+            self._load_allowed_devices()
+
+    def _load_allowed_devices(self):
+        the_devices = self.model.show_allowed_devices()
+        for key, item in the_devices.items():
+            self._cb_allowed_devices.addItem(str(key))
+        self._cb_allowed_devices.setMaxVisibleItems(5)
+
+    def _daq_check_box_changed(self):
+        self._load_1d_scan()
+
+    @staticmethod
+    def _cleanup_layout(layout):
+        """
+        Get rid of all the widgets in this layout.
+        Parameters
+        ----------
+        layout : QLayout
+        """
+        for i in reversed(range(layout.count())):
+            layout.itemAt(i).widget().setParent(None)
+
+    @staticmethod
+    def add_arg_widget(name, data=''):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of widget
+        data : str, optional
+            Default data to be added to the lineEdit.
+
+        Returns
+        -------
+        tuple : either a new pair of (QLabel, QLineEdit) widgets,
+                or or a (QLabel, QCheckBox) pair of widgets
+        """
+        boolean_widgets = ['record', 'use_l3t']
+        label = QLabel(str(name))
+        label.setObjectName(str(name))
+        if name in boolean_widgets:
+            check_box = QCheckBox()
+            check_box.setObjectName(str(name))
+            if data is True:
+                check_box.setChecked(True)
+            return label, check_box
+
+        line_edit = QLineEdit()
+        line_edit.setObjectName(str(name))
+        line_edit.setText(str(data))
+        return label, line_edit
+
+    def _pb_copy_to_queue_clicked(self):
+        try:
+            item, kwargs = self.gather_scan_widget_info()
+            if kwargs:
+                self.model.new_item_add_to_queue('daq_dscan', item, kwargs)
+            else:
+                self.model.new_item_add_to_queue('scan', item)
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def get_widgets_info(self):
+        info_map = self._previous_widgets_info
+        widgets = self._one_dim_scan_widgets
+        if widgets:
+            scan_args = ['start', 'end', 'nsteps', 'motor', 'detectors']
+            daq_dscan_args = ['events', 'duration', 'per_step']
+            daq_dscan_cb = ['record', 'use_l3t']
+            for i in scan_args:
+                info_map[i] = widgets[i].text()
+            if self._check_box_daq.isChecked() and widgets.get('events'):
+                for i in daq_dscan_args:
+                    info_map[i] = widgets[i].text()
+                for i in daq_dscan_cb:
+                    info_map[i] = widgets[i].isChecked()
+
+    def gather_scan_widget_info(self):
+        """
+        Take all the info from the widgets associated with the scan and
+        send it to the model.
+        Mostly the following are needed:
+         "name":"scan",
+         "args":[["det1", "det2"], "motor", -1, 1, 10]
+         "kwargs": {"events": 120, "record": True}}
+        """
+        scan_widgets = self._one_dim_scan_widgets
+        # scan args
+        start = float(scan_widgets['start'].text())
+        end = float(scan_widgets['end'].text())
+        nsteps = float(scan_widgets['nsteps'].text())
+        motor = scan_widgets['motor'].text()
+        detectors = list(scan_widgets['detectors'].text().split(','))
+
+        kwargs = None
+        if self._check_box_daq.isChecked():
+            events = int(scan_widgets['events'].text())
+            duration = scan_widgets['duration'].text()
+            duration = int(duration) if duration else None
+            record = scan_widgets['record'].isChecked()
+            use_l3t = scan_widgets['use_l3t'].isChecked()
+
+            per_step = scan_widgets['per_step'].text()
+            per_step = int(per_step) if per_step else None
+
+            kwargs = {'events': events,
+                      'record': record,
+                      'use_l3t': use_l3t}
+            if duration:
+                kwargs.update({'duration': duration})
+            if per_step:
+                kwargs.update({'per_step': per_step})
+
+        args = [detectors, motor, start, end, nsteps]
+        return args, kwargs
+
+    def _load_1d_scan(self):
+        """
+        Get here when the load_scan button is clicked...
+        """
+        daq = self._daq_args
+        scan = self._one_dim_scan_args
+        self.get_widgets_info()
+        if self._check_box_daq.isChecked() is True:
+            self._update_1d_scan_widgets({**scan, **daq})
+        else:
+            self._update_1d_scan_widgets(scan)
+
+    def _update_1d_scan_widgets(self, args):
+        # cleanup previous grid layout
+        self._cleanup_layout(self._widgets_grid)
+        # get rid of all the elements in self._one_dim_scan_widgets
+        self._one_dim_scan_widgets.clear()
+
+        row = 0
+        l_column = 0
+        le_column = 1
+        sections = 2
+        if len(args) > 8:
+            sections = 3
+
+        for key, value in args.items():
+            label, edit_line = self.add_arg_widget(key, value)
+            if self._previous_widgets_info:
+                if isinstance(edit_line, QLineEdit) and self._previous_widgets_info.get(key):
+                    edit_line.setText(str(self._previous_widgets_info.get(key)))
+                if isinstance(edit_line, QCheckBox) and self._previous_widgets_info.get(key):
+                    edit_line.setChecked(self._previous_widgets_info.get(key))
+            self._one_dim_scan_widgets[key] = edit_line
+            self._widgets_grid.addWidget(label, row, l_column)
+            self._widgets_grid.addWidget(edit_line, row, le_column)
+            if row == sections:
+                # go back from row 0
+                row = 0
+                l_column += 2
+                le_column += 2
+            else:
+                row += 1
+        self._plan_widgets_area.setLayout(self._widgets_grid)
+        self.get_widgets_info()
+
+#
+# class QtReAddingPlanAutomatically(QWidget):
+#     signal_update_widget = Signal(object)
+#
+#     def __init__(self, model, parent=None):
+#         super().__init__(parent)
+#         self.model = model
+#         self.signal_update_widget.connect(self.slot_update_widgets)
+#
+#         # dictionary to hold all the widget objects for the scan
+#         self._plan_widgets = {}
+#
+#         self.model.events.status_changed.connect(self.on_update_widgets)
+#         self.signal_update_widget.connect(self.slot_update_widgets)
+#
+#         self.spacer = (QSpacerItem(
+#             20, 20, QSizePolicy.Preferred, QSizePolicy.Maximum))
+#
+#         self._plan_widgets_area = QGroupBox()
+#         self._cb_allowed_scans = QComboBox()
+#         self._cb_allowed_devices = QComboBox()
+#         self._widgets_grid = QGridLayout()
+#         self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
+#         self._pb_load_scans = PushButtonMinimumWidth("Avail. Dev:")
+#
+#         self._all_args_plans = {}
+#         self._all_args_devices = {}
+#         self._current_selected_plan = None
+#
+#         self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
+#         self._pb_load_scans.clicked.connect(self._load_allowed_plans_clicked)
+#
+#         self._pb_load_scans.setEnabled(False)
+#         self._pb_copy_to_queue.setEnabled(False)
+#         self._pb_load_1d_scan.setEnabled(True)
+#
+#         vbox = QVBoxLayout()
+#         hbox = QHBoxLayout()
+#
+#         hbox.addWidget(QLabel("ADD PLAN"))
+#         hbox.layout().addItem(self.spacer)
+#         hbox.addWidget(self._pb_load_scans)
+#         hbox.addWidget(self._cb_allowed_scans)
+#         hbox.addWidget(self._cb_allowed_devices)
+#         hbox.addWidget(self._pb_copy_to_queue)
+#         vbox.addLayout(hbox)
+#         vbox.addWidget(self._plan_widgets_area)
+#         self.setLayout(vbox)
+#
+#     def on_update_widgets(self, event):
+#         is_connected = event.is_connected
+#         self.signal_update_widget.emit(is_connected)
+#
+#     @Slot()
+#     def slot_update_widgets(self):
+#         self._update_button_states()
+#
+#     def _update_button_states(self):
+#         is_connected = bool(self.model.re_manager_connected)
+#         self._pb_copy_to_queue.setEnabled(is_connected)
+#         self._pb_load_scans.setEnabled(is_connected)
+#
+#     def _load_allowed_plans_clicked(self):
+#         the_plans = self.model.show_allowed_plans()
+#         for key, item in the_plans.items():
+#             self._cb_allowed_scans.addItem(str(key))
+#             name = the_plans[key]['name']
+#             params = self.get_args(the_plans[key]['parameters'])
+#             self._all_args[str(name)] = {'params': params}
+#         # only connect it after the scans have been loaded
+#         self._cb_allowed_scans.currentTextChanged.connect(self.update_current_selected_scan)
+#         self._load_allowed_devices()
+#
+#     def _load_allowed_devices(self):
+#         the_devices = self.model.show_allowed_devices()
+#
+#         for key, item in the_devices.items():
+#             self._cb_allowed_devices.addItem(str(key))
+#             print(key, item)
+#             # name = the_devices[key]['name']
+#            #  params = self.get_args(the_devices[key]['parameters'])
+#            # self._all_args_devices[str(name)] = {'params': params}
+#         # only connect it after the scans have been loaded
+#        # self._cb_allowed_scans.currentTextChanged.connect(self.update_current_selected_scan)
+#
+#     @Slot(str)
+#     def update_current_selected_scan(self, plan):
+#         self._current_selected_plan = plan
+#         self._update_args_widgets(plan)
+#
+#     @staticmethod
+#     def _cleanup_layout(layout):
+#         for i in reversed(range(layout.count())):
+#             layout.itemAt(i).widget().setParent(None)
+#
+#     def _update_args_widgets(self, plan):
+#         # cleanup previous grid layout
+#         args = self._all_args_plans.get(plan)
+#         self._cleanup_layout(self._widgets_grid)
+#         # get rid of all the elements in self._one_dim_scan_widgets
+#         self._one_dim_scan_widgets.clear()
+#
+#         row = 0
+#         l_column = 0
+#         le_column = 1
+#         sections = 2
+#         if len(args) > 8:
+#             sections = 3
+#
+#         for key, value in args.items():
+#             label, edit_line = self.add_arg_widget(self._plan_widgets_area, key, value)
+#             self._one_dim_scan_widgets[key] = edit_line
+#             self._widgets_grid.addWidget(label, row, l_column)
+#             self._widgets_grid.addWidget(edit_line, row, le_column)
+#             if row == sections:
+#                 # go back from row 0
+#                 row = 0
+#                 l_column += 2
+#                 le_column += 2
+#             else:
+#                 row += 1
+#         self._plan_widgets_area.setLayout(self._widgets_grid)
+#         # # cleanup previous grid layout
+#         # self._cleanup_layout(self._widgets_grid)
+#         #
+#         # plan_args = self._all_args.get(plan)
+#         # if plan_args:
+#         #     num = 0
+#         #     num2 = int(len(plan_args['params'])/2)
+#         #     p = 0
+#         #     p1 = 1
+#         #     for i in plan_args['params']:
+#         #         label, value = self.add_arg_widget(self._plan_widgets_area, i)
+#         #         print(f'label: {label}')
+#         #         self._widgets_grid.addWidget(label, num, p)
+#         #         self._widgets_grid.addWidget(value, num, p1)
+#         #
+#         #         print(f'num: {num}')
+#         #         print(f'num2: {num2}')
+#         #         if num == num2:
+#         #             num = 0
+#         #             p = 2
+#         #             p1 = 3
+#         #         else:
+#         #             num += 1
+#         # self._plan_widgets_area.setLayout(self._widgets_grid)
+#
+#     def get_args(self, scan_param_list):
+#         arg_list = []
+#         for i in scan_param_list:
+#             # arg_list.append(v for k, v in i.items() if k == 'name')
+#             for k, v in i.items():
+#                 if k == 'name':
+#                     arg_list.append(v)
+#         return arg_list
+#
+#     @staticmethod
+#     def add_arg_widget(parent, name, data=''):
+#         """
+#         Parameters
+#         ----------
+#         parent : QWidget
+#             Parent widget that holds the lineEdits and QLabels
+#         name : str
+#             Name of widget
+#         data : str, optional
+#             Default data to be added to the lineEdit.
+#
+#         Returns
+#         -------
+#         tuple : either a new pair of (QLabel, QLineEdit) widgets,
+#                 or if they exist already, just returns the existing widgets.
+#         """
+#         boolean_widgets = ['record', 'use_l3t']
+#         label = QLabel(str(name))
+#         label.setObjectName(str(name))
+#         if name in boolean_widgets:
+#             check_box = QCheckBox()
+#             check_box.setObjectName(str(name))
+#             if data is True:
+#                 check_box.setChecked(True)
+#             return label, check_box
+#
+#         line_edit = QLineEdit()
+#         line_edit.setObjectName(str(name))
+#         line_edit.setText(str(data))
+#         return label, line_edit
+#
+#     def _pb_copy_to_queue_clicked(self):
+#         try:
+#             item, params = self.pack_item()
+#             if params:
+#                 self.model.new_item_add_to_queue('daq_dscan', item, params)
+#             else:
+#                 self.model.new_item_add_to_queue('scan', item)
+#         except Exception as ex:
+#             print(f"Exception: {ex}")
+#
+#     def pack_item(self):
+#         """
+#         Mostly the following are needed:
+#          "name":"scan",
+#          "args":[["det1", "det2"], "motor", -1, 1, 10]
+#          "kwargs": {"events": 120, "record": True}}
+#         """
+#         scan_widgets = self._one_dim_scan_widgets
+#
+#         # scan args
+#         start = float(scan_widgets['start'].text())
+#         end = float(scan_widgets['end'].text())
+#         nsteps = float(scan_widgets['nsteps'].text())
+#         motor = scan_widgets['motor'].text()
+#         detectors = list(scan_widgets['detectors'].text().split(','))
+#
+#         params = None
+#         if self._check_box_daq.isChecked():
+#             events = int(scan_widgets['events'].text())
+#             duration = scan_widgets['duration'].text()
+#             duration = int(duration) if duration else None
+#             record = scan_widgets['record'].isChecked()
+#             use_l3t = scan_widgets['use_l3t'].isChecked()
+#
+#             per_step = scan_widgets['per_step'].text()
+#             per_step = int(per_step) if per_step else None
+#
+#             params = {'events': events,
+#                       'record': record,
+#                       'use_l3t': use_l3t}
+#             if duration:
+#                 params.update({'duration': duration})
+#             if per_step:
+#                 param.update({'per_step': per_step})
+#
+#         args = [detectors, motor, start, end, nsteps]
+#         return args, params
