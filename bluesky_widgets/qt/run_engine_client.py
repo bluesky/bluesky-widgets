@@ -1,5 +1,7 @@
 import time
 import pprint
+import logging
+import sys
 
 from qtpy.QtWidgets import (
     QWidget,
@@ -25,6 +27,8 @@ from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette
 
 from bluesky_widgets.qt.threading import FunctionWorker
+from bluesky.callbacks import LiveTable
+from bluesky.callbacks.mpl_plotting import LivePlot
 
 
 class QtReManagerConnection(QWidget):
@@ -1306,8 +1310,8 @@ class QtReAddingSimpleScan(QWidget):
         self.model.events.status_changed.connect(self.on_update_widgets)
         self.signal_update_widget.connect(self.slot_update_widgets)
 
-        self.spacer = (QSpacerItem(
-            20, 20, QSizePolicy.Preferred, QSizePolicy.Maximum))
+        # self.spacer = (QSpacerItem(
+        #     20, 20, QSizePolicy.Preferred, QSizePolicy.Maximum))
 
         self._plan_widgets_area = QGroupBox()
         self._cb_allowed_devices = QComboBox()
@@ -1328,9 +1332,9 @@ class QtReAddingSimpleScan(QWidget):
         hbox = QHBoxLayout()
 
         hbox.addWidget(QLabel("ADD PLAN"))
-        hbox.layout().addItem(self.spacer)
+       #  hbox.layout().addItem(self.spacer)
         hbox.addWidget(self._check_box_daq)
-        hbox.layout().addItem(self.spacer)
+        # hbox.layout().addItem(self.spacer)
         hbox.addWidget(self._available_devices)
         hbox.addWidget(self._cb_allowed_devices)
         hbox.addWidget(self._pb_copy_to_queue)
@@ -1533,8 +1537,8 @@ class QtReAddingPlanAutomatically(QWidget):
         self.model.events.status_changed.connect(self.on_update_widgets)
         self.signal_update_widget.connect(self.slot_update_widgets)
 
-        self.spacer = (QSpacerItem(
-            20, 20, QSizePolicy.Preferred, QSizePolicy.Maximum))
+        # self.spacer = (QSpacerItem(
+        #     20, 20, QSizePolicy.Preferred, QSizePolicy.Maximum))
 
         self._plan_widgets_area = QGroupBox()
         self._cb_allowed_scans = QComboBox()
@@ -1558,7 +1562,7 @@ class QtReAddingPlanAutomatically(QWidget):
         hbox = QHBoxLayout()
 
         hbox.addWidget(QLabel("ADD PLAN"))
-        hbox.layout().addItem(self.spacer)
+        # hbox.layout().addItem(self.spacer)
         hbox.addWidget(self._pb_load_scans)
         hbox.addWidget(self._cb_allowed_scans)
         hbox.addWidget(self._cb_allowed_devices)
@@ -1761,3 +1765,203 @@ class QtReAddingPlanAutomatically(QWidget):
         final_args = [detectors] + arg_list
         return final_args, kwargs
 
+
+class QtReAddPVMotorScan(QWidget):
+    """
+    Custom Addition of the `pv_scan` and `motor_pv_scan` plans
+    and the option of using the daq as a detector.
+    This should not become part of the Bluesky Widgets package...!!
+    """
+    signal_update_widget = Signal(object)
+
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.model = model
+
+        # current supported plans
+        self._scan_args = {
+            'pv_scan': {
+                 'detectors': '',
+                 'pv': '',
+                 'start': 0,
+                 'stop': 0,
+                 'num': 0,
+                 'events': 0
+                },
+            'motor_pv_scan': {
+                 'detectors': '',
+                 'pv': '',
+                 'start': 0,
+                 'stop': 0,
+                 'num': 0,
+                 'events': 0
+             }}
+        # TODO might need some validations for fields...
+        # dictionary to hold all the widget objects for the scan
+        self._current_scan_widgets = {}
+        self._current_scan = ''
+
+        self._plan_widgets_area = QGroupBox()
+        self._cb_scan_options = QComboBox()
+        self._cb_scan_options.setEnabled(False)
+        self._widgets_grid = QGridLayout()
+        self._check_box_daq = QCheckBox("use DAQ")
+        self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
+
+        self.v_box = QVBoxLayout()
+        self.h_box = QHBoxLayout()
+
+        self.setup_ui_elements()
+        self.setup_connections()
+        self.populate_scans_in_combo_box()
+
+    def setup_ui_elements(self):
+        self.h_box.addWidget(QLabel("ADD PLAN"))
+        self.h_box.addWidget(self._cb_scan_options)
+        self.h_box.addWidget(self._check_box_daq)
+        self.h_box.addWidget(self._pb_copy_to_queue)
+        self.v_box.addLayout(self.h_box)
+        self.v_box.addWidget(self._plan_widgets_area)
+        self.setLayout(self.v_box)
+
+        self._pb_copy_to_queue.setEnabled(False)
+        self._check_box_daq.setEnabled(False)
+
+    def setup_connections(self):
+        self.model.events.status_changed.connect(self.on_update_widgets)
+        self.signal_update_widget.connect(self.slot_update_widgets)
+        self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
+        self._cb_scan_options.currentTextChanged.connect(self.update_scan_widgets)
+        self._check_box_daq.clicked.connect(self.daq_check_box_changed)
+
+    def on_update_widgets(self, event):
+        is_connected = event.is_connected
+        self.signal_update_widget.emit(is_connected)
+        if event:
+            self._cb_scan_options.setEnabled(True)
+
+    @Slot()
+    def slot_update_widgets(self):
+        self._update_button_states()
+
+    def _update_button_states(self):
+        is_connected = bool(self.model.re_manager_connected)
+        self._pb_copy_to_queue.setEnabled(is_connected)
+        self._check_box_daq.setEnabled(is_connected)
+
+    def populate_scans_in_combo_box(self):
+        """
+        Populate the current supported scans in the Combo Box.
+        """
+        for key, item in self._scan_args.items():
+            self._cb_scan_options.addItem(str(key))
+
+    def _cleanup_layout(self, layout):
+        """
+        Get rid of all the widgets in this layout.
+        Parameters
+        ----------
+        layout : QLayout
+        """
+        for i in reversed(range(layout.count())):
+            layout.itemAt(i).widget().setParent(None)
+        # also cleanup the widgets map:
+        self._current_scan_widgets.clear()
+
+    def daq_check_box_changed(self):
+        # TODO: this is not working because i
+        # TODO don't have anything in the current_scan_widgets
+        status = self._check_box_daq.isChecked()
+        print(f'current scan: {self._current_scan}')
+        scan = self._current_scan_widgets.get(self._current_scan)
+        if scan:
+            if status is True:
+                # disable the edit line for events
+                scan['events'].setEnable(False)
+            elif status is False:
+                # enable the events
+                scan['events'].setEnable(True)
+
+    @staticmethod
+    def add_scan_arg_widget(name, data=''):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of widget
+        data : str, optional
+            Default data to be added to the lineEdit.
+
+        Returns
+        -------
+        tuple : a new pair of (QLabel, QLineEdit)
+        """
+        name = name + ':'
+        label = QLabel(str(name))
+        label.setObjectName(str(name))
+        line_edit = QLineEdit()
+        line_edit.setObjectName(str(name))
+        line_edit.setText(str(data))
+        return label, line_edit
+
+    def _pb_copy_to_queue_clicked(self):
+        try:
+            item, kwargs = self.gather_scan_widget_info()
+            # TODO: i don't actually have any kwargs here...in the current scans
+            if kwargs:
+                self.model.new_item_add_to_queue(self.__current_scan, item, kwargs)
+            else:
+                self.model.new_item_add_to_queue(self._current_scan, item)
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def gather_scan_widget_info(self):
+        """
+        Take all the info from the widgets associated with the scan and
+        send it to the model.
+        Mostly the following are needed:
+         "name":"scan",
+         "args":[["det1", "det2"], "motor", -1, 1, 10]
+         "kwargs": {"events": 120, "record": True}}
+        """
+        scan_widgets = self._current_scan_widgets
+        # scan args
+        start = float(scan_widgets['start'].text())
+        stop = float(scan_widgets['stop'].text())
+        num = float(scan_widgets['num'].text())
+        pv = scan_widgets['pv'].text()
+        det = scan_widgets['detectors'].text()
+        events = scan_widgets['events'].text()
+        detectors = []
+        if det:
+            detectors = list(det.split(','))
+        if self._check_box_daq.isChecked():
+            detectors.append('daq')
+
+        kwargs = None
+        args = [detectors, pv, start, stop, num, events]
+        return args, kwargs
+
+    def update_scan_widgets(self, scan_name):
+        # cleanup previous grid layout
+        self._cleanup_layout(self._widgets_grid)
+        self._current_scan = scan_name
+
+        # get the arguments for the current selected scan
+        args = self._scan_args[scan_name]
+        row = 0
+        l_column = 1
+        lv_column = 2
+        tot_rows = 3
+        for key, value in args.items():
+            label, value_widget = self.add_scan_arg_widget(key, value)
+            self._widgets_grid.addWidget(label, row, l_column)
+            self._widgets_grid.addWidget(value_widget, row, lv_column)
+            self._current_scan_widgets[key] = value_widget
+            self._plan_widgets_area.setLayout(self._widgets_grid)
+            if row == tot_rows:
+                row = 0
+                l_column += 2
+                lv_column += 2
+            else:
+                row += 1

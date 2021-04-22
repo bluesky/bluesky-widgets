@@ -939,6 +939,7 @@ class RunEngineClient:
                 'user_group': '', 'item_uid': '', 'result': {}}
         if item_params:
             item.update({'kwargs': item_params})
+
         self.queue_item_add(item=item)
 
     def show_allowed_plans(self):
@@ -946,3 +947,4 @@ class RunEngineClient:
 
     def show_allowed_devices(self):
         return self._allowed_devices
+
