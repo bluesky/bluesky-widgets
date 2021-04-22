@@ -68,7 +68,8 @@ class QtSearch(QWidget):
         else:
             # The root catalog is a catalog-of-catalogs, so display a combo
             # box.
-            self._initialize_selector(list(model.current_catalog))
+            if model.current_catalog is not None:
+                self._initialize_selector(list(model.current_catalog))
 
     def on_enter(self, event=None):
         "We are entering a subcatalog."
