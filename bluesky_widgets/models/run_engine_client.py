@@ -1,4 +1,5 @@
 import collections
+import copy
 import pprint
 import time
 
@@ -58,6 +59,14 @@ class RunEngineClient:
         #   Items in the history can not be moved or deleted, only added to the bottom, so
         #   using positions is consistent.
         self._selected_history_item_pos = -1
+
+        # TODO: in the future the list of allowed instructions should be requested from the server
+        self._allowed_instructions = {
+            "queue_stop": {
+                "name": "queue_stop",
+                "description": "Stop execution of the queue.",
+            }
+        }
 
         self.events = EmitterGroup(
             source=self,
@@ -257,6 +266,178 @@ class RunEngineClient:
             print(f"Exception: {ex}")
 
     # ============================================================================
+    #                       Useful functions
+    def get_allowed_plan_parameters(self, *, name):
+        """
+        Returns the dictionary of parameters for the plan with name ``name`` from
+        the list of allowed plans. Returns ``None`` if plan is not found in the list
+
+        Parameters
+        ----------
+        name : str
+            name of the plan
+
+        Returns
+        -------
+        dict or None
+            dictionary of plan parameters or ``None`` if the plan is not in the list.
+        """
+        return self._allowed_plans.get(name, None)
+
+    def get_allowed_instruction_parameters(self, *, name):
+        """
+        Returns the dictionary of parameters for the instruction with name ``name`` from
+        the list of allowed instructions. Returns ``None`` if plan is not found in the list
+
+        Parameters
+        ----------
+        name : str
+            name of the instruction
+
+        Returns
+        -------
+        dict or None
+            dictionary of instruction parameters or ``None`` if the plan is not in the list.
+        """
+        return self._allowed_instructions.get(name, None)
+
+    def extract_descriptions_from_item_parameters(self, *, item_parameters):
+        """
+        Extract descriptions from the dictionary of item parameters. The descriptions
+        includes: item name/description, each parameter name/type/description.
+        The descriptions are presented in humanly readable text form, which is convenient
+        for user presentation.
+
+        TODO: potentially move this function to Queue Server code (file 'profile_ops.py')
+
+        Parameters
+        ----------
+        item_parameters : dict
+            dictionary of item parameters (element of the list of allowed plans/instructions)
+
+        Returns
+        -------
+        dict
+            dictionary of descriptions
+        """
+        if not item_parameters:
+            return {}
+
+        descriptions = {}
+
+        # Plan description
+        item_name = item_parameters.get("name", "")
+        item_description = item_parameters.get("description", None)
+        item_description = item_description if item_description else ""
+        item_description = str(item_description)
+
+        descriptions = {
+            "name": item_name,
+            "description": item_description,
+            "parameters": {},
+        }
+
+        parameters = item_parameters.get("parameters", {})
+        for p in parameters:
+            p_name = p.get("name", "")
+
+            p_type, p_description, p_default = None, None, None
+
+            custom = p.get("custom", None)
+            if custom is not None:
+                p_type = custom.get("annotation", None)
+                if p_type is not None:
+                    devices = custom.get("devices", "")
+                    if devices:
+                        p_type = str(p_type) + "\n" + pprint.pformat(devices)
+
+                p_description = custom.get("description", None)
+
+            if p_type is None:
+                p_type = p.get("annotation", "")
+
+            if p_description is None:
+                p_description = p.get("description", None)
+            p_description = p_description if p_description else ""
+            p_description = str(p_description)
+
+            try:
+                d_tmp = p["default"]
+                p_default = str(d_tmp)
+                if p_default:
+                    p_default = (
+                        f"'{p_default}'" if isinstance(d_tmp, str) else p_default
+                    )
+            except Exception:
+                p_default = ""
+
+            descriptions["parameters"][p_name] = {}
+            descriptions["parameters"][p_name]["name"] = p_name
+            descriptions["parameters"][p_name]["type"] = p_type
+            descriptions["parameters"][p_name]["description"] = p_description
+            descriptions["parameters"][p_name]["default"] = p_default
+
+        return descriptions
+
+    def format_item_parameter_descriptions(self, *, item_descriptions, use_html=True):
+        """
+        Format plan parameter descriptions obtained from ``extract_descriptions_from_plan_parameters``.
+        Returns description of the plan and each parameter represented as formatted strings
+        containing plan name/description and parameter name/type/description. The text is ready
+        for presentation in user interfaces.
+
+        TODO: potentially move this function or its modification to
+              Queue Server code (file 'profile_ops.py')
+        """
+
+        if not item_descriptions:
+            return {}
+
+        start_bold = "<b>" if use_html else ""
+        stop_bold = "</b>" if use_html else ""
+        start_it = "<i>" if use_html else ""
+        stop_it = "</i>" if use_html else ""
+        new_line = "<br>" if use_html else ""
+
+        not_available = "Description is not available"
+
+        descriptions = {}
+
+        item_name = item_descriptions.get("name", "")
+        item_description = item_descriptions.get("description", "")
+        item_description = item_description.replace("\n", new_line)
+        s = (
+            f"{start_it}Name:{stop_it} {start_bold}{item_name}{stop_bold}{new_line}"
+            f"{item_description}"
+        )
+
+        descriptions["description"] = s if s else not_available
+
+        descriptions["parameters"] = {}
+        for _, p in item_descriptions["parameters"].items():
+            p_name = p["name"] or "-"
+            p_type = p["type"] or "-"
+            p_default = p["default"] or "-"
+            p_description = p["description"]
+            p_description = p_description.replace("\n", new_line)
+            s = (
+                f"{start_it}Name:{stop_it} {start_bold}{p_name}{stop_bold}{new_line}"
+                f"{start_it}Type:{stop_it} {start_bold}{p_type}{stop_bold}{new_line}"
+                f"{start_it}Default:{stop_it} {start_bold}{p_default}{stop_bold}{new_line}"
+                f"{p_description}"
+            )
+
+            descriptions["parameters"][p_name] = s if s else not_available
+
+        return descriptions
+
+    def get_allowed_plan_names(self):
+        return list(self._allowed_plans.keys()) if self._allowed_plans else []
+
+    def get_allowed_instruction_names(self):
+        return list(("queue_stop",))
+
+    # ============================================================================
     #                         Item representation
 
     def set_map_param_labels_to_keys(self, *, map_dict=None):
@@ -291,6 +472,36 @@ class RunEngineClient:
         }
         map_dict = map_dict if (map_dict is not None) else _default_map
         self._map_column_labels_to_keys = map_dict
+
+    def get_bound_item_arguments(self, item):
+        item_args = item.get("args", [])
+        item_kwargs = item.get("kwargs", {})
+        item_type = item.get("item_type", None)
+        item_name = item.get("name", None)
+
+        try:
+            if item_type == "plan":
+                plan_parameters = self._allowed_plans.get(item_name, None)
+                if plan_parameters is None:
+                    raise RuntimeError(
+                        f"Plan '{item_name}' is not in the list of allowed plans"
+                    )
+                bound_arguments = bind_plan_arguments(
+                    plan_args=item_args,
+                    plan_kwargs=item_kwargs,
+                    plan_parameters=plan_parameters,
+                )
+                # If the arguments were bound successfully, then replace 'args' and 'kwargs'.
+                item_args = []
+                item_kwargs = bound_arguments.arguments
+        except Exception:
+            # print(
+            #     f"Failed to bind arguments (item_type='{item_type}', "
+            #     f"item_name='{item_name}'). Exception: {ex}"
+            # )
+            pass
+
+        return item_args, item_kwargs
 
     def get_item_value_for_label(self, *, item, label, as_str=True):
         """
@@ -327,7 +538,6 @@ class RunEngineClient:
         # Follow the path in the dictionary. 'KeyError' exception is raised if a key does not exist
         try:
             value = item
-            item_name, item_type = item.get("name", ""), item.get("item_type", "")
             if (len(key_seq) == 1) and (key_seq[-1] in ("args", "kwargs")):
                 # Special case: combine args and kwargs to be displayed in one column
                 value = {
@@ -347,26 +557,7 @@ class RunEngineClient:
 
             s = ""
             if key in ("args", "kwargs"):
-                try:
-                    if item_type == "plan":
-                        plan_parameters = self._allowed_plans.get(item_name, None)
-                        if plan_parameters is None:
-                            raise RuntimeError(
-                                f"Plan '{item_name}' is not in the list of allowed plans"
-                            )
-                        bound_arguments = bind_plan_arguments(
-                            plan_args=value["args"],
-                            plan_kwargs=value["kwargs"],
-                            plan_parameters=plan_parameters,
-                        )
-                        # If the arguments were bound successfully, then replace 'args' and 'kwargs'.
-                        value["args"] = []
-                        value["kwargs"] = bound_arguments.arguments
-                except Exception as ex:
-                    print(
-                        f"Failed to bind arguments (item_type='{item_type}', "
-                        f"item_name='{item_name}'). Exception: {ex}"
-                    )
+                value["args"], value["kwargs"] = self.get_bound_item_arguments(item)
 
                 s_args, s_kwargs = "", ""
                 if value["args"] and isinstance(
@@ -380,16 +571,20 @@ class RunEngineClient:
                         f"{k}: {v}" for k, v in value["kwargs"].items()
                     )
                 s = ", ".join([_ for _ in [s_args, s_kwargs] if _])
+
             elif key == "args":
                 if value and isinstance(value, collections.abc.Iterable):
                     s = ", ".join(f"{v}" for v in value)
+
             elif key == "item_type":
                 # Print capitalized first letter of the item type ('P' or 'I')
                 s_tmp = str(value)
                 if s_tmp:
                     s = s_tmp[0].upper()
+
             else:
                 s = str(value)
+
         else:
             s = value
 
@@ -418,6 +613,26 @@ class RunEngineClient:
         except Exception:
             item_uid = ""
         return item_uid
+
+    def queue_item_by_uid(self, item_uid):
+        """
+        Returns deep copy of the item based on item UID or None if the item was not found.
+
+        Parameters
+        ----------
+        item_uid : str
+            UID of an item. If ``item_uid=""`` then None will be returned
+
+        Returns
+        -------
+        dict or None
+            Dictionary of item parameters or ``None`` if the item was not found
+        """
+        if item_uid:
+            sel_item_pos = self.queue_item_uid_to_pos(item_uid)
+            if sel_item_pos >= 0:
+                return copy.deepcopy(self._plan_queue_items[sel_item_pos])
+        return None
 
     def queue_item_move_up(self):
         """
@@ -587,6 +802,38 @@ class RunEngineClient:
         request_params.update(params)
         response = self._client.send_message(
             method="queue_item_add", params=request_params
+        )
+        self.load_re_manager_status(unbuffered=True)
+        if not response["success"]:
+            raise RuntimeError(f"Failed to add item to the queue: {response['msg']}")
+        else:
+            try:
+                # The 'item' and 'item_uid' should always be included in the returned item in case of success.
+                sel_item_uid = response["item"]["item_uid"]
+            except KeyError as ex:
+                print(
+                    f"Item or item UID is not found in the server response {pprint.pformat(response)}. "
+                    f"Can not update item selection in the queue table. Exception: {ex}"
+                )
+            self.selected_queue_item_uid = sel_item_uid
+
+    def queue_item_update(self, *, item):
+        """
+        Update the existing plan in the queue. This function should be called by all widgets
+        that are used to modify (edit) the existing queue items. The items are distinguished by
+        item UID, so item UID in the submitted ``item`` must match UID of the existing queue item
+        that is replaced. The modified item becomes a selected item.
+        """
+        # We are submitting a plan as a new plan, so all unnecessary data will be stripped
+        #   and new item UID will be assigned.
+        request_params = {
+            "item": item,
+            "user": self._user_name,
+            "user_group": self._user_group,
+            "replace": True,  # Generates new UID
+        }
+        response = self._client.send_message(
+            method="queue_item_update", params=request_params
         )
         self.load_re_manager_status(unbuffered=True)
         if not response["success"]:

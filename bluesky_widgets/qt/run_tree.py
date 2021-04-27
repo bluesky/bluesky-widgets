@@ -12,7 +12,7 @@ from databroker.core import BlueskyEventStream
 
 
 class RunTree:
-    """Lazily populate the tree as data is requested. """
+    """Lazily populate the tree as data is requested."""
 
     def __init__(self, bs_run):
         self.run = bs_run
@@ -170,7 +170,7 @@ class TreeViewModel(QAbstractItemModel):
         return QModelIndex()
 
     def parent(self, index):
-        """ Return the parent."""
+        """Return the parent."""
         if not index.isValid:
             return QModelIndex()
         item = index.internalPointer()
