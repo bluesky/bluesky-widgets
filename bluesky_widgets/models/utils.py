@@ -100,9 +100,7 @@ def construct_namespace(run, stream_names):
             ds = run[stream_name].to_dask()
             namespace.update({column: ds[column] for column in ds})
             namespace.update({column: ds[column] for column in ds.coords})
-        namespace.update(
-            {stream_name: run[stream_name].to_dask() for stream_name in stream_names}
-        )
+        namespace.update({stream_name: run[stream_name].to_dask() for stream_name in stream_names})
     namespace.update({"run": run})
     return namespace
 
@@ -167,9 +165,7 @@ def call_or_eval(mapping, run, stream_names, namespace=None):
         namespace_.update(namespace or {})
         del namespace  # Avoid conflating namespace and namespace_ below.
 
-        return {
-            key: call_or_eval_one(item, namespace_) for key, item in mapping.items()
-        }
+        return {key: call_or_eval_one(item, namespace_) for key, item in mapping.items()}
 
 
 def call_or_eval_one(item, namespace):
@@ -225,22 +221,14 @@ def call_or_eval_one(item, namespace):
         try:
             ast.parse(item)
         except SyntaxError as err:
-            raise ValueError(
-                f"Could find {item!r} in namespace or parse it as "
-                "a Python expression."
-            ) from err
+            raise ValueError(f"Could find {item!r} in namespace or parse it as " "a Python expression.") from err
         # Try to evaluate it as a Python expression in the namespace.
         try:
             return eval(item, namespace)
         except Exception as err:
-            raise ValueError(
-                f"Could find {item!r} in namespace or evaluate it."
-            ) from err
+            raise ValueError(f"Could find {item!r} in namespace or evaluate it.") from err
     else:
-        raise ValueError(
-            f"expected callable or string, received {item!r} of "
-            f"type {type(item).__name__}"
-        )
+        raise ValueError(f"expected callable or string, received {item!r} of " f"type {type(item).__name__}")
 
 
 def auto_label(callable_or_expr):
@@ -331,9 +319,7 @@ class RunManager:
         # widereaching change, so we'll stay within the framework as it is
         # today.
         if len(runs) != 1:
-            raise NotImplementedError(
-                "We current assume a 1:1 association of aritsts and runs."
-            )
+            raise NotImplementedError("We current assume a 1:1 association of aritsts and runs.")
         (run,) = runs
         run_uid = run.metadata["start"]["uid"]
         self._runs_to_artists[run_uid].append(artist)

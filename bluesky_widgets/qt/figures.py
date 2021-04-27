@@ -123,9 +123,7 @@ class QtFigures(QTabWidget):
         # Update the tab title when short_title changes (or, if short_title is
         # None, when title changes).
         self._threadsafe_connect(figure_spec.events.title, self._on_title_changed)
-        self._threadsafe_connect(
-            figure_spec.events.short_title, self._on_short_title_changed
-        )
+        self._threadsafe_connect(figure_spec.events.short_title, self._on_short_title_changed)
 
     def _on_figure_removed(self, event):
         "Remove the associated tab and close its canvas."
@@ -175,16 +173,12 @@ class QtFigure(QWidget):
         # TODO Let Figure give different options to subplots here,
         # but verify that number of axes created matches the number of axes
         # specified.
-        self.axes_list = list(
-            self.figure.subplots(len(model.axes), squeeze=False).ravel()
-        )
+        self.axes_list = list(self.figure.subplots(len(model.axes), squeeze=False).ravel())
 
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):
-            self._axes[axes_spec.uuid] = ThreadsafeMatplotlibAxes(
-                model=axes_spec, axes=axes
-            )
+            self._axes[axes_spec.uuid] = ThreadsafeMatplotlibAxes(model=axes_spec, axes=axes)
         canvas = FigureCanvas(self.figure)
         canvas.setMinimumWidth(640)
         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)

@@ -7,9 +7,7 @@ def make_test_app(qtbot, request):
     apps = []
 
     def actual_factory(*model_args, **model_kwargs):
-        model_kwargs["show"] = model_kwargs.pop(
-            "show", request.config.getoption("--show-window")
-        )
+        model_kwargs["show"] = model_kwargs.pop("show", request.config.getoption("--show-window"))
         app = ExampleApp(*model_args, **model_kwargs)
         apps.append(app)
         return app

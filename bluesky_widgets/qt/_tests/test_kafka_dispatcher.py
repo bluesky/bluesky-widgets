@@ -94,12 +94,8 @@ def test_publisher_and_qt_remote_dispatcher(
         # it returns False to end the polling loop
         # as soon as it sees one stop document
         def until_first_stop_document():
-            dispatched_bluesky_document_names = [
-                name for name, _ in dispatched_bluesky_documents
-            ]
-            test_logger.debug(
-                "until_first_stop_document %s", dispatched_bluesky_document_names
-            )
+            dispatched_bluesky_document_names = [name for name, _ in dispatched_bluesky_documents]
+            test_logger.debug("until_first_stop_document %s", dispatched_bluesky_document_names)
             if "stop" in dispatched_bluesky_document_names:
                 return False
             else:

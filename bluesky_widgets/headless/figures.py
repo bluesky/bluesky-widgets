@@ -187,11 +187,7 @@ def _close_figure(figure):
         from matplotlib._pylab_helpers import Gcf
 
         num = next(
-            (
-                manager.num
-                for manager in Gcf.figs.values()
-                if manager.canvas.figure == figure
-            ),
+            (manager.num for manager in Gcf.figs.values() if manager.canvas.figure == figure),
             None,
         )
         if num is not None:

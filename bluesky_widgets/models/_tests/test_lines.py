@@ -100,9 +100,7 @@ def test_adding_ys(operation, operation_args, num_ys, ys_list, num_lines, Figure
 )
 def test_removing_ys(operation, operation_args, num_ys, ys_list, num_lines, FigureView):
     "Test that remove, pop, del, and clear work properly"
-    model = Lines(
-        "c * motor", ["det", "det+1", "det+2"], namespace={"c": 3}, max_runs=MAX_RUNS
-    )
+    model = Lines("c * motor", ["det", "det+1", "det+2"], namespace={"c": 3}, max_runs=MAX_RUNS)
     view = FigureView(model.figure)
     model.add_run(runs[0])
     assert len(model.ys) == 3

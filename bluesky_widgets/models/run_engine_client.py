@@ -25,9 +25,7 @@ class RunEngineClient:
         ``user_group_permissions.yaml`` (see documentation for RE Manager).
     """
 
-    def __init__(
-        self, zmq_server_address=None, user_name="GUI Client", user_group="admin"
-    ):
+    def __init__(self, zmq_server_address=None, user_name="GUI Client", user_group="admin"):
         self._client = ZMQCommSendThreads(zmq_server_address=zmq_server_address)
         self.set_map_param_labels_to_keys()
 
@@ -114,16 +112,11 @@ class RunEngineClient:
         self.load_plan_history()
 
     def load_re_manager_status(self, *, unbuffered=False):
-        if unbuffered or (
-            time.time() - self._re_manager_status_time
-            > self._re_manager_status_update_period
-        ):
+        if unbuffered or (time.time() - self._re_manager_status_time > self._re_manager_status_update_period):
             status = self._re_manager_status.copy()
             accessible = self._re_manager_connected
             try:
-                new_manager_status = self._client.send_message(
-                    method="status", raise_exceptions=True
-                )
+                new_manager_status = self._client.send_message(method="status", raise_exceptions=True)
                 self._re_manager_status.clear()
                 self._re_manager_status.update(new_manager_status)
                 self._re_manager_connected = True
@@ -140,9 +133,7 @@ class RunEngineClient:
 
             except CommTimeoutError:
                 self._re_manager_connected = False
-            if (status != self._re_manager_status) or (
-                accessible != self._re_manager_connected
-            ):
+            if (status != self._re_manager_status) or (accessible != self._re_manager_connected):
                 # Status changed. Initiate the updates
                 self.events.status_changed(
                     status=self._re_manager_status,
@@ -157,9 +148,7 @@ class RunEngineClient:
                 raise_exceptions=True,
             )
             if result["success"] is False:
-                raise RuntimeError(
-                    f"Failed to load list of allowed devices: {result['msg']}"
-                )
+                raise RuntimeError(f"Failed to load list of allowed devices: {result['msg']}")
             self._allowed_devices.clear()
             self._allowed_devices.update(result["devices_allowed"])
             self.events.allowed_devices_changed(allowed_devices=self._allowed_devices)
@@ -174,9 +163,7 @@ class RunEngineClient:
                 raise_exceptions=True,
             )
             if result["success"] is False:
-                raise RuntimeError(
-                    f"Failed to load list of allowed plans: {result['msg']}"
-                )
+                raise RuntimeError(f"Failed to load list of allowed plans: {result['msg']}")
             self._allowed_plans.clear()
             self._allowed_plans.update(result["plans_allowed"])
             self.events.allowed_plans_changed(allowed_plans=self._allowed_plans)
@@ -185,9 +172,7 @@ class RunEngineClient:
 
     def load_plan_queue(self):
         try:
-            result = self._client.send_message(
-                method="queue_get", raise_exceptions=True
-            )
+            result = self._client.send_message(method="queue_get", raise_exceptions=True)
             if result["success"] is False:
                 raise RuntimeError(f"Failed to load queue: {result['msg']}")
             self._plan_queue_items.clear()
@@ -199,9 +184,7 @@ class RunEngineClient:
             # The dictionary that relates item uids and their positions in the queue.
             #   Used to speed up computations during queue operations.
             self._plan_queue_items_pos = {
-                item["item_uid"]: n
-                for n, item in enumerate(self._plan_queue_items)
-                if "item_uid" in item
+                item["item_uid"]: n for n, item in enumerate(self._plan_queue_items) if "item_uid" in item
             }
 
             # Deselect queue item if it is not present in the queue
@@ -242,9 +225,7 @@ class RunEngineClient:
 
     def load_plan_history(self):
         try:
-            result = self._client.send_message(
-                method="history_get", raise_exceptions=True
-            )
+            result = self._client.send_message(method="history_get", raise_exceptions=True)
             if result["success"] is False:
                 raise RuntimeError(f"Failed to load history: {result['msg']}")
             self._plan_history_items.clear()
@@ -365,9 +346,7 @@ class RunEngineClient:
                 d_tmp = p["default"]
                 p_default = str(d_tmp)
                 if p_default:
-                    p_default = (
-                        f"'{p_default}'" if isinstance(d_tmp, str) else p_default
-                    )
+                    p_default = f"'{p_default}'" if isinstance(d_tmp, str) else p_default
             except Exception:
                 p_default = ""
 
@@ -406,10 +385,7 @@ class RunEngineClient:
         item_name = item_descriptions.get("name", "")
         item_description = item_descriptions.get("description", "")
         item_description = item_description.replace("\n", new_line)
-        s = (
-            f"{start_it}Name:{stop_it} {start_bold}{item_name}{stop_bold}{new_line}"
-            f"{item_description}"
-        )
+        s = f"{start_it}Name:{stop_it} {start_bold}{item_name}{stop_bold}{new_line}" f"{item_description}"
 
         descriptions["description"] = s if s else not_available
 
@@ -483,9 +459,7 @@ class RunEngineClient:
             if item_type == "plan":
                 plan_parameters = self._allowed_plans.get(item_name, None)
                 if plan_parameters is None:
-                    raise RuntimeError(
-                        f"Plan '{item_name}' is not in the list of allowed plans"
-                    )
+                    raise RuntimeError(f"Plan '{item_name}' is not in the list of allowed plans")
                 bound_arguments = bind_plan_arguments(
                     plan_args=item_args,
                     plan_kwargs=item_kwargs,
@@ -548,9 +522,7 @@ class RunEngineClient:
                 for key in key_seq:
                     value = value[key]
         except KeyError:
-            raise KeyError(
-                f"Parameter with keys {key_seq} is not found in the item dictionary"
-            )
+            raise KeyError(f"Parameter with keys {key_seq} is not found in the item dictionary")
 
         if as_str:
             key = key_seq[-1]
@@ -560,16 +532,10 @@ class RunEngineClient:
                 value["args"], value["kwargs"] = self.get_bound_item_arguments(item)
 
                 s_args, s_kwargs = "", ""
-                if value["args"] and isinstance(
-                    value["args"], collections.abc.Iterable
-                ):
+                if value["args"] and isinstance(value["args"], collections.abc.Iterable):
                     s_args = ", ".join(f"{v}" for v in value["args"])
-                if value["kwargs"] and isinstance(
-                    value["kwargs"], collections.abc.Mapping
-                ):
-                    s_kwargs = ", ".join(
-                        f"{k}: {v}" for k, v in value["kwargs"].items()
-                    )
+                if value["kwargs"] and isinstance(value["kwargs"], collections.abc.Mapping):
+                    s_kwargs = ", ".join(f"{k}: {v}" for k, v in value["kwargs"].items())
                 s = ", ".join([_ for _ in [s_args, s_kwargs] if _])
 
             elif key == "args":
@@ -677,12 +643,7 @@ class RunEngineClient:
         item_uid = self.selected_queue_item_uid
         n_item = self.queue_item_uid_to_pos(item_uid)
         n_item_to_replace = self.queue_item_uid_to_pos(item_uid_to_replace)
-        if (
-            item_uid
-            and item_uid_to_replace
-            and (n_item_to_replace >= 0)
-            and (item_uid != item_uid_to_replace)
-        ):
+        if item_uid and item_uid_to_replace and (n_item_to_replace >= 0) and (item_uid != item_uid_to_replace):
             location = "before_uid" if (n_item_to_replace < n_item) else "after_uid"
             response = self._client.send_message(
                 method="queue_item_move",
@@ -735,9 +696,7 @@ class RunEngineClient:
                 n_sel_item_new = n_item - 1
             self.selected_queue_item_uid = self.queue_item_pos_to_uid(n_sel_item_new)
 
-            response = self._client.send_message(
-                method="queue_item_remove", params={"uid": item_uid}
-            )
+            response = self._client.send_message(method="queue_item_remove", params={"uid": item_uid})
             self.load_re_manager_status(unbuffered=True)
             if not response["success"]:
                 raise RuntimeError(f"Failed to delete item: {response['msg']}")
@@ -757,9 +716,7 @@ class RunEngineClient:
         """
         Enable or disable LOOP mode of the queue
         """
-        response = self._client.send_message(
-            method="queue_mode_set", params={"mode": {"loop": enable}}
-        )
+        response = self._client.send_message(method="queue_mode_set", params={"mode": {"loop": enable}})
         self.load_re_manager_status(unbuffered=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to change plan queue mode: {response['msg']}")
@@ -800,9 +757,7 @@ class RunEngineClient:
             "user_group": self._user_group,
         }
         request_params.update(params)
-        response = self._client.send_message(
-            method="queue_item_add", params=request_params
-        )
+        response = self._client.send_message(method="queue_item_add", params=request_params)
         self.load_re_manager_status(unbuffered=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to add item to the queue: {response['msg']}")
@@ -832,9 +787,7 @@ class RunEngineClient:
             "user_group": self._user_group,
             "replace": True,  # Generates new UID
         }
-        response = self._client.send_message(
-            method="queue_item_update", params=request_params
-        )
+        response = self._client.send_message(method="queue_item_update", params=request_params)
         self.load_re_manager_status(unbuffered=True)
         if not response["success"]:
             raise RuntimeError(f"Failed to add item to the queue: {response['msg']}")
@@ -911,18 +864,14 @@ class RunEngineClient:
         self.load_re_manager_status()
         status = self._re_manager_status
         if status["manager_state"] != "idle":
-            raise RuntimeError(
-                f"RE Manager state must be 'idle': current state: {status['manager_state']}"
-            )
+            raise RuntimeError(f"RE Manager state must be 'idle': current state: {status['manager_state']}")
         if status["worker_environment_exists"]:
             raise RuntimeError("RE Worker environment already exists")
 
         # Initiate opening of RE Worker environment
         response = self._client.send_message(method="environment_open")
         if not response["success"]:
-            raise RuntimeError(
-                f"Failed to open RE Worker environment: {response['msg']}"
-            )
+            raise RuntimeError(f"Failed to open RE Worker environment: {response['msg']}")
 
         # Wait for the environment to be created.
         if timeout:
@@ -930,10 +879,7 @@ class RunEngineClient:
         while True:
             self.load_re_manager_status()
             status2 = self._re_manager_status
-            if (
-                status2["worker_environment_exists"]
-                and status2["manager_state"] == "idle"
-            ):
+            if status2["worker_environment_exists"] and status2["manager_state"] == "idle":
                 break
             if timeout and (time.time() > t_stop):
                 raise RuntimeError("Failed to start RE Worker: timeout occurred")
@@ -958,18 +904,14 @@ class RunEngineClient:
         self.load_re_manager_status()
         status = self._re_manager_status
         if status["manager_state"] != "idle":
-            raise RuntimeError(
-                f"RE Manager state must be 'idle': current state: {status['manager_state']}"
-            )
+            raise RuntimeError(f"RE Manager state must be 'idle': current state: {status['manager_state']}")
         if not status["worker_environment_exists"]:
             raise RuntimeError("RE Worker environment does not exist")
 
         # Initiate opening of RE Worker environment
         response = self._client.send_message(method="environment_close")
         if not response["success"]:
-            raise RuntimeError(
-                f"Failed to close RE Worker environment: {response['msg']}"
-            )
+            raise RuntimeError(f"Failed to close RE Worker environment: {response['msg']}")
 
         # Wait for the environment to be created.
         if timeout:
@@ -977,10 +919,7 @@ class RunEngineClient:
         while True:
             self.load_re_manager_status()
             status2 = self._re_manager_status
-            if (
-                not status2["worker_environment_exists"]
-                and status2["manager_state"] == "idle"
-            ):
+            if not status2["worker_environment_exists"] and status2["manager_state"] == "idle":
                 break
             if timeout and (time.time() > t_stop):
                 raise RuntimeError("Failed to start RE Worker: timeout occurred")
@@ -1012,9 +951,7 @@ class RunEngineClient:
         # Initiate opening of RE Worker environment
         response = self._client.send_message(method="environment_destroy")
         if not response["success"]:
-            raise RuntimeError(
-                f"Failed to destroy RE Worker environment: {response['msg']}"
-            )
+            raise RuntimeError(f"Failed to destroy RE Worker environment: {response['msg']}")
 
         # Wait for the environment to be created.
         if timeout:
@@ -1022,10 +959,7 @@ class RunEngineClient:
         while True:
             self.load_re_manager_status()
             status2 = self._re_manager_status
-            if (
-                not status2["worker_environment_exists"]
-                and status2["manager_state"] == "idle"
-            ):
+            if not status2["worker_environment_exists"] and status2["manager_state"] == "idle":
                 break
             if timeout and (time.time() > t_stop):
                 raise RuntimeError("Failed to start RE Worker: timeout occurred")
@@ -1042,16 +976,12 @@ class RunEngineClient:
     def queue_stop(self):
         response = self._client.send_message(method="queue_stop")
         if not response["success"]:
-            raise RuntimeError(
-                f"Failed to request stopping the queue: {response['msg']}"
-            )
+            raise RuntimeError(f"Failed to request stopping the queue: {response['msg']}")
 
     def queue_stop_cancel(self):
         response = self._client.send_message(method="queue_stop_cancel")
         if not response["success"]:
-            raise RuntimeError(
-                f"Failed to cancel request to stop the queue: {response['msg']}"
-            )
+            raise RuntimeError(f"Failed to cancel request to stop the queue: {response['msg']}")
 
     # ============================================================================
     #                        RE Control
@@ -1087,18 +1017,14 @@ class RunEngineClient:
         """
 
         # Initiate opening of RE Worker environment
-        response = self._client.send_message(
-            method="re_pause", params={"option": option}
-        )
+        response = self._client.send_message(method="re_pause", params={"option": option})
         if not response["success"]:
             raise RuntimeError(f"Failed to pause the running plan: {response['msg']}")
 
         def condition(status):
             return status["manager_state"] in ("idle", "paused")
 
-        self._wait_for_completion(
-            condition=condition, msg="pause the running plan", timeout=timeout
-        )
+        self._wait_for_completion(condition=condition, msg="pause the running plan", timeout=timeout)
 
     def re_resume(self, timeout=0):
         """
@@ -1123,9 +1049,7 @@ class RunEngineClient:
         def condition(status):
             return status["manager_state"] in ("idle", "executing_queue")
 
-        self._wait_for_completion(
-            condition=condition, msg="resume execution of the plan", timeout=timeout
-        )
+        self._wait_for_completion(condition=condition, msg="resume execution of the plan", timeout=timeout)
 
     def _re_continue_plan(self, *, action, timeout=0):
 
@@ -1136,16 +1060,12 @@ class RunEngineClient:
 
         response = self._client.send_message(method=method)
         if not response["success"]:
-            raise RuntimeError(
-                f"Failed to {action} the running plan: {response['msg']}"
-            )
+            raise RuntimeError(f"Failed to {action} the running plan: {response['msg']}")
 
         def condition(status):
             return status["manager_state"] == "idle"
 
-        self._wait_for_completion(
-            condition=condition, msg=f"{action} the plan", timeout=timeout
-        )
+        self._wait_for_completion(condition=condition, msg=f"{action} the plan", timeout=timeout)
 
     def re_stop(self, timeout=0):
         self._re_continue_plan(action="stop", timeout=timeout)

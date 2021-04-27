@@ -73,9 +73,7 @@ except ImportError:
 def configure_parser_arguments(parser):
     # From AbstractCalibration
 
-    parser.add_argument(
-        "args", metavar="FILE", help="List of files to calibrate", nargs="*"
-    )
+    parser.add_argument("args", metavar="FILE", help="List of files to calibrate", nargs="*")
 
     # Not yet used
     parser.add_argument(
@@ -158,9 +156,7 @@ def configure_parser_arguments(parser):
         help="file containing the mask (for image reconstruction)",
         default=None,
     )
-    parser.add_argument(
-        "-p", "--pixel", dest="pixel", help="size of the pixel in micron", default=None
-    )
+    parser.add_argument("-p", "--pixel", dest="pixel", help="size of the pixel in micron", default=None)
     parser.add_argument(
         "-s",
         "--spline",
@@ -437,8 +433,7 @@ def configure_parser_arguments(parser):
     parser.add_argument(
         "--unit",
         dest="unit",
-        help="Valid units for radial range: 2th_deg, 2th_rad, q_nm^-1,"
-        " q_A^-1, r_mm. Default: 2th_deg",
+        help="Valid units for radial range: 2th_deg, 2th_rad, q_nm^-1," " q_A^-1, r_mm. Default: 2th_deg",
         type=str,
         default="2th_deg",
     )
@@ -595,9 +590,7 @@ def setup_model(model, options):
             settings.calibrantModel().setCalibrant(calibrant)
 
     if options.wavelength:
-        value = units.convert(
-            options.wavelength, units.Unit.ANGSTROM, units.Unit.METER_WL
-        )
+        value = units.convert(options.wavelength, units.Unit.ANGSTROM, units.Unit.METER_WL)
         settings.wavelength().setValue(value)
 
     if options.energy:
@@ -611,9 +604,7 @@ def setup_model(model, options):
         try:
             detector = pyFAI.gui.cli_calibration.get_detector(options.detector_name)
             if options.pixel:
-                logger.warning(
-                    "Detector model already specified. Pixel size argument ignored."
-                )
+                logger.warning("Detector model already specified. Pixel size argument ignored.")
         except Exception as e:
             detector = None
             displayExceptionBox("Error while loading the detector", e)
@@ -630,9 +621,7 @@ def setup_model(model, options):
             elif detector.__class__ is pyFAI.detectors.Detector or detector.HAVE_TAPER:
                 detector.set_splineFile(options.spline)
             else:
-                logger.warning(
-                    "Spline file not supported with this kind of detector. Argument ignored."
-                )
+                logger.warning("Spline file not supported with this kind of detector. Argument ignored.")
         except Exception as e:
             displayExceptionBox("Error while loading the spline file", e)
 
@@ -662,13 +651,9 @@ def setup_model(model, options):
                 now = datetime.datetime.now()
                 geometryHistory.appendGeometry("Ponifile", now, geometryFromPoni, None)
             else:
-                logger.warning(
-                    "Detector redefined in the command line. Detector from --poni argument ignored."
-                )
+                logger.warning("Detector redefined in the command line. Detector from --poni argument ignored.")
         else:
-            logger.warning(
-                "PONI file '%s' do not exists. --poni option ignored.", options.poni
-            )
+            logger.warning("PONI file '%s' do not exists. --poni option ignored.", options.poni)
 
     settings.detectorModel().setDetector(detector)
 
@@ -812,9 +797,7 @@ def setup_model(model, options):
 
             controlPoints = ControlPoints(filename=options.npt)
             peakSelectionModel = model.peakSelectionModel()
-            model_transform.initPeaksFromControlPoints(
-                peakSelectionModel, controlPoints
-            )
+            model_transform.initPeaksFromControlPoints(peakSelectionModel, controlPoints)
         except Exception as e:
             displayExceptionBox("Error while loading control-point file", e)
 
@@ -869,9 +852,7 @@ def main():
     app = qt.QApplication(qtArgs)
     pyFAI.resources.silx_integration()
 
-    settings = qt.QSettings(
-        qt.QSettings.IniFormat, qt.QSettings.UserScope, "pyfai", "pyfai-calib2", None
-    )
+    settings = qt.QSettings(qt.QSettings.IniFormat, qt.QSettings.UserScope, "pyfai", "pyfai-calib2", None)
 
     context = CalibrationContext(settings)
     context.restoreSettings()

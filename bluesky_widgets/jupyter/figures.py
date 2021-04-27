@@ -11,9 +11,7 @@ def _initialize_mpl():
     "Set backend to ipympl and import pyplot."
     import matplotlib
 
-    matplotlib.use(
-        "module://ipympl.backend_nbagg"
-    )  # must set before importing matplotlib.pyplot
+    matplotlib.use("module://ipympl.backend_nbagg")  # must set before importing matplotlib.pyplot
     # must import matplotlib.pyplot here because bluesky.utils.during_task
     # expects it to be imported
     import matplotlib.pyplot as plt  # noqa
@@ -131,9 +129,7 @@ class JupyterFigure(widgets.HBox):
         # TODO Let Figure give different options to subplots here,
         # but verify that number of axes created matches the number of axes
         # specified.
-        self.axes_list = list(
-            self.figure.subplots(len(model.axes), squeeze=False).ravel()
-        )
+        self.axes_list = list(self.figure.subplots(len(model.axes), squeeze=False).ravel())
         self.figure.suptitle(model.title)
         self._axes = {}
         for axes_spec, axes in zip(model.axes, self.axes_list):

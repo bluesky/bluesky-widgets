@@ -42,11 +42,7 @@ class AutoPlotter(abc.ABC):
 
             run.events.new_stream.connect(pass_to_handle_new_stream)
             # When run is complete, stop listening.
-            run.events.completed.connect(
-                lambda event: run.events.new_stream.disconnect(
-                    pass_to_handle_new_stream
-                )
-            )
+            run.events.completed.connect(lambda event: run.events.new_stream.disconnect(pass_to_handle_new_stream))
 
     def discard_run(self, run):
         """
@@ -77,10 +73,7 @@ class AutoPlotter(abc.ABC):
                     if figure is plot_builder.figure:
                         self.plot_builders.remove(plot_builder)
             else:
-                ValueError(
-                    "A plot builder is expected to have an attribute "
-                    "`figure` or `figures`"
-                )
+                ValueError("A plot builder is expected to have an attribute " "`figure` or `figures`")
 
     def _on_figure_removed(self, event):
         self.handle_figure_removed(event.item)

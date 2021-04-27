@@ -32,10 +32,7 @@ def test_pinned():
     # Add a pinned run.
     pinned_run = runs[5]
     model.add_run(pinned_run, pinned=True)
-    assert (
-        frozenset([pinned_run.metadata["start"]["uid"]])
-        == model.plot_builders[0].pinned
-    )
+    assert frozenset([pinned_run.metadata["start"]["uid"]]) == model.plot_builders[0].pinned
     for run in runs[6:]:
         model.add_run(run)
         assert len(model.plot_builders[0].runs) == 1 + MAX_RUNS
