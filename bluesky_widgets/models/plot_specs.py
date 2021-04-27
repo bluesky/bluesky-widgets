@@ -493,9 +493,7 @@ class ArtistSpec(BaseSpec):
     def style(self, update):
         # Provide a more helpful error than the default,
         # AttributeError: can't set attribute.
-        raise AttributeError(
-            f"can't set attribute. Use style.update({update!r}) instead of style = {update!r}."
-        )
+        raise AttributeError(f"can't set attribute. Use style.update({update!r}) instead of style = {update!r}.")
 
     def __repr__(self):
         return (
