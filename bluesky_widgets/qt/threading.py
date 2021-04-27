@@ -200,7 +200,7 @@ class FunctionWorker(WorkerBase):
     def __init__(self, func: Callable, *args, **kwargs):
         if inspect.isgeneratorfunction(func):
             raise TypeError(
-                f"Generator function {func} cannot be used with " "FunctionWorker, use GeneratorWorker instead"
+                f"Generator function {func} cannot be used with FunctionWorker, use GeneratorWorker instead"
             )
         super().__init__()
 
@@ -249,7 +249,7 @@ class GeneratorWorker(WorkerBase):
     ):
         if not inspect.isgeneratorfunction(func):
             raise TypeError(
-                f"Regular function {func} cannot be used with " "GeneratorWorker, use FunctionWorker instead"
+                f"Regular function {func} cannot be used with GeneratorWorker, use FunctionWorker instead"
             )
         super().__init__(SignalsClass=SignalsClass)
 

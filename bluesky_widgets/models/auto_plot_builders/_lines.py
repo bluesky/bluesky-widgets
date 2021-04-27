@@ -74,7 +74,7 @@ class AutoLines(AutoPlotter):
         if len(set(d[1] for d in dimensions)) != 1:
             cleanup_motor_heuristic = True
             dimensions = GUESS  # Fall back on our GUESS.
-            warn("We are ignoring the dimensions hinted because we cannot " "combine streams.")
+            warn("We are ignoring the dimensions hinted because we cannot combine streams.")
 
         # for each dimension, choose one field only
         # the plan can supply a list of fields. It's assumed the first
@@ -266,4 +266,4 @@ class AutoLines(AutoPlotter):
             #         self._live_scatters[descriptor['uid']][I_key] = live_scatter
 
         else:
-            raise NotImplementedError("we do not support 3D+ in BEC yet " "(and it should have bailed above)")
+            raise NotImplementedError("we do not support 3D+ in BEC yet (and it should have bailed above)")

@@ -385,7 +385,7 @@ class RunEngineClient:
         item_name = item_descriptions.get("name", "")
         item_description = item_descriptions.get("description", "")
         item_description = item_description.replace("\n", new_line)
-        s = f"{start_it}Name:{stop_it} {start_bold}{item_name}{stop_bold}{new_line}" f"{item_description}"
+        s = f"{start_it}Name:{stop_it} {start_bold}{item_name}{stop_bold}{new_line}{item_description}"
 
         descriptions["description"] = s if s else not_available
 

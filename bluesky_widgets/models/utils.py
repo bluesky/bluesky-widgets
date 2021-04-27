@@ -221,14 +221,14 @@ def call_or_eval_one(item, namespace):
         try:
             ast.parse(item)
         except SyntaxError as err:
-            raise ValueError(f"Could find {item!r} in namespace or parse it as " "a Python expression.") from err
+            raise ValueError(f"Could find {item!r} in namespace or parse it as a Python expression.") from err
         # Try to evaluate it as a Python expression in the namespace.
         try:
             return eval(item, namespace)
         except Exception as err:
             raise ValueError(f"Could find {item!r} in namespace or evaluate it.") from err
     else:
-        raise ValueError(f"expected callable or string, received {item!r} of " f"type {type(item).__name__}")
+        raise ValueError(f"expected callable or string, received {item!r} of type {type(item).__name__}")
 
 
 def auto_label(callable_or_expr):

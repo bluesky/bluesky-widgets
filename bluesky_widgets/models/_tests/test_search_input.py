@@ -136,7 +136,7 @@ def test_time_validator():
         if isinstance(since, timedelta):
             if not (until is None or until == now):
                 raise ValueError(
-                    "This UI cannot express since=timedelta(...) unless until " "is timedelta() or None."
+                    "This UI cannot express since=timedelta(...) unless until is timedelta() or None."
                 )
             for item in allowed:
                 if since == item:

@@ -73,7 +73,7 @@ class AutoPlotter(abc.ABC):
                     if figure is plot_builder.figure:
                         self.plot_builders.remove(plot_builder)
             else:
-                ValueError("A plot builder is expected to have an attribute " "`figure` or `figures`")
+                ValueError("A plot builder is expected to have an attribute `figure` or `figures`")
 
     def _on_figure_removed(self, event):
         self.handle_figure_removed(event.item)
