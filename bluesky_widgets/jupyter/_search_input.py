@@ -1,6 +1,15 @@
 import contextlib
 
-from ipywidgets.widgets import Text, VBox, RadioButtons, HBox, Label, Button, Layout, GridBox
+from ipywidgets.widgets import (
+    Text,
+    VBox,
+    RadioButtons,
+    HBox,
+    Label,
+    Button,
+    Layout,
+    GridBox,
+)
 from traitlets import All
 from ipydatetime import DatetimePicker
 from datetime import datetime, timedelta
@@ -11,22 +20,31 @@ class JupyterSearchInput(HBox):
     def __init__(self, model, *args, **kwargs):
         self.model = model
         self._fields = {field: Text() for field in self.model.fields}
-        self.radio_button_group = RadioButtons(description="When:",
-                                               options=["All", "30 Days", "24 Hours",
-                                                        "1 Year", "1 Week", "1 Hour"])
+        self.radio_button_group = RadioButtons(
+            description="When:",
+            options=["All", "30 Days", "24 Hours", "1 Year", "1 Week", "1 Hour"],
+        )
         self.refresh_button = Button(description="Refresh")
         date_buttons = VBox([self.radio_button_group, self.refresh_button])
         self.since_widget = DatetimePicker()
         self.until_widget = DatetimePicker()
-        date_range = HBox([Label(value="Date range:"), self.since_widget, Label(value="-"), self.until_widget])
+        date_range = HBox(
+            [
+                Label(value="Date range:"),
+                self.since_widget,
+                Label(value="-"),
+                self.until_widget,
+            ]
+        )
 
         grid_children = []
         for field, text in self._fields.items():
             grid_children.append(Label(value=f"{field}:"))
             grid_children.append(text)
 
-        text_grid = GridBox(children=grid_children,
-                            layout=Layout(grid_template_columns="30% 70%"))
+        text_grid = GridBox(
+            children=grid_children, layout=Layout(grid_template_columns="30% 70%")
+        )
 
         text_input = VBox([date_range, text_grid])
         children = (date_buttons, text_input)
@@ -57,7 +75,7 @@ class JupyterSearchInput(HBox):
         for field, text in zip(self.model.fields, self._fields.values()):
 
             def on_field_text_changed(change, field=field):
-                self.model.field_search.update({field: change['new']})
+                self.model.field_search.update({field: change["new"]})
 
             text.observe(on_field_text_changed, "value")
 
@@ -89,10 +107,14 @@ class JupyterSearchInput(HBox):
     def _on_reload(self, event):
         now = self._now()
         if isinstance(self.model.since, timedelta):
-            with _blocked(self.since_widget, self._on_since_view_changed, names="value"):
+            with _blocked(
+                self.since_widget, self._on_since_view_changed, names="value"
+            ):
                 self.since_widget.value = now + self.model.since
         if isinstance(self.model.until, timedelta):
-            with _blocked(self.until_widget, self._on_until_view_changed, names="value"):
+            with _blocked(
+                self.until_widget, self._on_until_view_changed, names="value"
+            ):
                 self.until_widget.value = now + self.model.until
 
     def _on_since_view_changed(self, change):
@@ -103,20 +125,32 @@ class JupyterSearchInput(HBox):
         if isinstance(event.date, timedelta):
             new_datetime = now + event.date
             if event.date == timedelta(hours=-1):
-                self.radio_button_group.index = self.radio_button_group.options.index("1 Hour")
+                self.radio_button_group.index = self.radio_button_group.options.index(
+                    "1 Hour"
+                )
             elif event.date == timedelta(days=-1):
-                self.radio_button_group.index = self.radio_button_group.options.index("24 Hours")
+                self.radio_button_group.index = self.radio_button_group.options.index(
+                    "24 Hours"
+                )
             elif event.date == timedelta(days=-7):
-                self.radio_button_group.index = self.radio_button_group.options.index("1 Week")
+                self.radio_button_group.index = self.radio_button_group.options.index(
+                    "1 Week"
+                )
             elif event.date == timedelta(days=-30):
-                self.radio_button_group.index = self.radio_button_group.options.index("30 Days")
+                self.radio_button_group.index = self.radio_button_group.options.index(
+                    "30 Days"
+                )
             elif event.date == timedelta(days=-365):
-                self.radio_button_group.index = self.radio_button_group.options.index("1 Year")
+                self.radio_button_group.index = self.radio_button_group.options.index(
+                    "1 Year"
+                )
             else:
                 pass
         else:
             if event.date == GRACE_HOPPER_BIRTHDAY:
-                self.radio_button_group.index = self.radio_button_group.options.index("All")
+                self.radio_button_group.index = self.radio_button_group.options.index(
+                    "All"
+                )
             else:
                 self.radio_button_group.index = None
             new_datetime = event.date
@@ -131,10 +165,14 @@ class JupyterSearchInput(HBox):
     def _on_until_model_changed(self, event):
         if not isinstance(event.date, timedelta):
             self.radio_button_group.index = None
-            with _blocked(self.until_widget, self._on_until_view_changed, names="value"):
+            with _blocked(
+                self.until_widget, self._on_until_view_changed, names="value"
+            ):
                 self.until_widget.value = event.date
         else:
-            with _blocked(self.until_widget, self._on_until_view_changed, names="value"):
+            with _blocked(
+                self.until_widget, self._on_until_view_changed, names="value"
+            ):
                 self.until_widget.value = event.date + self._now()
 
     def _on_text_view_changed(self, change):
