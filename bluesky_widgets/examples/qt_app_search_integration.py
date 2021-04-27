@@ -141,9 +141,7 @@ def main():
     search_model = SearchAndOpen(catalog, columns=columns)
     # Define what to do when the signal associated with the "Open" button fires.
     # In this toy example, just print to the terminal.
-    search_model.events.open.connect(
-        lambda event: print(f"Opening {event.selected_runs}")
-    )
+    search_model.events.open.connect(lambda event: print(f"Opening {event.selected_runs}"))
     # Create a Qt "view" of this model...
     search_view = QtSearchListWithButton(search_model)
     # ...and place it in our app.

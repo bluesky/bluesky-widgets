@@ -91,9 +91,7 @@ class RunNode(object):
             node = RunNode(self.run, "descriptors (1)", "", descriptors[0], self)
             node.num_children = len(descriptors[0])
         else:
-            node = RunNode(
-                self.run, f"descriptors ({len(descriptors)})", descriptors, self
-            )
+            node = RunNode(self.run, f"descriptors ({len(descriptors)})", descriptors, self)
             node.num_children = len(descriptors)
 
         self.children.append(node)

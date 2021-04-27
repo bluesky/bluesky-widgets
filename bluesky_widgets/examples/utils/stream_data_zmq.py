@@ -69,8 +69,7 @@ def run_publisher(in_port, data_path, quiet=False):
 def stream_example_data(data_path, quiet=False):
     data_path = Path(data_path)
     log.info(
-        f"Writing example data into directory {data_path!s}. "
-        "It will be deleted when this process is stopped."
+        f"Writing example data into directory {data_path!s}. It will be deleted when this process is stopped."
     )
 
     queue = Queue()

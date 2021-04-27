@@ -98,9 +98,7 @@ class RemoteDispatcher(QObject):
             self._receive_data,
         )
         # Schedule this method to be run again after a brief wait.
-        worker.finished.connect(
-            lambda: self._timer.singleShot(LOADING_LATENCY, self._work_loop)
-        )
+        worker.finished.connect(lambda: self._timer.singleShot(LOADING_LATENCY, self._work_loop))
         worker.yielded.connect(self._process_result)
         worker.start()
 

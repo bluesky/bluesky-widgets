@@ -60,9 +60,7 @@ class QtSearch(QWidget):
         if run_search:
             # The root catalog contains Runs, so immediately display Run Search
             # input and output.
-            self._initialize_run_search(
-                run_search.search_input, run_search.search_results
-            )
+            self._initialize_run_search(run_search.search_input, run_search.search_results)
             # No need to have a "Back" button in this case
             self._back_button.setVisible(False)
         else:
@@ -117,9 +115,7 @@ class QtSearch(QWidget):
     def _initialize_run_search(self, search_input, search_results):
         "Create search input and output for a catalog of Runs."
         # Create run search widgets and stash them as state for removal later.
-        self._run_search_widgets.extend(
-            [QtSearchInput(search_input), QtSearchResults(search_results)]
-        )
+        self._run_search_widgets.extend([QtSearchInput(search_input), QtSearchResults(search_results)])
         for w in self._run_search_widgets:
             self.layout().addWidget(w)
         self._vspacer.changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Minimum)

@@ -60,10 +60,7 @@ class Query(collections.abc.Mapping):
         return type(self)(**{**self.kwargs, **kwargs})
 
     def __repr__(self):
-        return (
-            f"{type(self).__name__}("
-            f"{', '.join(f'{k}={v}' for k, v in self.kwargs.items())})"
-        )
+        return f"{type(self).__name__}(" f"{', '.join(f'{k}={v}' for k, v in self.kwargs.items())})"
 
 
 class TextQuery(Query):
@@ -133,16 +130,12 @@ class TimeRange(Query):
         if since is None:
             self._since_normalized = None
         else:
-            self._since_normalized = normalize_human_friendly_time(
-                since, tz=self.timezone
-            )
+            self._since_normalized = normalize_human_friendly_time(since, tz=self.timezone)
         self._since_raw = since
         if until is None:
             self._until_normalized = None
         else:
-            self._until_normalized = normalize_human_friendly_time(
-                until, tz=self.timezone
-            )
+            self._until_normalized = normalize_human_friendly_time(until, tz=self.timezone)
         self._until_raw = until
         if since is not None and until is not None:
             if self._since_normalized > self._until_normalized:
@@ -247,9 +240,7 @@ def normalize_human_friendly_time(val, tz):
 
 
 # fill in the placeholder we left in the previous docstring
-normalize_human_friendly_time.__doc__ = normalize_human_friendly_time.__doc__.format(
-    _doc_ts_formats
-)
+normalize_human_friendly_time.__doc__ = normalize_human_friendly_time.__doc__.format(_doc_ts_formats)
 
 
 def secs_since_epoch(datetime):
@@ -518,9 +509,7 @@ class SearchResults:
 
     def get_uid_by_row(self, row):
         if row > len(self._catalog):
-            raise ValueError(
-                f"Cannot get row {row}. Catalog has {len(self._catalog)} rows."
-            )
+            raise ValueError(f"Cannot get row {row}. Catalog has {len(self._catalog)} rows.")
         cache_length = len(self._uids)
         if row >= cache_length:
             for _ in range(row - cache_length + 1):
@@ -713,9 +702,7 @@ class Search:
         if self.root_catalog is self.current_catalog:
             raise RuntimeError("We are the root catalog.")
         if self._search is not None:
-            self._search.search_results.events.active_row.disconnect(
-                self._on_active_row
-            )
+            self._search.search_results.events.active_row.disconnect(self._on_active_row)
             self._search = None
             self.events.run_search_cleared()
         self._subcatalogs.pop()
@@ -766,9 +753,7 @@ class SearchList(EventedList):
         super().__init__(*args, **kwargs)
         self.events.add(active=Event)
         self.events.added.connect(self._connect_enforce_mutually_exclusive_activation)
-        self.events.removed.connect(
-            self._disconnect_enforce_mutually_exclusive_activation
-        )
+        self.events.removed.connect(self._disconnect_enforce_mutually_exclusive_activation)
 
     # Ensure that whenever an item in this list become "active" all others are
     # not active.

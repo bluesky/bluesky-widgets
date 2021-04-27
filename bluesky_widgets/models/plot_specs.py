@@ -386,9 +386,7 @@ class ArtistSpec(BaseSpec):
         # Re-emit updates. It's important to re-emit (not just pass through)
         # because the consumer will need access to self.
         self._style.events.updated.connect(
-            lambda event: self.events.style_updated(
-                update=event.update, artist_spec=self
-            )
+            lambda event: self.events.style_updated(update=event.update, artist_spec=self)
         )
         super().__init__(uuid)
 
@@ -495,10 +493,7 @@ class ArtistSpec(BaseSpec):
     def style(self, update):
         # Provide a more helpful error than the default,
         # AttributeError: can't set attribute.
-        raise AttributeError(
-            f"can't set attribute. Use style.update({update!r}) "
-            f"instead of style = {update!r}."
-        )
+        raise AttributeError(f"can't set attribute. Use style.update({update!r}) instead of style = {update!r}.")
 
     def __repr__(self):
         return (

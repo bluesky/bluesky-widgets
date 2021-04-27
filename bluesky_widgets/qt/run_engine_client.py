@@ -45,9 +45,7 @@ class QtReManagerConnection(QWidget):
         self._pb_re_manager_connect.clicked.connect(self._pb_re_manager_connect_clicked)
 
         self._pb_re_manager_disconnect = QPushButton("Disconnect")
-        self._pb_re_manager_disconnect.clicked.connect(
-            self._pb_re_manager_disconnect_clicked
-        )
+        self._pb_re_manager_disconnect.clicked.connect(self._pb_re_manager_disconnect_clicked)
 
         self._group_box = QGroupBox("Queue Server")
 
@@ -164,12 +162,8 @@ class QtReEnvironmentControls(QWidget):
         # 'is_connected' takes values True, False
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
-        self._pb_env_open.setEnabled(
-            is_connected and not worker_exists and (manager_state == "idle")
-        )
-        self._pb_env_close.setEnabled(
-            is_connected and worker_exists and (manager_state == "idle")
-        )
+        self._pb_env_open.setEnabled(is_connected and not worker_exists and (manager_state == "idle"))
+        self._pb_env_close.setEnabled(is_connected and worker_exists and (manager_state == "idle"))
         self._pb_env_destroy.setEnabled(is_connected and worker_exists)
 
     def _pb_env_open_clicked(self):
@@ -240,12 +234,8 @@ class QtReQueueControls(QWidget):
         s = "RUNNING" if running_item_uid else "STOPPED"
         self._lb_queue_state.setText(s)
 
-        self._pb_queue_start.setEnabled(
-            is_connected and worker_exists and not bool(running_item_uid)
-        )
-        self._pb_queue_stop.setEnabled(
-            is_connected and worker_exists and bool(running_item_uid)
-        )
+        self._pb_queue_start.setEnabled(is_connected and worker_exists and not bool(running_item_uid))
+        self._pb_queue_stop.setEnabled(is_connected and worker_exists and bool(running_item_uid))
         self._pb_queue_stop.setChecked(queue_stop_pending)
 
     def _pb_queue_start_clicked(self):
@@ -273,15 +263,11 @@ class QtReExecutionControls(QWidget):
 
         self._pb_plan_pause_deferred = QPushButton("Pause: Deferred")
         self._pb_plan_pause_deferred.setEnabled(False)
-        self._pb_plan_pause_deferred.clicked.connect(
-            self._pb_plan_pause_deferred_clicked
-        )
+        self._pb_plan_pause_deferred.clicked.connect(self._pb_plan_pause_deferred_clicked)
 
         self._pb_plan_pause_immediate = QPushButton("Pause: Immediate")
         self._pb_plan_pause_immediate.setEnabled(False)
-        self._pb_plan_pause_immediate.clicked.connect(
-            self._pb_plan_pause_immediate_clicked
-        )
+        self._pb_plan_pause_immediate.clicked.connect(self._pb_plan_pause_immediate_clicked)
 
         self._pb_plan_resume = QPushButton("Resume")
         self._pb_plan_resume.setEnabled(False)
@@ -337,18 +323,10 @@ class QtReExecutionControls(QWidget):
         self._pb_plan_pause_immediate.setEnabled(
             is_connected and worker_exists and (manager_state == "executing_queue")
         )
-        self._pb_plan_resume.setEnabled(
-            is_connected and worker_exists and (manager_state == "paused")
-        )
-        self._pb_plan_stop.setEnabled(
-            is_connected and worker_exists and (manager_state == "paused")
-        )
-        self._pb_plan_abort.setEnabled(
-            is_connected and worker_exists and (manager_state == "paused")
-        )
-        self._pb_plan_halt.setEnabled(
-            is_connected and worker_exists and (manager_state == "paused")
-        )
+        self._pb_plan_resume.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
+        self._pb_plan_stop.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
+        self._pb_plan_abort.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
+        self._pb_plan_halt.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
 
     def _pb_plan_pause_deferred_clicked(self):
         try:
@@ -464,9 +442,7 @@ class QtReStatusMonitor(QWidget):
         queue_loop_enabled = queue_mode.get("loop", None) if queue_mode else None
 
         # Capitalize state of RE Manager
-        manager_state = (
-            manager_state.upper() if isinstance(manager_state, str) else manager_state
-        )
+        manager_state = manager_state.upper() if isinstance(manager_state, str) else manager_state
         re_state = re_state.upper() if isinstance(re_state, str) else re_state
 
         self._set_label_text(
@@ -474,18 +450,14 @@ class QtReStatusMonitor(QWidget):
             self._lb_environment_exists_text,
             "OPEN" if worker_exists else "CLOSED",
         )
-        self._set_label_text(
-            self._lb_manager_state, self._lb_manager_state_text, manager_state
-        )
+        self._set_label_text(self._lb_manager_state, self._lb_manager_state_text, manager_state)
         self._set_label_text(self._lb_re_state, self._lb_re_state_text, re_state)
         self._set_label_text(
             self._lb_items_in_history,
             self._lb_items_in_history_text,
             str(items_in_history),
         )
-        self._set_label_text(
-            self._lb_items_in_queue, self._lb_items_in_queue_text, str(items_in_queue)
-        )
+        self._set_label_text(self._lb_items_in_queue, self._lb_items_in_queue_text, str(items_in_queue))
         self._set_label_text(
             self._lb_queue_is_running,
             self._lb_queue_is_running_text,
@@ -692,21 +664,15 @@ class QtRePlanQueue(QWidget):
         self.model.events.plan_queue_changed.connect(self.on_plan_queue_changed)
         self.signal_plan_queue_changed.connect(self.slot_plan_queue_changed)
 
-        self.model.events.queue_item_selection_changed.connect(
-            self.on_queue_item_selection_changed
-        )
+        self.model.events.queue_item_selection_changed.connect(self.on_queue_item_selection_changed)
         self.signal_update_selection.connect(self.slot_change_selection)
 
         self._table.signal_drop_event.connect(self.on_table_drop_event)
         self._table.signal_scroll.connect(self.on_table_scroll_event)
 
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
-        self._table.verticalScrollBar().valueChanged.connect(
-            self.on_vertical_scrollbar_value_changed
-        )
-        self._table.verticalScrollBar().rangeChanged.connect(
-            self.on_vertical_scrollbar_range_changed
-        )
+        self._table.verticalScrollBar().valueChanged.connect(self.on_vertical_scrollbar_value_changed)
+        self._table.verticalScrollBar().rangeChanged.connect(self.on_vertical_scrollbar_range_changed)
 
         self._update_button_states()
 
@@ -794,9 +760,7 @@ class QtRePlanQueue(QWidget):
         #   even if additional plans are added to the queue.
         scroll_value = self._table.verticalScrollBar().value()
         scroll_maximum = self._table.verticalScrollBar().maximum()
-        self._table_scrolled_to_bottom = scroll_value and (
-            scroll_value == scroll_maximum
-        )
+        self._table_scrolled_to_bottom = scroll_value and (scroll_value == scroll_maximum)
 
         self._table.clearContents()
         self._table.setRowCount(len(plan_queue_items))
@@ -811,9 +775,7 @@ class QtRePlanQueue(QWidget):
         for nr, item in enumerate(plan_queue_items):
             for nc, col_name in enumerate(self._table_column_labels):
                 try:
-                    value = self.model.get_item_value_for_label(
-                        item=item, label=col_name
-                    )
+                    value = self.model.get_item_value_for_label(item=item, label=col_name)
                 except KeyError:
                     value = ""
                 table_item = QTableWidgetItem(value)
@@ -994,18 +956,12 @@ class QtRePlanHistory(QWidget):
         self.model.events.plan_history_changed.connect(self.on_plan_history_changed)
         self.signal_plan_history_changed.connect(self.slot_plan_history_changed)
 
-        self.model.events.history_item_selection_changed.connect(
-            self.on_history_item_selection_changed
-        )
+        self.model.events.history_item_selection_changed.connect(self.on_history_item_selection_changed)
         self.signal_update_selection.connect(self.slot_change_selection)
 
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
-        self._table.verticalScrollBar().valueChanged.connect(
-            self.on_vertical_scrollbar_value_changed
-        )
-        self._table.verticalScrollBar().rangeChanged.connect(
-            self.on_vertical_scrollbar_range_changed
-        )
+        self._table.verticalScrollBar().valueChanged.connect(self.on_vertical_scrollbar_value_changed)
+        self._table.verticalScrollBar().rangeChanged.connect(self.on_vertical_scrollbar_range_changed)
 
         self._update_button_states()
 
@@ -1060,9 +1016,7 @@ class QtRePlanHistory(QWidget):
         for nr, item in enumerate(plan_history_items):
             for nc, col_name in enumerate(self._table_column_labels):
                 try:
-                    value = self.model.get_item_value_for_label(
-                        item=item, label=col_name
-                    )
+                    value = self.model.get_item_value_for_label(item=item, label=col_name)
                 except KeyError:
                     value = ""
                 table_item = QTableWidgetItem(value)
@@ -1197,9 +1151,7 @@ class QtReRunningPlan(QWidget):
             for line in lines:
                 line_no_leading_spaces = line.lstrip(" ")
                 n_leading_spaces = len(line) - len(line_no_leading_spaces)
-                lines_modified.append(
-                    "&nbsp;" * (n_leading_spaces + nindent) + line_no_leading_spaces
-                )
+                lines_modified.append("&nbsp;" * (n_leading_spaces + nindent) + line_no_leading_spaces)
             text_modified = "<br>".join(lines_modified)
 
             return text_modified
@@ -1207,9 +1159,7 @@ class QtReRunningPlan(QWidget):
         if running_item:
             s_running_item += f"<b>Plan Name:</b> {running_item.get('name', '')}<br>"
             if ("args" in running_item) and running_item["args"]:
-                s_running_item += (
-                    f"<b>Arguments:</b> {str(running_item['args'])[1:-1]}<br>"
-                )
+                s_running_item += f"<b>Arguments:</b> {str(running_item['args'])[1:-1]}<br>"
             if ("kwargs" in running_item) and running_item["kwargs"]:
                 s_running_item += "<b>Parameters:</b><br>"
                 for k, v in running_item["kwargs"].items():
@@ -1372,9 +1322,7 @@ class _QtRePlanEditorTable(QTableWidget):
         self.itemChanged.connect(self.table_item_changed)
 
         self._editable = editable  # Table is editable
-        self._detailed = (
-            detailed  # Detailed view of parameters (show all plan parameters)
-        )
+        self._detailed = detailed  # Detailed view of parameters (show all plan parameters)
         self.show_item(item=None)
 
     @property
@@ -1428,13 +1376,9 @@ class _QtRePlanEditorTable(QTableWidget):
             if item_type == "plan":
                 item_params = self.model.get_allowed_plan_parameters(name=item_name)
             else:
-                item_params = self.model.get_allowed_instruction_parameters(
-                    name=item_name
-                )
+                item_params = self.model.get_allowed_instruction_parameters(name=item_name)
             item_editable = (item_name is not None) and (item_params is not None)
-            params_descriptions = self.model.extract_descriptions_from_item_parameters(
-                item_parameters=item_params
-            )
+            params_descriptions = self.model.extract_descriptions_from_item_parameters(item_parameters=item_params)
             params_descriptions = self.model.format_item_parameter_descriptions(
                 item_descriptions=params_descriptions
             )
@@ -1451,9 +1395,7 @@ class _QtRePlanEditorTable(QTableWidget):
         # print(f"plan_params={pprint.pformat(plan_params)}")
         if item_editable:
             # Construct parameters (list of inspect.Parameter objects)
-            parameters, created_type_list = _construct_parameters(
-                item_params.get("parameters", {})
-            )
+            parameters, created_type_list = _construct_parameters(item_params.get("parameters", {}))
             # print(f"parameters = {parameters}")
             # print(f"default = {[_.default for _ in parameters]}")
         else:
@@ -1469,14 +1411,9 @@ class _QtRePlanEditorTable(QTableWidget):
 
         params = []
         for p in parameters:
-            param_value = (
-                item_kwargs[p.name]
-                if (p.name in item_kwargs)
-                else inspect.Parameter.empty
-            )
+            param_value = item_kwargs[p.name] if (p.name in item_kwargs) else inspect.Parameter.empty
             is_value_set = (param_value != inspect.Parameter.empty) or (
-                p.default == inspect.Parameter.empty
-                and p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)
+                p.default == inspect.Parameter.empty and p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)
             )
 
             # description = item_descriptions.get("parameters", {}).get(p.name, None)
@@ -1529,13 +1466,9 @@ class _QtRePlanEditorTable(QTableWidget):
         args = []
         if n_var_pos > 0:
             if not isinstance(params[n_var_pos]["value"], (list, tuple)):
-                raise ValueError(
-                    f"Invalid type of VAR_POSITIONAL argument: {params[n_var_pos]['value']}"
-                )
+                raise ValueError(f"Invalid type of VAR_POSITIONAL argument: {params[n_var_pos]['value']}")
             for n in range(n_var_pos):
-                if params[n]["is_value_set"] and (
-                    params[n]["value"] != inspect.Parameter.empty
-                ):
+                if params[n]["is_value_set"] and (params[n]["value"] != inspect.Parameter.empty):
                     args.append(params[n]["value"])
             args.extend(params[n_var_pos]["value"])
 
@@ -1545,16 +1478,12 @@ class _QtRePlanEditorTable(QTableWidget):
 
         kwargs = {}
         for n in range(n_start, n_stop):
-            if params[n]["is_value_set"] and (
-                params[n]["value"] != inspect.Parameter.empty
-            ):
+            if params[n]["is_value_set"] and (params[n]["value"] != inspect.Parameter.empty):
                 kwargs[params[n]["parameters"].name] = params[n]["value"]
 
         if n_var_kwd > 0:
             if not isinstance(params[n_var_kwd]["value"], dict):
-                raise ValueError(
-                    f"Invalid type of VAR_KEYWORD argument: {params[n_var_kwd]['value']}"
-                )
+                raise ValueError(f"Invalid type of VAR_KEYWORD argument: {params[n_var_kwd]['value']}")
             kwargs.update(params[n_var_kwd]["value"])
 
         item["args"] = args
@@ -1576,11 +1505,7 @@ class _QtRePlanEditorTable(QTableWidget):
         is_var_positional = p["parameters"].kind == inspect.Parameter.VAR_POSITIONAL
         is_var_keyword = p["parameters"].kind == inspect.Parameter.VAR_KEYWORD
         is_value_set = p["is_value_set"]
-        is_optional = (
-            (default_value != inspect.Parameter.empty)
-            or is_var_positional
-            or is_var_keyword
-        )
+        is_optional = (default_value != inspect.Parameter.empty) or is_var_positional or is_var_keyword
         is_editable = self._editable and (is_value_set or not is_optional)
 
         description = self._params_descriptions.get("parameters", {}).get(p_name, None)
@@ -1670,8 +1595,7 @@ class _QtRePlanEditorTable(QTableWidget):
             description = params_descriptions.get("parameters", {}).get(key, None)
             if not description:
                 description = (
-                    f"Description for parameter '{self._queue_item.get('name', '-')}' "
-                    f"was not found ..."
+                    f"Description for parameter '{self._queue_item.get('name', '-')}' " f"was not found ..."
                 )
 
             is_value_set = p["is_value_set"]
@@ -1780,11 +1704,7 @@ class _QtRePlanEditorTable(QTableWidget):
                         cell_valid = False
                         data_valid = False
 
-                    table_item.setForeground(
-                        self._text_color_valid
-                        if cell_valid
-                        else self._text_color_invalid
-                    )
+                    table_item.setForeground(self._text_color_valid if cell_valid else self._text_color_invalid)
 
         self.signal_parameters_valid.emit(data_valid)
 
@@ -1796,13 +1716,8 @@ class _QtRePlanEditorTable(QTableWidget):
                 is_checked = table_item.checkState() == Qt.Checked
                 if self._params[row]["is_value_set"] != is_checked:
 
-                    if (
-                        is_checked
-                        and self._params[row]["value"] == inspect.Parameter.empty
-                    ):
-                        self._params[row]["value"] = self._params[row][
-                            "parameters"
-                        ].default
+                    if is_checked and self._params[row]["value"] == inspect.Parameter.empty:
+                        self._params[row]["value"] = self._params[row]["parameters"].default
 
                     self._params[row]["is_value_set"] = is_checked
                     self._show_row_value(row=row)
@@ -1836,12 +1751,8 @@ class _QtReViewer(QWidget):
         self._pb_edit = QPushButton("Edit")
 
         # Start with 'detailed' view (show optional parameters)
-        self._wd_editor = _QtRePlanEditorTable(
-            self.model, editable=False, detailed=True
-        )
-        self._cb_show_optional.setChecked(
-            Qt.Checked if self._wd_editor.detailed else Qt.Unchecked
-        )
+        self._wd_editor = _QtRePlanEditorTable(self.model, editable=False, detailed=True)
+        self._cb_show_optional.setChecked(Qt.Checked if self._wd_editor.detailed else Qt.Unchecked)
 
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
@@ -1863,23 +1774,17 @@ class _QtReViewer(QWidget):
 
         self.setLayout(vbox)
 
-        self._cb_show_optional.stateChanged.connect(
-            self._cb_show_optional_state_changed
-        )
+        self._cb_show_optional.stateChanged.connect(self._cb_show_optional_state_changed)
         self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
         self._pb_edit.clicked.connect(self._pb_edit_clicked)
 
-        self.model.events.queue_item_selection_changed.connect(
-            self.on_queue_item_selection_changed
-        )
+        self.model.events.queue_item_selection_changed.connect(self.on_queue_item_selection_changed)
         self.signal_update_selection.connect(self.slot_change_selection)
 
         self.model.events.status_changed.connect(self.on_update_widgets)
         self.signal_update_widgets.connect(self.slot_update_widgets)
 
-        self._wd_editor.signal_item_description_changed.connect(
-            self.slot_item_description_changed
-        )
+        self._wd_editor.signal_item_description_changed.connect(self.slot_item_description_changed)
 
     def on_queue_item_selection_changed(self, event):
         sel_item_uid = event.selected_item_uid
@@ -1898,14 +1803,9 @@ class _QtReViewer(QWidget):
         item_type = self._queue_item_type
 
         if item_type == "plan":
-            is_item_allowed = (
-                self.model.get_allowed_plan_parameters(name=item_name) is not None
-            )
+            is_item_allowed = self.model.get_allowed_plan_parameters(name=item_name) is not None
         elif item_type == "instruction":
-            is_item_allowed = (
-                self.model.get_allowed_instruction_parameters(name=item_name)
-                is not None
-            )
+            is_item_allowed = self.model.get_allowed_instruction_parameters(name=item_name) is not None
         else:
             is_item_allowed = False
 
@@ -1931,9 +1831,7 @@ class _QtReViewer(QWidget):
 
         # Displayed item type is supposed to be 'Instruction:' if an instruction is selected,
         #   otherwise it should be 'Plan:' (even if nothing is selected)
-        displayed_item_type = (
-            "Instruction:" if self._queue_item_type == "instruction" else "Plan:"
-        )
+        displayed_item_type = "Instruction:" if self._queue_item_type == "instruction" else "Plan:"
         self._lb_item_type.setText(displayed_item_type)
 
         self._lb_item_name.setText(self._queue_item_name)
@@ -1991,21 +1889,15 @@ class _QtReEditor(QWidget):
         self._combo_item_list = QComboBox()
         self._combo_item_list.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         # self._combo_item_list.setSizePolicy(QComboBox.AdjustToContents)
-        self._combo_item_list.currentIndexChanged.connect(
-            self._combo_item_list_sel_changed
-        )
+        self._combo_item_list.currentIndexChanged.connect(self._combo_item_list_sel_changed)
 
         self._pb_new_item = QPushButton("New")
         self._lb_item_source = QLabel(self._current_item_source)
 
         # Start with 'detailed' view (show optional parameters)
-        self._wd_editor = _QtRePlanEditorTable(
-            self.model, editable=False, detailed=True
-        )
+        self._wd_editor = _QtRePlanEditorTable(self.model, editable=False, detailed=True)
         self._wd_editor.signal_parameters_valid.connect(self._slot_parameters_valid)
-        self._wd_editor.signal_item_description_changed.connect(
-            self._slot_item_description_changed
-        )
+        self._wd_editor.signal_item_description_changed.connect(self._slot_item_description_changed)
 
         self._pb_add_to_queue = QPushButton("Add to Queue")
         self._pb_save_item = QPushButton("Save")
@@ -2092,9 +1984,7 @@ class _QtReEditor(QWidget):
 
         self._pb_add_to_queue.setEnabled(self._editor_state_valid and is_connected)
         self._pb_save_item.setEnabled(
-            self._editor_state_valid
-            and is_connected
-            and self._current_item_source == "QUEUE ITEM"
+            self._editor_state_valid and is_connected and self._current_item_source == "QUEUE ITEM"
         )
         self._pb_reset.setEnabled(self._queue_item_loaded)
         self._pb_cancel.setEnabled(self._queue_item_loaded)
@@ -2109,11 +1999,7 @@ class _QtReEditor(QWidget):
         self._queue_item_name = queue_item.get("name", None)
         self._queue_item_type = queue_item.get("item_type", None)
 
-        if (
-            self._queue_item_name
-            and self._queue_item_type
-            and self._queue_item_type in ("plan", "instruction")
-        ):
+        if self._queue_item_name and self._queue_item_type and self._queue_item_type in ("plan", "instruction"):
 
             if self._queue_item_type == "instruction":
                 self._current_instruction_name = self._queue_item_name

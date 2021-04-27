@@ -106,9 +106,7 @@ class QtRemoteDispatcher(QObject):
                         (
                             name,
                             document,
-                        ) = self._dispatcher._bluesky_consumer._deserializer(
-                            msg.value()
-                        )
+                        ) = self._dispatcher._bluesky_consumer._deserializer(msg.value())
                         if self._waiting_for_start:
                             if name == "start":
                                 self._waiting_for_start = False
@@ -157,9 +155,7 @@ class QtRemoteDispatcher(QObject):
         if result is None:
             return
         consumer, topic, name, document = result
-        self._dispatcher.process_document(
-            consumer=consumer, topic=topic, name=name, document=document
-        )
+        self._dispatcher.process_document(consumer=consumer, topic=topic, name=name, document=document)
 
     def stop(self):
         logger.debug("QtRemoteDispatcher.stop")

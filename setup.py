@@ -33,11 +33,7 @@ with open(path.join(here, "README.rst"), encoding="utf-8") as readme_file:
 def read_requirements(requirements_filename):
     with open(path.join(here, requirements_filename)) as requirements_file:
         # Parse requirements.txt, ignoring any commented-out lines.
-        requirements = [
-            line
-            for line in requirements_file.read().splitlines()
-            if not line.startswith("#")
-        ]
+        requirements = [line for line in requirements_file.read().splitlines() if not line.startswith("#")]
     return requirements
 
 
@@ -47,8 +43,7 @@ requirements = read_requirements("requirements.txt")
 # group? Seems a little much to ask the user to manage all this, so I am
 # erring on the side of inclusion for now.
 extras_require = {
-    key: read_requirements(f"requirements-{key}.txt")
-    for key in ["examples", "jupyter", "pyside2", "pyqt5"]
+    key: read_requirements(f"requirements-{key}.txt") for key in ["examples", "jupyter", "pyside2", "pyqt5"]
 }
 extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
 

@@ -56,10 +56,7 @@ class QtSearchListWithButton(QWidget):
         Add whatever we want to the event by passing it as a kwarg, in this case the images kwarg.
         Can access images in the callback by accessing Event.images.
         """
-        thumbnails = [
-            generate_thumbnail(run)
-            for _, run in self.model.active.selection_as_catalog.items()
-        ]
+        thumbnails = [generate_thumbnail(run) for _, run in self.model.active.selection_as_catalog.items()]
         self.model.events.view_images(images=thumbnails)
 
 

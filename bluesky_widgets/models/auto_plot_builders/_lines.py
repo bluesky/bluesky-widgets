@@ -74,10 +74,7 @@ class AutoLines(AutoPlotter):
         if len(set(d[1] for d in dimensions)) != 1:
             cleanup_motor_heuristic = True
             dimensions = GUESS  # Fall back on our GUESS.
-            warn(
-                "We are ignoring the dimensions hinted because we cannot "
-                "combine streams."
-            )
+            warn("We are ignoring the dimensions hinted because we cannot combine streams.")
 
         # for each dimension, choose one field only
         # the plan can supply a list of fields. It's assumed the first
@@ -87,9 +84,7 @@ class AutoLines(AutoPlotter):
         # make distinction between flattened fields and plotted fields
         # motivation for this is that when plotting, we find dependent variable
         # by finding elements that are not independent variables
-        all_dim_fields = [
-            field for fields, stream_name in dimensions for field in fields
-        ]
+        all_dim_fields = [field for fields, stream_name in dimensions for field in fields]
 
         _, dim_stream = dimensions[0]
 
@@ -126,11 +121,7 @@ class AutoLines(AutoPlotter):
 
         # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
 
-        if (
-            (start_doc.get("num_points") == 1)
-            and (stream_name == dim_stream)
-            and omit_single_point_plot
-        ):
+        if (start_doc.get("num_points") == 1) and (stream_name == dim_stream) and omit_single_point_plot:
             return []
 
         # This is a heuristic approach until we think of how to hint this in a
@@ -186,10 +177,7 @@ class AutoLines(AutoPlotter):
                 for y_key in columns:
                     dtype = descriptor["data_keys"][y_key]["dtype"]
                     if dtype not in ("number", "integer"):
-                        warn(
-                            "Omitting {} from plot because dtype is {}"
-                            "".format(y_key, dtype)
-                        )
+                        warn("Omitting {} from plot because dtype is {}" "".format(y_key, dtype))
                         continue
                     axes = Axes(x_label=x_key, title=y_key)
                     axes_list.append(axes)
@@ -206,10 +194,7 @@ class AutoLines(AutoPlotter):
                     lines_instances.append(lines)
                 if not axes_list:
                     return
-                title = (
-                    ", ".join((str(lines.ys[0]) for lines in lines_instances))
-                    + f" vs. {x_key}"
-                )
+                title = ", ".join((str(lines.ys[0]) for lines in lines_instances)) + f" vs. {x_key}"
                 if len(title) > 15:
                     short_title = title[:15] + "..."
                 else:
@@ -281,6 +266,4 @@ class AutoLines(AutoPlotter):
             #         self._live_scatters[descriptor['uid']][I_key] = live_scatter
 
         else:
-            raise NotImplementedError(
-                "we do not support 3D+ in BEC yet " "(and it should have bailed above)"
-            )
+            raise NotImplementedError("we do not support 3D+ in BEC yet (and it should have bailed above)")

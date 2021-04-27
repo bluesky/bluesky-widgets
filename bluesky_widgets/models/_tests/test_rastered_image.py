@@ -11,9 +11,7 @@ def non_snaking_run():
     # Test data
     md = {"motors": ["y", "x"], "shape": [2, 2], "snaking": (False, False)}
     with RunBuilder(md) as builder:
-        builder.add_stream(
-            "primary", data={"ccd": [1, 2, 3, 4], "x": [0, 1, 0, 1], "y": [0, 0, 1, 1]}
-        )
+        builder.add_stream("primary", data={"ccd": [1, 2, 3, 4], "x": [0, 1, 0, 1], "y": [0, 0, 1, 1]})
     run = builder.get_run()
     return run
 
@@ -23,9 +21,7 @@ def snaking_run():
     # Test data
     md = {"motors": ["y", "x"], "shape": [2, 2], "snaking": (False, True)}
     with RunBuilder(md) as builder:
-        builder.add_stream(
-            "primary", data={"ccd": [1, 2, 3, 4], "x": [0, 1, 1, 0], "y": [0, 0, 1, 1]}
-        )
+        builder.add_stream("primary", data={"ccd": [1, 2, 3, 4], "x": [0, 1, 1, 0], "y": [0, 0, 1, 1]})
     run = builder.get_run()
     return run
 
@@ -107,30 +103,22 @@ def test_non_snaking_image_data_positions(FigureView):
         run = builder.get_run()
         model.add_run(run)
         # First data point
-        builder.add_stream(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_stream("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, numpy.nan], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Second point
-        builder.add_data(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_data("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Third point
-        builder.add_data(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_data("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [3, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Fourth point
-        builder.add_data(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_data("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [3, 4]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
@@ -148,30 +136,22 @@ def test_snaking_image_data_positions(FigureView):
         run = builder.get_run()
         model.add_run(run)
         # First data point
-        builder.add_stream(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_stream("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, numpy.nan], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Second point
-        builder.add_data(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_data("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [numpy.nan, numpy.nan]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Third point
-        builder.add_data(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_data("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [numpy.nan, 3]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)
         # Fourth point
-        builder.add_data(
-            "primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]}
-        )
+        builder.add_data("primary", data={"ccd": [next(ccd)], "x": [next(x)], "y": [next(y)]})
         actual_data = model.figure.axes[0].artists[0].update()["array"]
         expected_data = [[1, 2], [4, 3]]
         assert numpy.array_equal(actual_data, expected_data, equal_nan=True)

@@ -41,9 +41,7 @@ class WorkerBase(QRunnable):
     #: A set of Workers.  Add to set using :meth:`WorkerBase.start`
     _worker_set: Set["WorkerBase"] = set()
 
-    def __init__(
-        self, *args, SignalsClass: Type[QObject] = WorkerBaseSignals, **kwargs
-    ) -> None:
+    def __init__(self, *args, SignalsClass: Type[QObject] = WorkerBaseSignals, **kwargs) -> None:
         super().__init__()
         self._abort_requested = False
         self._running = False
@@ -147,9 +145,7 @@ class WorkerBase(QRunnable):
                             break
                         time.sleep(0.5)
         """
-        raise NotImplementedError(
-            f'"{self.__class__.__name__}" failed to define work() method'
-        )
+        raise NotImplementedError(f'"{self.__class__.__name__}" failed to define work() method')
 
     def start(self):
         """Start this worker in a thread and add it to the global threadpool.
@@ -204,8 +200,7 @@ class FunctionWorker(WorkerBase):
     def __init__(self, func: Callable, *args, **kwargs):
         if inspect.isgeneratorfunction(func):
             raise TypeError(
-                f"Generator function {func} cannot be used with "
-                "FunctionWorker, use GeneratorWorker instead"
+                f"Generator function {func} cannot be used with FunctionWorker, use GeneratorWorker instead"
             )
         super().__init__()
 
@@ -254,8 +249,7 @@ class GeneratorWorker(WorkerBase):
     ):
         if not inspect.isgeneratorfunction(func):
             raise TypeError(
-                f"Regular function {func} cannot be used with "
-                "GeneratorWorker, use FunctionWorker instead"
+                f"Regular function {func} cannot be used with GeneratorWorker, use FunctionWorker instead"
             )
         super().__init__(SignalsClass=SignalsClass)
 
@@ -400,9 +394,7 @@ def wait_for_workers_to_quit(msecs: int = None):
 
     msecs = msecs if msecs is not None else -1
     if not QThreadPool.globalInstance().waitForDone(msecs):
-        raise RuntimeError(
-            f"Workers did not quit gracefully in the time allotted ({msecs} ms)"
-        )
+        raise RuntimeError(f"Workers did not quit gracefully in the time allotted ({msecs} ms)")
 
 
 def active_thread_count() -> int:
@@ -500,10 +492,7 @@ def create_worker(
             _val = val if isinstance(val, (tuple, list)) else [val]
             for v in _val:
                 if not callable(v):
-                    raise TypeError(
-                        f'"_connect[{key!r}]" must be a function or '
-                        "sequence of functions"
-                    )
+                    raise TypeError(f'"_connect[{key!r}]" must be a function or ' "sequence of functions")
                 getattr(worker, key).connect(v)
 
     # if the user has not provided a default connection for the "errored"
