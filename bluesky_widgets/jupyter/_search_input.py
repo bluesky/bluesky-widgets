@@ -42,9 +42,7 @@ class JupyterSearchInput(HBox):
             grid_children.append(Label(value=f"{field}:"))
             grid_children.append(text)
 
-        text_grid = GridBox(
-            children=grid_children, layout=Layout(grid_template_columns="30% 70%")
-        )
+        text_grid = GridBox(children=grid_children, layout=Layout(grid_template_columns="30% 70%"))
 
         text_input = VBox([date_range, text_grid])
         children = (date_buttons, text_input)
@@ -107,14 +105,10 @@ class JupyterSearchInput(HBox):
     def _on_reload(self, event):
         now = self._now()
         if isinstance(self.model.since, timedelta):
-            with _blocked(
-                self.since_widget, self._on_since_view_changed, names="value"
-            ):
+            with _blocked(self.since_widget, self._on_since_view_changed, names="value"):
                 self.since_widget.value = now + self.model.since
         if isinstance(self.model.until, timedelta):
-            with _blocked(
-                self.until_widget, self._on_until_view_changed, names="value"
-            ):
+            with _blocked(self.until_widget, self._on_until_view_changed, names="value"):
                 self.until_widget.value = now + self.model.until
 
     def _on_since_view_changed(self, change):
@@ -125,32 +119,20 @@ class JupyterSearchInput(HBox):
         if isinstance(event.date, timedelta):
             new_datetime = now + event.date
             if event.date == timedelta(hours=-1):
-                self.radio_button_group.index = self.radio_button_group.options.index(
-                    "1 Hour"
-                )
+                self.radio_button_group.index = self.radio_button_group.options.index("1 Hour")
             elif event.date == timedelta(days=-1):
-                self.radio_button_group.index = self.radio_button_group.options.index(
-                    "24 Hours"
-                )
+                self.radio_button_group.index = self.radio_button_group.options.index("24 Hours")
             elif event.date == timedelta(days=-7):
-                self.radio_button_group.index = self.radio_button_group.options.index(
-                    "1 Week"
-                )
+                self.radio_button_group.index = self.radio_button_group.options.index("1 Week")
             elif event.date == timedelta(days=-30):
-                self.radio_button_group.index = self.radio_button_group.options.index(
-                    "30 Days"
-                )
+                self.radio_button_group.index = self.radio_button_group.options.index("30 Days")
             elif event.date == timedelta(days=-365):
-                self.radio_button_group.index = self.radio_button_group.options.index(
-                    "1 Year"
-                )
+                self.radio_button_group.index = self.radio_button_group.options.index("1 Year")
             else:
                 pass
         else:
             if event.date == GRACE_HOPPER_BIRTHDAY:
-                self.radio_button_group.index = self.radio_button_group.options.index(
-                    "All"
-                )
+                self.radio_button_group.index = self.radio_button_group.options.index("All")
             else:
                 self.radio_button_group.index = None
             new_datetime = event.date
@@ -165,14 +147,10 @@ class JupyterSearchInput(HBox):
     def _on_until_model_changed(self, event):
         if not isinstance(event.date, timedelta):
             self.radio_button_group.index = None
-            with _blocked(
-                self.until_widget, self._on_until_view_changed, names="value"
-            ):
+            with _blocked(self.until_widget, self._on_until_view_changed, names="value"):
                 self.until_widget.value = event.date
         else:
-            with _blocked(
-                self.until_widget, self._on_until_view_changed, names="value"
-            ):
+            with _blocked(self.until_widget, self._on_until_view_changed, names="value"):
                 self.until_widget.value = event.date + self._now()
 
     def _on_text_view_changed(self, change):
