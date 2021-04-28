@@ -173,8 +173,10 @@ class JupyterSearchInput(HBox):
 def _blocked(widget, handler, names=All, type="change"):
     "Block signals from this object inside the context."
     widget.unobserve(handler, names, type)
-    yield
-    widget.observe(handler, names, type)
+    try:
+        yield
+    finally:
+        widget.observe(handler, names, type)
 
 
 GRACE_HOPPER_BIRTHDAY = datetime(1906, 12, 9, tzinfo=LOCAL_TIMEZONE)
