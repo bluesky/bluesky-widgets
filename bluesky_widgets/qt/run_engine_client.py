@@ -2,6 +2,7 @@ import time
 import pprint
 import logging
 import sys
+import functools
 
 from qtpy.QtWidgets import (
     QWidget,
@@ -23,8 +24,8 @@ from qtpy.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
 )
-from qtpy.QtCore import Qt, Signal, Slot, QTimer
-from qtpy.QtGui import QFontMetrics, QPalette
+from qtpy.QtCore import Qt, Signal, Slot, QTimer, QRegExp
+from qtpy.QtGui import QFontMetrics, QPalette, QRegExpValidator, QValidator
 
 from bluesky_widgets.qt.threading import FunctionWorker
 from bluesky.callbacks import LiveTable
@@ -1733,7 +1734,6 @@ class QtReAddingPlanAutomatically(QWidget):
                     arg_list.append(value)
 
         final_args = [detectors] + arg_list
-        print(arg_list)
         return final_args, kwargs
 
     def handle_scans_with_args(self):
@@ -1796,7 +1796,6 @@ class QtReAddPVMotorScan(QWidget):
                  'num': 0,
                  'events': 0
              }}
-        # TODO might need some validations for fields...
         # dictionary to hold all the widget objects for the scan
         self._current_scan_widgets = {}
         self._current_scan = ''
@@ -1826,19 +1825,19 @@ class QtReAddPVMotorScan(QWidget):
 
         self._pb_copy_to_queue.setEnabled(False)
         self._check_box_daq.setEnabled(False)
+        self._plan_widgets_area.setEnabled(False)
 
     def setup_connections(self):
         self.model.events.status_changed.connect(self.on_update_widgets)
         self.signal_update_widget.connect(self.slot_update_widgets)
         self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
         self._cb_scan_options.currentTextChanged.connect(self.update_scan_widgets)
-        self._check_box_daq.clicked.connect(self.daq_check_box_changed)
 
     def on_update_widgets(self, event):
         is_connected = event.is_connected
         self.signal_update_widget.emit(is_connected)
-        if event:
-            self._cb_scan_options.setEnabled(True)
+        if is_connected:
+            self._cb_scan_options.setEnabled(is_connected)
 
     @Slot()
     def slot_update_widgets(self):
@@ -1848,6 +1847,7 @@ class QtReAddPVMotorScan(QWidget):
         is_connected = bool(self.model.re_manager_connected)
         self._pb_copy_to_queue.setEnabled(is_connected)
         self._check_box_daq.setEnabled(is_connected)
+        self._plan_widgets_area.setEnabled(is_connected)
 
     def populate_scans_in_combo_box(self):
         """
@@ -1868,22 +1868,20 @@ class QtReAddPVMotorScan(QWidget):
         # also cleanup the widgets map:
         self._current_scan_widgets.clear()
 
-    def daq_check_box_changed(self):
-        # TODO: this is not working because i
-        # TODO don't have anything in the current_scan_widgets
-        status = self._check_box_daq.isChecked()
-        print(f'current scan: {self._current_scan}')
-        scan = self._current_scan_widgets.get(self._current_scan)
-        if scan:
-            if status is True:
-                # disable the edit line for events
-                scan['events'].setEnable(False)
-            elif status is False:
-                # enable the events
-                scan['events'].setEnable(True)
+    def handle_validation_change(self, line_edit, validator):
+        s = validator.validate(line_edit.text(), 0)
+        if s[0] == QValidator.Invalid:
+            color = 'red'
+            line_edit.setStyleSheet('color: %s' % color)
+        elif s[0] == QValidator.Intermediate:
+            color = 'orange'
+            line_edit.setStyleSheet('color: %s' % color)
+        elif s[0] == QValidator.Acceptable:
+            color = 'green'
+            line_edit.setStyleSheet('color: %s' % color)
+            QTimer.singleShot(100, lambda: line_edit.setStyleSheet(''))
 
-    @staticmethod
-    def add_scan_arg_widget(name, data=''):
+    def add_scan_arg_widget(self, name, data=''):
         """
         Parameters
         ----------
@@ -1896,12 +1894,22 @@ class QtReAddPVMotorScan(QWidget):
         -------
         tuple : a new pair of (QLabel, QLineEdit)
         """
-        name = name + ':'
-        label = QLabel(str(name))
+        label = QLabel(str(name + ':'))
         label.setObjectName(str(name))
         line_edit = QLineEdit()
         line_edit.setObjectName(str(name))
-        line_edit.setText(str(data))
+        line_edit.setPlaceholderText(str(data))
+
+        if name in ['start', 'stop']:
+            reg_ex_float = QRegExp("^-?\\d*(\\.\\d+)?$")
+            input_validator = QRegExpValidator(reg_ex_float, line_edit)
+            line_edit.textChanged.connect(functools.partial(self.handle_validation_change,
+                                                            line_edit, input_validator))
+        elif name in ['num', 'events']:
+            reg_ex_float = QRegExp("^?\\d*$")
+            input_validator = QRegExpValidator(reg_ex_float, line_edit)
+            line_edit.textChanged.connect(functools.partial(self.handle_validation_change,
+                                                            line_edit, input_validator))
         return label, line_edit
 
     def _pb_copy_to_queue_clicked(self):
@@ -1926,12 +1934,12 @@ class QtReAddPVMotorScan(QWidget):
         """
         scan_widgets = self._current_scan_widgets
         # scan args
-        start = float(scan_widgets['start'].text())
-        stop = float(scan_widgets['stop'].text())
-        num = float(scan_widgets['num'].text())
+        start = float(scan_widgets['start'].text() or 0)
+        stop = float(scan_widgets['stop'].text() or 0)
+        num = float(scan_widgets['num'].text() or 0)
         pv = scan_widgets['pv'].text()
         det = scan_widgets['detectors'].text()
-        events = scan_widgets['events'].text()
+        events = int(scan_widgets['events'].text() or 0)
         detectors = []
         if det:
             detectors = list(det.split(','))
