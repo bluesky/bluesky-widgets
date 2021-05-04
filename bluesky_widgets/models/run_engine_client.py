@@ -76,6 +76,7 @@ class RunEngineClient:
             allowed_plans_changed=Event,
             queue_item_selection_changed=Event,
             history_item_selection_changed=Event,
+            history_item_process=Event,
         )
 
     @property
@@ -821,6 +822,20 @@ class RunEngineClient:
         if selected_item_pos >= 0:
             history_item = self._plan_history_items[selected_item_pos]
             self.queue_item_add(item=history_item)
+
+    def history_item_send_to_processing(self):
+        """
+        Emits the event ``history_item_process`` sending the currently selected
+        item as a parameter. The function should be called in response to some user
+        action on the selected item (e.g. double clicking the item). The event
+        can may be received by a widget that performs some processing of the item,
+        e.g. loading from data broker and plotting the experimental data
+        """
+        selected_item_pos = self.selected_history_item_pos
+        if selected_item_pos >= 0:
+            # Copy data before sending it for processing by another model
+            history_item = copy.deepcopy(self._plan_history_items[selected_item_pos])
+            self.events.history_item_process(item=history_item)
 
     def history_clear(self):
         """
