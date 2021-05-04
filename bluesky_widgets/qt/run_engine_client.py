@@ -962,6 +962,7 @@ class QtRePlanHistory(QWidget):
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
         self._table.verticalScrollBar().valueChanged.connect(self.on_vertical_scrollbar_value_changed)
         self._table.verticalScrollBar().rangeChanged.connect(self.on_vertical_scrollbar_range_changed)
+        self._table.cellDoubleClicked.connect(self._on_table_cell_double_clicked)
 
         self._update_button_states()
 
@@ -1060,6 +1061,12 @@ class QtRePlanHistory(QWidget):
         """
         row = event.selected_item_pos
         self.signal_update_selection.emit(row)
+
+    def _on_table_cell_double_clicked(self, n_row, n_col):
+        """
+        Double-clicking of an item of the table widget: send the item (plan) for processing.
+        """
+        self.model.history_item_send_to_processing()
 
     @Slot(int)
     def slot_change_selection(self, selected_item_pos):
