@@ -23,8 +23,9 @@ from qtpy.QtWidgets import (
     QCheckBox,
     QSizePolicy,
     QSpacerItem,
+    QPlainTextEdit,
 )
-from qtpy.QtCore import Qt, Signal, Slot, QTimer, QRegExp
+from qtpy.QtCore import Qt, Signal, Slot, QTimer, QRegExp, QProcess
 from qtpy.QtGui import QFontMetrics, QPalette, QRegExpValidator, QValidator
 
 from bluesky_widgets.qt.threading import FunctionWorker
@@ -1973,3 +1974,120 @@ class QtReAddPVMotorScan(QWidget):
                 lv_column += 2
             else:
                 row += 1
+
+
+class TelnetWindow(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._process = None
+        # if telnet:
+        # self._process_name = 'telnet'
+        # self._process_args = ['ioc-ued-ccd01', '30102']
+
+        # if tail
+        self._process_name = 'tail'
+        self._process_args = ['-f', '/cds/data/iocData/ioc-ued-bsgui-qs/iocInfo/ioc.log']
+
+        self._start_telnet_process = PushButtonMinimumWidth("Start")
+        self._start_telnet_process.pressed.connect(self.start_process)
+        self.v_box = QVBoxLayout()
+        self.h_box = QHBoxLayout()
+
+        self.text = QPlainTextEdit()
+        self.text.setReadOnly(True)
+
+        self.h_box.addWidget(QLabel("Start Telnet Session:"))
+        self.h_box.addWidget(self._start_telnet_process)
+        self.v_box.addLayout(self.h_box)
+        self.v_box.addWidget(self.text)
+
+        self.w = QWidget()
+        self.w.setLayout(self.v_box)
+
+        height = 400
+        width = 600
+        title = "RE Output"
+        self.w.resize(width, height)
+        self.w.setWindowTitle(title)
+
+    def close(self):
+        if self._process:
+            print('Closing process..')
+            self._process.close()
+
+    def message(self, s):
+        self.text.appendPlainText(s)
+
+    def start_process(self):
+        if self._process is None:
+            self.message("Executing process.")
+            self._process = QProcess()
+            self._process.start(self._process_name, self._process_args)
+            self._process.finished.connect(self.process_finished)
+            self._process.readyReadStandardOutput.connect(self.handle_stdout)
+            self._process.readyReadStandardError.connect(self.handle_stderr)
+            self._process.stateChanged.connect(self.handle_state)
+        else:
+            self.message("Process already running..")
+
+    def handle_stderr(self):
+        data = self._process.readAllStandardError()
+        stderr = bytes(data).decode("utf8")
+        self.message(stderr)
+
+    def handle_stdout(self):
+        data = self._process.readAllStandardOutput()
+        stdout = bytes(data).decode("utf8")
+        self.message(stdout)
+
+    def handle_state(self, state):
+        """
+        QProcess.NotRunning	0	The process is not running.
+        QProcess.Starting	1	The process is starting, but the program has not yet been invoked.
+        QProcess.Running	2	The process is running and is ready for reading and writing.
+        """
+        states = {
+            QProcess.NotRunning: 'Not running',
+            QProcess.Starting: 'Starting',
+            QProcess.Running: 'Running',
+        }
+        state_name = states[state]
+        self.message(f"State changed: {state_name}")
+
+    def process_finished(self):
+        self.message("Process finished.")
+        self._process = None
+
+
+class QtGetREOutput(QWidget):
+    """
+    Class to see the RE output
+    """
+    closing = Signal(object)
+
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+
+        self.model = model
+        self._open_telnet_window = PushButtonMinimumWidth("See RE Output")
+        self.v_box = QVBoxLayout()
+        self.h_box = QHBoxLayout()
+
+        self.h_box.addWidget(QLabel("Open Re Output Window:"))
+        self.h_box.addWidget(self._open_telnet_window)
+        self.v_box.addLayout(self.h_box)
+        self.setLayout(self.v_box)
+
+        self.telnet_window = None
+
+        self._open_telnet_window.clicked.connect(self.on_open_telnet_clicked)
+
+        self.destroyed.connect(lambda: self.telnet_window.close)
+
+    def on_open_telnet_clicked(self):
+        if self.telnet_window is None:
+            self.telnet_window = TelnetWindow(self)
+        self.telnet_window.w.show()
+        self.destroyed.connect(self.telnet_window.close)
+
+
