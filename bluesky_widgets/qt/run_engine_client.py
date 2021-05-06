@@ -1982,12 +1982,12 @@ class TelnetWindow(QWidget):
         self._process = None
 
         # if telnet:
-        # self._process_name = 'telnet'
-        # self._process_args = ['ioc-ued-ccd01', '30102']
+        self._process_name = 'telnet'
+        self._process_args = ['ioc-ued-ccd01', '30102']
 
         # if tail
-        self._process_name = 'tail'
-        self._process_args = ['-f', '/cds/data/iocData/ioc-ued-bsgui-qs/iocInfo/ioc.log']
+        # self._process_name = 'tail'
+        # self._process_args = ['-f', '/cds/data/iocData/ioc-ued-bsgui-qs/iocInfo/ioc.log']
 
         self._start_telnet_process = PushButtonMinimumWidth("Start")
         self._start_telnet_process.pressed.connect(self.start_process)
@@ -1995,6 +1995,10 @@ class TelnetWindow(QWidget):
         self.h_box = QHBoxLayout()
 
         self.text = QPlainTextEdit()
+        document = self.text.document()
+        font = document.defaultFont()
+        font.setFamily("Courier New")
+        document.setDefaultFont(font)
         self.text.setReadOnly(True)
 
         self.h_box.addWidget(QLabel("Start Telnet Session:"))
