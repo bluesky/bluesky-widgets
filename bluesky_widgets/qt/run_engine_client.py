@@ -1980,6 +1980,7 @@ class TelnetWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._process = None
+
         # if telnet:
         # self._process_name = 'telnet'
         # self._process_args = ['ioc-ued-ccd01', '30102']
@@ -2005,7 +2006,7 @@ class TelnetWindow(QWidget):
         self.w.setLayout(self.v_box)
 
         height = 400
-        width = 600
+        width = 800
         title = "RE Output"
         self.w.resize(width, height)
         self.w.setWindowTitle(title)
