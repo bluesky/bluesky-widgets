@@ -25,7 +25,7 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QCheckBox,
 )
-from qtpy.QtCore import Qt, Signal, Slot, QTimer
+from qtpy.QtCore import Qt, Signal, Slot, QTimer, QItemSelectionModel, QRect
 from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor
 
 from bluesky_widgets.qt.threading import FunctionWorker
@@ -888,8 +888,8 @@ class QtRePlanQueue(QWidget):
 
 class QtRePlanHistory(QWidget):
     signal_update_widgets = Signal()
-    signal_update_selection = Signal(int)
-    signal_plan_history_changed = Signal(object, int)
+    signal_update_selection = Signal(object)
+    signal_plan_history_changed = Signal(object, object)
 
     def __init__(self, model, parent=None):
         super().__init__(parent)
@@ -913,7 +913,7 @@ class QtRePlanHistory(QWidget):
         self._table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
 
         self._table.setSelectionBehavior(QTableView.SelectRows)
-        self._table.setSelectionMode(QTableWidget.SingleSelection)
+        self._table.setSelectionMode(QTableWidget.ContiguousSelection)
         self._table.setShowGrid(True)
         self._table.setAlternatingRowColors(True)
 
@@ -928,7 +928,7 @@ class QtRePlanHistory(QWidget):
         # The following parameters are used only to control widget state (e.g. activate/deactivate
         #   buttons), not to perform real operations.
         self._n_table_items = 0  # The number of items in the table
-        self._n_selected_item = -1  # Selected item (table row)
+        self._n_selected_items = []  # Selected items (table rows)
 
         self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
         self._pb_deselect_all = PushButtonMinimumWidth("Deselect All")
@@ -984,9 +984,9 @@ class QtRePlanHistory(QWidget):
     def _update_button_states(self):
         is_connected = bool(self.model.re_manager_connected)
         n_items = self._n_table_items
-        n_selected_item = self._n_selected_item
+        n_selected_items = self._n_selected_items
 
-        is_sel = n_selected_item >= 0
+        is_sel = bool(n_selected_items)
 
         self._pb_copy_to_queue.setEnabled(is_connected and is_sel)
         self._pb_deselect_all.setEnabled(is_sel)
@@ -997,7 +997,7 @@ class QtRePlanHistory(QWidget):
         selected_item_pos = event.selected_item_pos
         self.signal_plan_history_changed.emit(plan_history_items, selected_item_pos)
 
-    @Slot(object, int)
+    @Slot(object, object)
     def slot_plan_history_changed(self, plan_history_items, selected_item_pos):
         # Check if the vertical scroll bar is scrolled to the bottom.
         scroll_value = self._table.verticalScrollBar().value()
@@ -1033,6 +1033,7 @@ class QtRePlanHistory(QWidget):
             self._table.verticalScrollBar().setValue(scroll_maximum_new)
 
         # Call function directly
+        print(f"selected_item_pos={selected_item_pos}")
         self.slot_change_selection(selected_item_pos)
 
         self._update_button_states()
@@ -1046,14 +1047,14 @@ class QtRePlanHistory(QWidget):
         #   so that more than one row could be selected at a time, the following code will not work.
         try:
             if len(sel_rows) >= 1:
-                selected_item_pos = sel_rows[0].row()
+                selected_item_pos = [_.row() for _ in sel_rows]
                 self.model.selected_history_item_pos = selected_item_pos
-                self._n_selected_item = selected_item_pos
+                self._n_selected_items = selected_item_pos
             else:
                 raise Exception()
         except Exception:
-            self.model.selected_history_item_pos = -1
-            self._n_selected_item = -1
+            self.model.selected_history_item_pos = []
+            self._n_selected_items = []
 
     def on_history_item_selection_changed(self, event):
         """
@@ -1068,16 +1069,17 @@ class QtRePlanHistory(QWidget):
         """
         self.model.history_item_send_to_processing()
 
-    @Slot(int)
+    @Slot(object)
     def slot_change_selection(self, selected_item_pos):
-        row = selected_item_pos
+        rows = selected_item_pos
 
-        if row < 0:
+        if not rows:
             self._table.clearSelection()
-            self._n_selected_item = -1
+            self._n_selected_items = []
         else:
-            self._table.selectRow(row)
-            self._n_selected_item = row
+            rect = QRect(0, rows[0], 0, rows[-1] - rows[0] + 1)
+            self._table.setSelection(rect, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+            self._n_selected_items = rows
 
         self._update_button_states()
 
@@ -1089,7 +1091,7 @@ class QtRePlanHistory(QWidget):
 
     def _pb_deselect_all_clicked(self):
         self._table.clearSelection()
-        self._n_selected_item = -1
+        self._n_selected_items = []
         self._update_button_states()
 
     def _pb_clear_history_clicked(self):
