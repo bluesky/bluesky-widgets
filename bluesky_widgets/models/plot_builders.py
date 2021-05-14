@@ -492,6 +492,10 @@ class Images:
         # axis until there are only two axes.
         data = result["array"]
         while data.ndim > 2:
+            if data.shape[0] == 0:
+                # Handle case where array is just initialized, with a shape like (0, y, x).
+                data = numpy.zeros(data.shape[1:])
+                continue
             middle = data.shape[0] // 2
             data = data[middle]
         result["array"] = data
