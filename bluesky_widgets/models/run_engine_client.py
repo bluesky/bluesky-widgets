@@ -55,8 +55,8 @@ class RunEngineClient:
         self._selected_queue_item_uid = ""
         # History items are addressed by position (there could be repeated UIDs in the history)
         #   Items in the history can not be moved or deleted, only added to the bottom, so
-        #   using positions is consistent.
-        self._selected_history_item_pos = -1
+        #   using positions is consistent. Empty list - no items are selected
+        self._selected_history_item_pos = []
 
         # TODO: in the future the list of allowed instructions should be requested from the server
         self._allowed_instructions = {
@@ -236,8 +236,8 @@ class RunEngineClient:
             # Deselect queue history if it does not exist in the queue
             #   Selection will be cleared when the table is reloaded, so save it in local variable
             selected_item_pos = self.selected_history_item_pos
-            if selected_item_pos >= len(self._plan_history_items):
-                selected_item_pos = -1
+            if selected_item_pos and (selected_item_pos[-1] >= len(self._plan_history_items)):
+                selected_item_pos = []
 
             self.events.plan_history_changed(
                 plan_history_items=self._plan_history_items.copy(),
@@ -803,6 +803,68 @@ class RunEngineClient:
                 )
             self.selected_queue_item_uid = sel_item_uid
 
+    def queue_item_add_batch(self, *, items, params=None):
+        """
+        Add a batch of items to queue. This function should be called by all widgets that
+        add a batch of items to queue. The new set of items added to the back of the queue.
+        inserted after the selected item or to the back of the queue in case no item is selected.
+        Optional dictionary `params` may be used to override the default behavior.
+        E.g. ``params={"pos": "front"}`` will add the item to the font of the queue.
+        See the documentation for ``queue_item_add_batch`` 0MQ API of Queue Server.
+        The newly inserted items becomes selected.
+        """
+        # TODO: this is temporary solution using multiple calls to 'queue_item_add' API
+        #       to submit plans one by one. The permanent solution will use 'queue_item_add_batch'
+        #       API to submit the plans in one batch. Advantages of 'queue_item_add_batch' API
+        #       is that the complete batch of the plans is validated and either inserted in the
+        #       queue or rejected. Current implementation of 'queue_item_add_batch' API does not
+        #       accept additional parameters that specify the position of inserted plans in the queue,
+        #       therefore the plans are always added to the back of the queue. Full functionality
+        #       of the widget requires the items to be inserted after the current selection,
+        #       therefore batch submission needs to be simulated using mutliple calls to
+        #       'queue_item_add' API. If the batch contains a plan that is rejected by the server,
+        #       only the plans that are preceding the invalid plan will be submitted.
+        #       The function should be modified when 'queue_item_add_batch' is extended.
+        # TODO: the queue widget does not allow selection of multiple rows. Once the queue widget
+        #       is extended to support multiple selection, the should be changed to select
+        #       all inserted items. Currently only the last inserted item from the batch is selected.
+        sel_item_uid = self._selected_queue_item_uid
+        for item in items:
+            queue_is_empty = not len(self._plan_queue_items)
+            if not params:
+                if queue_is_empty or not sel_item_uid:
+                    # Push button to the back of the queue
+                    params = {}
+                else:
+                    params = {"after_uid": sel_item_uid}
+
+            # We are submitting a plan as a new plan, so all unnecessary data will be stripped
+            #   and new item UID will be assigned.
+            request_params = {
+                "item": item,
+                "user": self._user_name,
+                "user_group": self._user_group,
+            }
+            request_params.update(params)
+            response = self._client.send_message(method="queue_item_add", params=request_params)
+            self.load_re_manager_status(unbuffered=True)
+            if not response["success"]:
+                raise RuntimeError(f"Failed to add item to the queue: {response['msg']}")
+            else:
+                try:
+                    # The 'item' and 'item_uid' should always be included in the returned item in case of success.
+                    sel_item_uid = response["item"]["item_uid"]
+                except KeyError as ex:
+                    print(
+                        f"Item or item UID is not found in the server response {pprint.pformat(response)}. "
+                        f"Can not update item selection in the queue table. Exception: {ex}"
+                    )
+                self.selected_queue_item_uid = sel_item_uid
+
+            # 'params' are used only for the first inserted item. The remaining items are inserter
+            #   after the first item. So clear the parameters
+            params = None
+
     # ============================================================================
     #                         History operations
 
@@ -812,6 +874,16 @@ class RunEngineClient:
 
     @selected_history_item_pos.setter
     def selected_history_item_pos(self, item_pos):
+        """
+        Sets the list of selected item in history
+
+        Parameters
+        ----------
+        item_pos : iterable
+            List or tuple of indices of the selected history items. Empty list/tuple
+            if no items are selected.
+        """
+        item_pos = list(item_pos)
         if self._selected_history_item_pos != item_pos:
             self._selected_history_item_pos = item_pos
             self.events.history_item_selection_changed(selected_item_pos=item_pos)
@@ -819,9 +891,9 @@ class RunEngineClient:
     def history_item_add_to_queue(self):
         """Copy the selected plan from history to the end of the queue"""
         selected_item_pos = self.selected_history_item_pos
-        if selected_item_pos >= 0:
-            history_item = self._plan_history_items[selected_item_pos]
-            self.queue_item_add(item=history_item)
+        if selected_item_pos:
+            history_items = [self._plan_history_items[_] for _ in selected_item_pos]
+            self.queue_item_add_batch(items=history_items)
 
     def history_item_send_to_processing(self):
         """
@@ -832,9 +904,9 @@ class RunEngineClient:
         e.g. loading from data broker and plotting the experimental data
         """
         selected_item_pos = self.selected_history_item_pos
-        if selected_item_pos >= 0:
+        if selected_item_pos:
             # Copy data before sending it for processing by another model
-            history_item = copy.deepcopy(self._plan_history_items[selected_item_pos])
+            history_item = copy.deepcopy(self._plan_history_items[selected_item_pos[0]])
             self.events.history_item_process(item=history_item)
 
     def history_clear(self):
