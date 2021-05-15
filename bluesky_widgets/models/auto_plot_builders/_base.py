@@ -2,6 +2,7 @@ import abc
 
 from ..plot_specs import FigureList
 from ..utils import run_is_live_and_not_completed
+from ...utils.list import EventedList
 
 
 class AutoPlotter(abc.ABC):
@@ -20,7 +21,7 @@ class AutoPlotter(abc.ABC):
     def __init__(self):
         self.figures = FigureList()
         self.figures.events.removed.connect(self._on_figure_removed)
-        self.plot_builders = []
+        self.plot_builders = EventedList()
 
     def add_run(self, run, **kwargs):
         """
