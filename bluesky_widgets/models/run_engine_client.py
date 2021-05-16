@@ -51,8 +51,8 @@ class RunEngineClient:
         self._plan_history_items = []
         self._plan_history_uid = ""
 
-        # UID of the selected queue item, "" if no items are selected
-        self._selected_queue_item_uid = ""
+        # List of UIDs of the selected queue items, [] if no items are selected
+        self._selected_queue_item_uids = []
         # History items are addressed by position (there could be repeated UIDs in the history)
         #   Items in the history can not be moved or deleted, only added to the bottom, so
         #   using positions is consistent. Empty list - no items are selected
@@ -188,16 +188,25 @@ class RunEngineClient:
                 item["item_uid"]: n for n, item in enumerate(self._plan_queue_items) if "item_uid" in item
             }
 
-            # Deselect queue item if it is not present in the queue
-            #   Selection will be cleared when the table is reloaded, so save it in local variable
-            selected_uid = self.selected_queue_item_uid
-            if self.queue_item_uid_to_pos(selected_uid) < 0:
-                selected_uid = ""
+            # Deselect queue items that are not in the queue or are not part of the contiguous
+            #   selection. The selection will be cleared when the table is reloaded, so save
+            #   it in local variable.
+            selected_uids = self.selected_queue_item_uids
+            pos, uids = -1, []
+            for uid in selected_uids:
+                p = self.queue_item_uid_to_pos(uid)
+                if p >= 0:
+                    if (pos < 0) or ((p >= 0) and (p == pos + 1)):
+                        pos = p
+                        uids.append(uid)
+                    else:
+                        break
+            self.selected_queue_item_uids = uids
 
             # Update the representation of the queue
             self.events.plan_queue_changed(
                 plan_queue_items=self._plan_queue_items,
-                selected_item_uid=selected_uid,
+                selected_item_uids=self.selected_queue_item_uids.copy(),
             )
             self.events.running_item_changed(
                 running_item=self._running_item,
@@ -238,10 +247,11 @@ class RunEngineClient:
             selected_item_pos = self.selected_history_item_pos
             if selected_item_pos and (selected_item_pos[-1] >= len(self._plan_history_items)):
                 selected_item_pos = []
+                self.selected_history_item_pos = selected_item_pos
 
             self.events.plan_history_changed(
                 plan_history_items=self._plan_history_items.copy(),
-                selected_item_pos=selected_item_pos,
+                selected_item_pos=self.selected_history_item_pos,
             )
 
         except Exception as ex:
@@ -561,14 +571,14 @@ class RunEngineClient:
     #                         Queue operations
 
     @property
-    def selected_queue_item_uid(self):
-        return self._selected_queue_item_uid
+    def selected_queue_item_uids(self):
+        return self._selected_queue_item_uids
 
-    @selected_queue_item_uid.setter
-    def selected_queue_item_uid(self, item_uid):
-        if self._selected_queue_item_uid != item_uid:
-            self._selected_queue_item_uid = item_uid
-            self.events.queue_item_selection_changed(selected_item_uid=item_uid)
+    @selected_queue_item_uids.setter
+    def selected_queue_item_uids(self, item_uids):
+        if self._selected_queue_item_uids != item_uids:
+            self._selected_queue_item_uids = item_uids.copy()
+            self.events.queue_item_selection_changed(selected_item_uids=item_uids)
 
     def queue_item_uid_to_pos(self, item_uid):
         # Returns -1 if item was not found
@@ -601,106 +611,158 @@ class RunEngineClient:
                 return copy.deepcopy(self._plan_queue_items[sel_item_pos])
         return None
 
+    def _queue_item_move(self, *, sel_items, target_item, position):
+        """
+        Move the selected items above or below the target item.
+
+        Parameters
+        ----------
+        sel_items : list
+            the list of selected item UIDs
+        target_item : str
+            UID of the target imte
+        position : str
+            "before" - the items are moved above the target item, "after" - below the traget item
+        """
+        supported_positions = ("before", "after")
+        if position not in supported_positions:
+            raise ValueError(f"Unsupported position: {position}, supported values: {supported_positions}")
+
+        if target_item in sel_items:
+            # Nothing to do
+            return
+
+        sel_items_copy = sel_items.copy()
+        self.selected_queue_item_uids = []
+        items_already_moved = []
+        for uid in sel_items_copy:
+            params = {"uid": uid}
+            if position == "before":
+                params.update({"before_uid": target_item})
+            else:
+                params.update({"after_uid": target_item})
+
+            response = self._client.send_message(
+                method="queue_item_move",
+                params=params,
+            )
+            self.load_re_manager_status(unbuffered=True)
+
+            items_already_moved.append(uid)
+            self.selected_queue_item_uids = items_already_moved
+
+            if not response["success"]:
+                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+
+            if position == "after":
+                target_item = uid
+
     def queue_item_move_up(self):
         """
         Move plan up in the queue by one positon
         """
-        item_uid = self.selected_queue_item_uid
-        n_item = self.queue_item_uid_to_pos(item_uid)
         n_items = len(self._plan_queue_items)
-        if item_uid and (n_items > 1) and (n_item > 0):
+        n_sel_items = len(self.selected_queue_item_uids)
+        if not n_items or not n_sel_items or (n_items - n_sel_items < 1):
+            return
+
+        item_uid = self.selected_queue_item_uids[0]
+        n_item = self.queue_item_uid_to_pos(item_uid)
+        if item_uid and (n_item > 0):
             n_item_above = n_item - 1
             item_uid_above = self.queue_item_pos_to_uid(n_item_above)
-            response = self._client.send_message(
-                method="queue_item_move",
-                params={"uid": item_uid, "before_uid": item_uid_above},
+            self._queue_item_move(
+                sel_items=self._selected_queue_item_uids, target_item=item_uid_above, position="before"
             )
-            self.load_re_manager_status(unbuffered=True)
-            if not response["success"]:
-                raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
     def queue_item_move_down(self):
         """
         Move plan down in the queue by one positon
         """
-        item_uid = self.selected_queue_item_uid
-        n_item = self.queue_item_uid_to_pos(item_uid)
         n_items = len(self._plan_queue_items)
-        if item_uid and (n_items > 1) and (0 <= n_item < n_items - 1):
+        n_sel_items = len(self.selected_queue_item_uids)
+        if not n_items or not n_sel_items or (n_items - n_sel_items < 1):
+            return
+
+        item_uid = self.selected_queue_item_uids[-1]
+        n_item = self.queue_item_uid_to_pos(item_uid)
+        if item_uid and (0 <= n_item < n_items - 1):
             n_item_below = n_item + 1
             item_uid_below = self.queue_item_pos_to_uid(n_item_below)
-            response = self._client.send_message(
-                method="queue_item_move",
-                params={"uid": item_uid, "after_uid": item_uid_below},
+            self._queue_item_move(
+                sel_items=self._selected_queue_item_uids, target_item=item_uid_below, position="after"
             )
-            self.load_re_manager_status(unbuffered=True)
-            if not response["success"]:
-                raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
     def queue_item_move_in_place_of(self, item_uid_to_replace):
         """
         Replace plan with given UID with the selected plan
         """
-        item_uid = self.selected_queue_item_uid
-        n_item = self.queue_item_uid_to_pos(item_uid)
+        n_items = len(self._plan_queue_items)
+        n_sel_items = len(self.selected_queue_item_uids)
+        if not n_items or not n_sel_items or (n_items - n_sel_items < 1):
+            return
+
+        sel_item_uid_top = self.selected_queue_item_uids[0]
+        sel_item_uid_bottom = self.selected_queue_item_uids[-1]
+        n_item_top = self.queue_item_uid_to_pos(sel_item_uid_top)
+        n_item_bottom = self.queue_item_uid_to_pos(sel_item_uid_bottom)
         n_item_to_replace = self.queue_item_uid_to_pos(item_uid_to_replace)
-        if item_uid and item_uid_to_replace and (n_item_to_replace >= 0) and (item_uid != item_uid_to_replace):
-            location = "before_uid" if (n_item_to_replace < n_item) else "after_uid"
-            response = self._client.send_message(
-                method="queue_item_move",
-                params={"uid": item_uid, location: item_uid_to_replace},
+
+        if (n_item_to_replace < n_item_top) or (n_item_to_replace > n_item_bottom):
+
+            position = "before" if (n_item_to_replace < n_item_top) else "after"
+            self._queue_item_move(
+                sel_items=self._selected_queue_item_uids, target_item=item_uid_to_replace, position=position
             )
-            self.load_re_manager_status(unbuffered=True)
-            if not response["success"]:
-                raise RuntimeError(f"Failed to move the item: {response['msg']}")
 
     def queue_item_move_to_top(self):
         """
         Move plan to top of the queue
         """
-        item_uid = self.selected_queue_item_uid
-        if item_uid:
-            response = self._client.send_message(
-                method="queue_item_move", params={"uid": item_uid, "pos_dest": "front"}
-            )
-            self.load_re_manager_status(unbuffered=True)
-            if not response["success"]:
-                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+        if not self._plan_queue_items:
+            return
+        self.queue_item_move_in_place_of(self._plan_queue_items[0].get("item_uid", ""))
 
     def queue_item_move_to_bottom(self):
         """
         Move plan to top of the queue
         """
-        item_uid = self.selected_queue_item_uid
-        if item_uid:
-            response = self._client.send_message(
-                method="queue_item_move", params={"uid": item_uid, "pos_dest": "back"}
-            )
-            self.load_re_manager_status(unbuffered=True)
-            if not response["success"]:
-                raise RuntimeError(f"Failed to move the item: {response['msg']}")
+        if not self._plan_queue_items:
+            return
+        self.queue_item_move_in_place_of(self._plan_queue_items[-1].get("item_uid", ""))
 
     def queue_item_remove(self):
         """
         Delete item from queue
         """
-        item_uid = self.selected_queue_item_uid
-        if item_uid:
+        sel_item_uids = self.selected_queue_item_uids.copy()
+        if sel_item_uids:
             # Find and set UID of an item that will be selected once the current item is removed
-            n_item = self.queue_item_uid_to_pos(item_uid)
+            sel_item_uid_top = sel_item_uids[0]
+            sel_item_uid_bottom = sel_item_uids[-1]
+            n_item_top = self.queue_item_uid_to_pos(sel_item_uid_top)
+            n_item_bottom = self.queue_item_uid_to_pos(sel_item_uid_bottom)
+
             n_items = len(self._plan_queue_items)
+
             if n_items <= 1:
                 n_sel_item_new = -1
-            elif n_item < n_items - 1:
-                n_sel_item_new = n_item + 1
+            elif n_item_bottom < n_items - 1:
+                n_sel_item_new = n_item_bottom + 1
             else:
-                n_sel_item_new = n_item - 1
-            self.selected_queue_item_uid = self.queue_item_pos_to_uid(n_sel_item_new)
+                n_sel_item_new = n_item_top - 1
 
-            response = self._client.send_message(method="queue_item_remove", params={"uid": item_uid})
-            self.load_re_manager_status(unbuffered=True)
-            if not response["success"]:
-                raise RuntimeError(f"Failed to delete item: {response['msg']}")
+            sel_item_new_uid = self.queue_item_pos_to_uid(n_sel_item_new)
+            if sel_item_new_uid:
+                self.selected_queue_item_uids = [sel_item_new_uid]
+            else:
+                self.selected_queue_item_uids = []
+
+            for uid in sel_item_uids:
+                response = self._client.send_message(method="queue_item_remove", params={"uid": uid})
+                self.load_re_manager_status(unbuffered=True)
+                if not response["success"]:
+                    print(f"Failed to delete item: {response['msg']}")
 
     def queue_clear(self):
         """
@@ -726,11 +788,14 @@ class RunEngineClient:
         """
         Copy currently selected item to queue. Item is supposed to be selected in the plan queue.
         """
-        sel_item_uid = self._selected_queue_item_uid
-        sel_item_pos = self.queue_item_uid_to_pos(sel_item_uid)
-        if sel_item_uid and (sel_item_pos >= 0):
-            item = self._plan_queue_items[sel_item_pos]
-            self.queue_item_add(item=item)
+        sel_item_uids = self._selected_queue_item_uids
+        sel_items = []
+        for uid in sel_item_uids:
+            pos = self.queue_item_uid_to_pos(uid)
+            if uid and (pos >= 0):
+                sel_items.append(self._plan_queue_items[pos])
+        if sel_items:
+            self.queue_item_add_batch(items=sel_items)
 
     def queue_item_add(self, *, item, params=None):
         """
@@ -741,7 +806,13 @@ class RunEngineClient:
         See the documentation for ``queue_item_add`` 0MQ API of Queue Server.
         The new item becomes the selected item.
         """
-        sel_item_uid = self._selected_queue_item_uid
+        if self._selected_queue_item_uids:
+            # Insert after the last item in the selected batch
+            sel_item_uid = self._selected_queue_item_uids[-1]
+        else:
+            # No selection: push to the back of the queue
+            sel_item_uid = None
+
         queue_is_empty = not len(self._plan_queue_items)
         if not params:
             if queue_is_empty or not sel_item_uid:
@@ -771,7 +842,7 @@ class RunEngineClient:
                     f"Item or item UID is not found in the server response {pprint.pformat(response)}. "
                     f"Can not update item selection in the queue table. Exception: {ex}"
                 )
-            self.selected_queue_item_uid = sel_item_uid
+            self.selected_queue_item_uids = [sel_item_uid]
 
     def queue_item_update(self, *, item):
         """
@@ -801,7 +872,7 @@ class RunEngineClient:
                     f"Item or item UID is not found in the server response {pprint.pformat(response)}. "
                     f"Can not update item selection in the queue table. Exception: {ex}"
                 )
-            self.selected_queue_item_uid = sel_item_uid
+            self.selected_queue_item_uids = [sel_item_uid]
 
     def queue_item_add_batch(self, *, items, params=None):
         """
@@ -825,10 +896,21 @@ class RunEngineClient:
         #       'queue_item_add' API. If the batch contains a plan that is rejected by the server,
         #       only the plans that are preceding the invalid plan will be submitted.
         #       The function should be modified when 'queue_item_add_batch' is extended.
-        # TODO: the queue widget does not allow selection of multiple rows. Once the queue widget
-        #       is extended to support multiple selection, the should be changed to select
-        #       all inserted items. Currently only the last inserted item from the batch is selected.
-        sel_item_uid = self._selected_queue_item_uid
+
+        # Do nothing if no items are to be inserted
+        if not items:
+            return
+
+        if self._selected_queue_item_uids:
+            # Insert after the last item in the selected batch
+            sel_item_uid = self._selected_queue_item_uids[-1]
+        else:
+            # No selection: push to the back of the queue
+            sel_item_uid = None
+
+        self._selected_queue_item_uids = []
+
+        sel_item_uids = []
         for item in items:
             queue_is_empty = not len(self._plan_queue_items)
             if not params:
@@ -854,12 +936,13 @@ class RunEngineClient:
                 try:
                     # The 'item' and 'item_uid' should always be included in the returned item in case of success.
                     sel_item_uid = response["item"]["item_uid"]
+                    sel_item_uids.append(sel_item_uid)
                 except KeyError as ex:
                     print(
                         f"Item or item UID is not found in the server response {pprint.pformat(response)}. "
                         f"Can not update item selection in the queue table. Exception: {ex}"
                     )
-                self.selected_queue_item_uid = sel_item_uid
+                self.selected_queue_item_uids = sel_item_uids
 
             # 'params' are used only for the first inserted item. The remaining items are inserter
             #   after the first item. So clear the parameters
