@@ -51,7 +51,7 @@ class AutoImages(AutoPlotter):
         ds = run[stream_name].to_dask()
         for field in ds:
             if 2 <= ds[field].ndim < 5:
-                key = (stream_name, field, run.metadata['start']['uid'])
+                key = (stream_name, field, run.metadata["start"]["uid"])
                 try:
                     images = self._field_to_builder[key]
                 except KeyError:
