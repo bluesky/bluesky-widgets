@@ -25,7 +25,7 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QCheckBox,
 )
-from qtpy.QtCore import Qt, Signal, Slot, QTimer, QItemSelectionModel, QRect
+from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor
 
 from bluesky_widgets.qt.threading import FunctionWorker
@@ -573,12 +573,15 @@ class PushButtonMinimumWidth(QPushButton):
 class QtRePlanQueue(QWidget):
 
     signal_update_widgets = Signal(bool)
-    signal_update_selection = Signal(str)
-    signal_plan_queue_changed = Signal(object, str)
+    signal_update_selection = Signal(object)
+    signal_plan_queue_changed = Signal(object, object)
 
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
+
+        # Set True to block processing of table selection change events
+        self._block_table_selection_processing = False
 
         self._table_column_labels = (
             "",
@@ -589,14 +592,15 @@ class QtRePlanQueue(QWidget):
         )
         self._table = QueueTableWidget()
         self._table.setColumnCount(len(self._table_column_labels))
-        # self._table.verticalHeader().hide()
         self._table.setHorizontalHeaderLabels(self._table_column_labels)
         self._table.horizontalHeader().setSectionsMovable(True)
 
         self._table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self._table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self._table.setSelectionBehavior(QTableView.SelectRows)
-        self._table.setSelectionMode(QTableWidget.SingleSelection)
+        self._table.setSelectionMode(QTableWidget.ContiguousSelection)
+
         self._table.setDragEnabled(False)
         self._table.setAcceptDrops(False)
         self._table.setDropIndicatorShown(True)
@@ -614,7 +618,7 @@ class QtRePlanQueue(QWidget):
         # The following parameters are used only to control widget state (e.g. activate/deactivate
         #   buttons), not to perform real operations.
         self._n_table_items = 0  # The number of items in the table
-        self._n_selected_item = -1  # Selected item (table row)
+        self._selected_items_pos = []  # Selected items (list of table rows)
 
         self._pb_move_up = PushButtonMinimumWidth("Move Up")
         self._pb_move_down = PushButtonMinimumWidth("Down")
@@ -695,11 +699,11 @@ class QtRePlanQueue(QWidget):
         loop_mode_on = status["plan_queue_mode"]["loop"] if status else False
 
         n_items = self._n_table_items
-        n_selected_item = self._n_selected_item
+        selected_items_pos = self._selected_items_pos
 
-        is_sel = n_selected_item >= 0
-        sel_top = n_selected_item == 0
-        sel_bottom = n_selected_item == n_items - 1
+        is_sel = len(selected_items_pos) > 0
+        sel_top = len(selected_items_pos) and (selected_items_pos[0] == 0)
+        sel_bottom = len(selected_items_pos) and (selected_items_pos[-1] == n_items - 1)
 
         self._pb_move_up.setEnabled(is_connected and is_sel and not sel_top)
         self._pb_move_down.setEnabled(is_connected and is_sel and not sel_bottom)
@@ -726,7 +730,7 @@ class QtRePlanQueue(QWidget):
     def on_table_drop_event(self, row, col):
         # If the selected queue item is not in the table anymore (e.g. sent to execution),
         #   then ignore the drop event, since the item can not be moved.
-        if self.model.selected_queue_item_uid:
+        if self.model.selected_queue_item_uids:
             item_uid_to_replace = self.model.queue_item_pos_to_uid(row)
             try:
                 self.model.queue_item_move_in_place_of(item_uid_to_replace)
@@ -749,15 +753,16 @@ class QtRePlanQueue(QWidget):
 
     def on_plan_queue_changed(self, event):
         plan_queue_items = event.plan_queue_items
-        selected_item_uid = event.selected_item_uid
-        self.signal_plan_queue_changed.emit(plan_queue_items, selected_item_uid)
+        selected_item_uids = event.selected_item_uids
+        self.signal_plan_queue_changed.emit(plan_queue_items, selected_item_uids)
 
-    @Slot(object, str)
-    def slot_plan_queue_changed(self, plan_queue_items, selected_item_uid):
-
+    @Slot(object, object)
+    def slot_plan_queue_changed(self, plan_queue_items, selected_item_uids):
         # Check if the vertical scroll bar is scrolled to the bottom. Ignore the case
         #   when 'scroll_value==0': if the top plan is visible, it should remain visible
         #   even if additional plans are added to the queue.
+        self._block_table_selection_processing = True
+
         scroll_value = self._table.verticalScrollBar().value()
         scroll_maximum = self._table.verticalScrollBar().maximum()
         self._table_scrolled_to_bottom = scroll_value and (scroll_value == scroll_maximum)
@@ -790,47 +795,65 @@ class QtRePlanQueue(QWidget):
             scroll_maximum_new = self._table.verticalScrollBar().maximum()
             self._table.verticalScrollBar().setValue(scroll_maximum_new)
 
-        self.slot_change_selection(selected_item_uid)
+        self._block_table_selection_processing = False
+
+        self.slot_change_selection(selected_item_uids)
         self._update_button_states()
 
     def on_item_selection_changed(self):
         """
         The handler for ``item_selection_changed`` signal emitted by QTableWidget
         """
+        if self._block_table_selection_processing:
+            return
+
         sel_rows = self._table.selectionModel().selectedRows()
-        # It is assumed that only one row may be selected at a time. If the table settings change
-        #   so that more than one row could be selected at a time, the following code will not work.
         try:
             if len(sel_rows) >= 1:
-                row = sel_rows[0].row()
-                selected_item_uid = self.model.queue_item_pos_to_uid(row)
-                self.model.selected_queue_item_uid = selected_item_uid
-                self._n_selected_item = row
+                selected_item_pos = [_.row() for _ in sel_rows]
+                selected_item_uids = [self.model.queue_item_pos_to_uid(_) for _ in selected_item_pos]
+                self.model.selected_queue_item_uids = selected_item_uids
+                self._selected_items_pos = selected_item_pos
             else:
                 raise Exception()
         except Exception:
-            self.model.selected_queue_item_uid = ""
-            self._n_selected_item = -1
+            self.model.selected_queue_item_uids = []
+            self._selected_items_pos = []
 
     def on_queue_item_selection_changed(self, event):
         """
         The handler for the event generated by the model
         """
-        selected_item_uid = event.selected_item_uid
-        self.signal_update_selection.emit(selected_item_uid)
+        selected_item_uids = event.selected_item_uids
+        self.signal_update_selection.emit(selected_item_uids)
 
-    @Slot(str)
-    def slot_change_selection(self, selected_item_uid):
-        row = -1
-        if selected_item_uid:
-            row = self.model.queue_item_uid_to_pos(selected_item_uid)
-        if row < 0:
+    @Slot(object)
+    def slot_change_selection(self, selected_item_uids):
+
+        rows = [self.model.queue_item_uid_to_pos(_) for _ in selected_item_uids]
+
+        if not rows:
             self._table.clearSelection()
-            self._n_selected_item = -1
+            self._selected_items_pos = []
         else:
-            self._table.selectRow(row)
-            self._n_selected_item = row
+            self._block_table_selection_processing = True
+            self._table.clearSelection()
+            for row in rows:
+                for col in range(self._table.columnCount()):
+                    item = self._table.item(row, col)
+                    item.setSelected(True)
 
+            if self._table.currentRow() not in rows:
+                self._table.setCurrentCell(rows[-1], 0)
+
+            row_visible = rows[-1]
+            item_visible = self._table.item(row_visible, 0)
+            self._table.scrollToItem(item_visible, QAbstractItemView.EnsureVisible)
+            self._block_table_selection_processing = False
+
+            self._selected_items_pos = rows
+
+        self.model.selected_queue_item_uids = selected_item_uids
         self._update_button_states()
 
     def _pb_move_up_clicked(self):
@@ -895,6 +918,9 @@ class QtRePlanHistory(QWidget):
         super().__init__(parent)
         self.model = model
 
+        # Set True to block processing of table selection change events
+        self._block_table_selection_processing = False
+
         self._table_column_labels = (
             "",
             "Name",
@@ -909,8 +935,8 @@ class QtRePlanHistory(QWidget):
         self._table.setHorizontalHeaderLabels(self._table_column_labels)
         self._table.horizontalHeader().setSectionsMovable(True)
 
-        # self._table.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self._table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self._table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self._table.setSelectionBehavior(QTableView.SelectRows)
         self._table.setSelectionMode(QTableWidget.ContiguousSelection)
@@ -928,7 +954,7 @@ class QtRePlanHistory(QWidget):
         # The following parameters are used only to control widget state (e.g. activate/deactivate
         #   buttons), not to perform real operations.
         self._n_table_items = 0  # The number of items in the table
-        self._n_selected_items = []  # Selected items (table rows)
+        self._selected_items_pos = []  # Selected items (table rows)
 
         self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
         self._pb_deselect_all = PushButtonMinimumWidth("Deselect All")
@@ -984,7 +1010,7 @@ class QtRePlanHistory(QWidget):
     def _update_button_states(self):
         is_connected = bool(self.model.re_manager_connected)
         n_items = self._n_table_items
-        n_selected_items = self._n_selected_items
+        n_selected_items = self._selected_items_pos
 
         is_sel = bool(n_selected_items)
 
@@ -1033,7 +1059,6 @@ class QtRePlanHistory(QWidget):
             self._table.verticalScrollBar().setValue(scroll_maximum_new)
 
         # Call function directly
-        print(f"selected_item_pos={selected_item_pos}")
         self.slot_change_selection(selected_item_pos)
 
         self._update_button_states()
@@ -1042,19 +1067,20 @@ class QtRePlanHistory(QWidget):
         """
         The handler for ``item_selection_changed`` signal emitted by QTableWidget
         """
+        if self._block_table_selection_processing:
+            return
+
         sel_rows = self._table.selectionModel().selectedRows()
-        # It is assumed that only one row may be selected at a time. If the table settings change
-        #   so that more than one row could be selected at a time, the following code will not work.
         try:
             if len(sel_rows) >= 1:
                 selected_item_pos = [_.row() for _ in sel_rows]
                 self.model.selected_history_item_pos = selected_item_pos
-                self._n_selected_items = selected_item_pos
+                self._selected_items_pos = selected_item_pos
             else:
                 raise Exception()
         except Exception:
             self.model.selected_history_item_pos = []
-            self._n_selected_items = []
+            self._selected_items_pos = []
 
     def on_history_item_selection_changed(self, event):
         """
@@ -1075,12 +1101,25 @@ class QtRePlanHistory(QWidget):
 
         if not rows:
             self._table.clearSelection()
-            self._n_selected_items = []
+            self._selected_items_pos = []
         else:
-            rect = QRect(0, rows[0], 0, rows[-1] - rows[0] + 1)
-            self._table.setSelection(rect, QItemSelectionModel.Select | QItemSelectionModel.Rows)
-            self._n_selected_items = rows
+            self._block_table_selection_processing = True
+            self._table.clearSelection()
+            for row in rows:
+                for col in range(self._table.columnCount()):
+                    item = self._table.item(row, col)
+                    item.setSelected(True)
 
+            if self._table.currentRow() not in rows:
+                self._table.setCurrentCell(rows[-1], 0)
+
+            row_visible = rows[-1]
+            item_visible = self._table.item(row_visible, 0)
+            self._table.scrollToItem(item_visible, QAbstractItemView.EnsureVisible)
+            self._block_table_selection_processing = False
+            self._selected_items_pos = rows
+
+        self.model.selected_history_item_pos = selected_item_pos
         self._update_button_states()
 
     def _pb_copy_to_queue_clicked(self):
@@ -1091,7 +1130,7 @@ class QtRePlanHistory(QWidget):
 
     def _pb_deselect_all_clicked(self):
         self._table.clearSelection()
-        self._n_selected_items = []
+        self._selected_items_pos = []
         self._update_button_states()
 
     def _pb_clear_history_clicked(self):
@@ -1316,6 +1355,7 @@ class _QtRePlanEditorTable(QTableWidget):
         self.setHorizontalHeaderLabels(self._table_column_labels)
 
         self.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self.setSelectionBehavior(QTableView.SelectRows)
         self.setSelectionMode(QAbstractItemView.NoSelection)
@@ -1796,7 +1836,12 @@ class _QtReViewer(QWidget):
         self._wd_editor.signal_item_description_changed.connect(self.slot_item_description_changed)
 
     def on_queue_item_selection_changed(self, event):
-        sel_item_uid = event.selected_item_uid
+        sel_item_uids = event.selected_item_uids
+        # Open item in the viewer only if a single item is selected.
+        if len(sel_item_uids) == 1:
+            sel_item_uid = sel_item_uids[0]
+        else:
+            sel_item_uid = ""
         sel_item_pos = self.model.queue_item_uid_to_pos(sel_item_uid)
         self.signal_update_selection.emit(sel_item_pos)
 
@@ -1862,9 +1907,11 @@ class _QtReViewer(QWidget):
             print(f"Exception: {ex}")
 
     def _pb_edit_clicked(self):
-        sel_item_uid = self.model.selected_queue_item_uid
-        sel_item = self.model.queue_item_by_uid(sel_item_uid)  # Returns deep copy
-        self.signal_edit_queue_item.emit(sel_item)
+        sel_item_uids = self.model.selected_queue_item_uids
+        if len(sel_item_uids) == 1:
+            sel_item_uid = sel_item_uids[0]
+            sel_item = self.model.queue_item_by_uid(sel_item_uid)  # Returns deep copy
+            self.signal_edit_queue_item.emit(sel_item)
 
 
 class _QtReEditor(QWidget):
