@@ -51,11 +51,12 @@ class AutoImages(AutoPlotter):
         ds = run[stream_name].to_dask()
         for field in ds:
             if 2 <= ds[field].ndim < 5:
+                key = (stream_name, field, run.metadata['start']['uid'])
                 try:
-                    images = self._field_to_builder[(stream_name, field)]
+                    images = self._field_to_builder[key]
                 except KeyError:
                     images = Images(field=field, needs_streams=(stream_name,))
-                    self._field_to_builder[(stream_name, field)] = images
+                    self._field_to_builder[key] = images
+                    self.plot_builders.append(images)
+                    self.figures.append(images.figure)
                 images.add_run(run)
-                self.plot_builders.append(images)
-                self.figures.append(images.figure)
