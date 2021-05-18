@@ -1,11 +1,14 @@
 import collections
 import copy
+import os.path
 import pprint
 import time
+import importlib
 
 from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
 from bluesky_queueserver.manager.profile_ops import bind_plan_arguments
+from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
 
 
 class RunEngineClient:
@@ -57,6 +60,13 @@ class RunEngineClient:
         #   Items in the history can not be moved or deleted, only added to the bottom, so
         #   using positions is consistent. Empty list - no items are selected
         self._selected_history_item_pos = []
+
+        # Current directory (used for opening/saving files).
+        self.current_dir = None
+        # Set the variable to the name of the Queue Server Custom Module (if available)
+        self.qserver_custom_module_name = None
+        # List of spreadsheet data types
+        self.plan_spreadsheet_data_types = None
 
         # TODO: in the future the list of allowed instructions should be requested from the server
         self._allowed_instructions = {
@@ -947,6 +957,76 @@ class RunEngineClient:
             # 'params' are used only for the first inserted item. The remaining items are inserter
             #   after the first item. So clear the parameters
             params = None
+
+    def queue_upload_spreadsheet(self, *, file_path, data_type=None):
+        # TODO: significant part of this function is duplication of the code from
+        #   ``bluesky_queueserver.server.server``. Implement reusable function as part of
+        #   Queue Server API.
+
+        file_path = os.path.expanduser(file_path)
+        file_path = os.path.abspath(file_path)
+        _, f_name = os.path.split(file_path)
+
+        with open(file_path, "rb") as f:
+            custom_code_module_name = self.qserver_custom_module_name
+
+            if custom_code_module_name:
+                try:
+                    print(f"Importing custom module '{custom_code_module_name}' ...")
+                    # logger.info("Importing custom module '%s' ...", custom_code_module_name)
+                    custom_code_module = importlib.import_module(custom_code_module_name.replace("-", "_"))
+                    print(f"Module '{custom_code_module_name}' was imported successfully.")
+                    # logger.info("Module '%s' was imported successfully.", custom_code_module_name)
+                except Exception as ex:
+                    custom_code_module = None
+                    print(f"Failed to import custom instrument module '{custom_code_module_name}': {ex}")
+                    # logger.error("Failed to import custom instrument module '%s':
+                    # %s", custom_code_module_name, ex)
+
+            item_list = []
+            processed = False
+            if custom_code_module and ("spreadsheet_to_plan_list" in custom_code_module.__dict__):
+                print("Processing spreadsheet using function from external module ...")
+                # logger.info("Processing spreadsheet using function from external module ...")
+                # Try applying  the custom processing function. Some additional useful data is passed to
+                #   the function. Unnecessary parameters can be ignored.
+                item_list = custom_code_module.spreadsheet_to_plan_list(
+                    spreadsheet_file=f, file_name=f_name, data_type=data_type, user=self._user_name
+                )
+                # The function is expected to return None if it rejects the file (based on 'data_type').
+                #   Then try to apply the default processing function.
+                processed = item_list is not None
+
+            if not processed:
+                # Apply default spreadsheet processing function.
+                # logger.info("Processing spreadsheet using default function ...")
+                item_list = spreadsheet_to_plan_list(
+                    spreadsheet_file=f, file_name=f_name, data_type=data_type, user=self._user_name
+                )
+
+            if item_list is None:
+                raise RuntimeError("Failed to process the spreadsheet: unsupported data type or format")
+
+            # Since 'item_list' may be returned by user defined functions, verify the type of the list.
+            if not isinstance(item_list, (tuple, list)):
+                raise ValueError(
+                    f"Spreadsheet processing function returned value of '{type(item_list)}' "
+                    f"type instead of 'list' or 'tuple'"
+                )
+
+            # Ensure, that 'item_list' is sent as a list
+            item_list = list(item_list)
+
+            # Set item type for all items that don't have item type already set (item list may contain
+            #   instructions, but it is responsibility of the user to set item types correctly.
+            #   By default an item is considered a plan.
+            for item in item_list:
+                if "item_type" not in item:
+                    item["item_type"] = "plan"
+
+            # logger.debug("The following plans were created: %s", pprint.pformat(item_list))
+
+            self.queue_item_add_batch(items=item_list)
 
     # ============================================================================
     #                         History operations
