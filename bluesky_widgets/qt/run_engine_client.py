@@ -2430,7 +2430,7 @@ class DialogBatchUpload(QDialog):
         if file_path:
             self._file_path = file_path
             self._current_dir, _ = os.path.split(file_path)
-            self._le_file_name.setText(self._current_dir)
+            self._le_file_name.setText(file_path)
             self.pb_ok.setEnabled(True)
 
     def _pb_ok_clicked(self):
