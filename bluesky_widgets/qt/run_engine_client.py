@@ -3,6 +3,7 @@ import inspect
 import time
 import pprint
 import copy
+import os
 
 from qtpy.QtWidgets import (
     QWidget,
@@ -21,15 +22,119 @@ from qtpy.QtWidgets import (
     QRadioButton,
     QButtonGroup,
     QComboBox,
-    QSizePolicy,
     QLineEdit,
     QCheckBox,
+    QDialog,
+    QFileDialog,
+    QDialogButtonBox,
 )
 from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor
 
 from bluesky_widgets.qt.threading import FunctionWorker
 from bluesky_queueserver.manager.profile_ops import _construct_parameters
+
+
+class LineEditExtended(QLineEdit):
+    """
+    LineEditExtended allows to mark the displayed value as invalid by setting
+    its `valid` property to False. By default, the text color is changed to Light Red.
+    It also emits `focusOut` signal at `self.focusOutEvent`.
+    """
+
+    # Emitted at focusOutEvent
+    focusOut = Signal()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._valid = True
+        self._style_sheet_valid = ""  # By default, clear the style sheet
+        self._style_sheet_invalid = "color: rgb(255, 0, 0);"
+        self._update_valid_status()
+
+    def _update_valid_status(self):
+        if self._valid:
+            super().setStyleSheet(self._style_sheet_valid)
+        else:
+            super().setStyleSheet(self._style_sheet_invalid)
+
+    def setStyleSheet(self, style_sheet, *, valid=True):
+        """
+        Set style sheet for valid/invalid states. If call with one parameter, the function
+        works the same as `setStyleSheet` of QWidget. If `valid` is set to `False`, the
+        supplied style sheet will be applied only if 'invalid' state is activated. The
+        style sheets for the valid and invalid states are independent and can be set
+        separately.
+
+        The default behavior: 'valid' state - clear style sheet, 'invalid' state -
+        use the style sheet `"color: rgb(255, 0, 0);"`
+
+        Parameters
+        ----------
+        style_sheet: str
+            style sheet
+        valid: bool
+            True - activate 'valid' state, False - activate 'invalid' state
+        """
+        if valid:
+            self._style_sheet_valid = style_sheet
+        else:
+            self._style_sheet_invalid = style_sheet
+        self._update_valid_status()
+
+    def getStyleSheet(self, *, valid):
+        """
+        Return the style sheet used 'valid' or 'invalid' state.
+
+        Parameters
+        ----------
+        valid: bool
+            True/False - return the style sheet that was set for 'valid'/'invalid' state.
+        """
+        if valid:
+            return self._style_sheet_valid
+        else:
+            return self._style_sheet_invalid
+
+    def setValid(self, state):
+        """Set the state of the line edit box.: True - 'valid', False - 'invalid'"""
+        self._valid = bool(state)
+        self._update_valid_status()
+
+    def isValid(self):
+        """
+        Returns 'valid' status of the line edit box (bool).
+        """
+        return self._valid
+
+    def focusOutEvent(self, event):
+        """
+        Overriddent QWidget method. Sends custom 'focusOut()' signal
+        """
+        super().focusOutEvent(event)
+        self.focusOut.emit()
+
+
+class LineEditReadOnly(LineEditExtended):
+    """
+    Read-only version of QLineEdit with background set to the same color
+    as the background of the disabled QLineEdit, but font color the same
+    as active QLineEdit.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        p = self.palette()
+        self._color_bckg = p.color(QPalette.Active, QPalette.Base)
+        self._color_disabled = p.color(QPalette.Disabled, QPalette.Base)
+        self.setReadOnly(True)
+
+    def setReadOnly(self, read_only):
+        super().setReadOnly(read_only)
+        color = self._color_disabled if read_only else self._color_bckg
+        p = self.palette()
+        p.setColor(QPalette.Base, color)
+        self.setPalette(p)
 
 
 class QtReManagerConnection(QWidget):
@@ -1288,41 +1393,41 @@ class QtReRunningPlan(QWidget):
 #       super().resizeEvent(event)
 
 
-class LineEditResized(QLineEdit):
-    def __init__(self):
-        super().__init__()
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self._hint_w = None
-
-        p = self.palette()
-        self._color_normal = p.color(QPalette.Normal, QPalette.Base)
-        self._color_disabled = p.color(QPalette.Disabled, QPalette.Base)
-
-    def setReadOnly(self, read_only):
-        super().setReadOnly(read_only)
-        p = self.palette()
-        if read_only:
-            p.setColor(QPalette.Base, self._color_disabled)
-        else:
-            p.setColor(QPalette.Base, self._color_normal)
-        self.setPalette(p)
-
-    def setTextAndResize(self, text, *, w_min=10, w_max=200, w_space=20):
-        self.setText(text)
-
-        fm = self.fontMetrics()
-        width = fm.boundingRect(text).width() + w_space
-        if w_max and (width > w_max):
-            width = w_max
-        if w_max < w_min:
-            width = w_min
-        self._hint_w = width
-
-    def sizeHint(self):
-        hint = super().sizeHint()
-        if self._hint_w is not None:
-            hint.setWidth(self._hint_w)
-        return hint
+# class LineEditResized(QLineEdit):
+#     def __init__(self):
+#         super().__init__()
+#         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+#         self._hint_w = None
+#
+#         p = self.palette()
+#         self._color_normal = p.color(QPalette.Normal, QPalette.Base)
+#         self._color_disabled = p.color(QPalette.Disabled, QPalette.Base)
+#
+#     def setReadOnly(self, read_only):
+#         super().setReadOnly(read_only)
+#         p = self.palette()
+#         if read_only:
+#             p.setColor(QPalette.Base, self._color_disabled)
+#         else:
+#             p.setColor(QPalette.Base, self._color_normal)
+#         self.setPalette(p)
+#
+#     def setTextAndResize(self, text, *, w_min=10, w_max=200, w_space=20):
+#         self.setText(text)
+#
+#         fm = self.fontMetrics()
+#         width = fm.boundingRect(text).width() + w_space
+#         if w_max and (width > w_max):
+#             width = w_max
+#         if w_max < w_min:
+#             width = w_min
+#         self._hint_w = width
+#
+#     def sizeHint(self):
+#         hint = super().sizeHint()
+#         if self._hint_w is not None:
+#             hint.setWidth(self._hint_w)
+#         return hint
 
 
 class _QtRePlanEditorTable(QTableWidget):
@@ -1955,12 +2060,15 @@ class _QtReEditor(QWidget):
         self._wd_editor.signal_parameters_valid.connect(self._slot_parameters_valid)
         self._wd_editor.signal_item_description_changed.connect(self._slot_item_description_changed)
 
+        self._pb_batch_upload = QPushButton("Batch Upload")
         self._pb_add_to_queue = QPushButton("Add to Queue")
         self._pb_save_item = QPushButton("Save")
         self._pb_reset = QPushButton("Reset")
         self._pb_cancel = QPushButton("Cancel")
 
         self._pb_new_item.clicked.connect(self._pb_new_item_clicked)
+        self._pb_batch_upload.clicked.connect(self._pb_batch_upload_clicked)
+
         self._pb_add_to_queue.clicked.connect(self._pb_add_to_queue_clicked)
         self._pb_save_item.clicked.connect(self._pb_save_item_clicked)
         self._pb_reset.clicked.connect(self._pb_reset_clicked)
@@ -1981,6 +2089,7 @@ class _QtReEditor(QWidget):
         vbox.addWidget(self._wd_editor)
 
         hbox = QHBoxLayout()
+        hbox.addWidget(self._pb_batch_upload)
         hbox.addStretch(1)
         hbox.addWidget(self._pb_add_to_queue)
         hbox.addWidget(self._pb_save_item)
@@ -2037,6 +2146,8 @@ class _QtReEditor(QWidget):
         self._combo_item_list.setEnabled(not self._queue_item_loaded)
         self._pb_new_item.setEnabled(not self._queue_item_loaded)
         self._pb_new_item.setVisible(not self._queue_item_loaded)
+
+        self._pb_batch_upload.setEnabled(is_connected)
 
         self._pb_add_to_queue.setEnabled(self._editor_state_valid and is_connected)
         self._pb_save_item.setEnabled(
@@ -2113,6 +2224,21 @@ class _QtReEditor(QWidget):
             new_item = {"item_type": item_type, "name": item_name}
             self._current_item_source = "NEW ITEM"
             self._edit_item(new_item)
+
+    def _pb_batch_upload_clicked(self):
+        dlg = DialogBatchUpload(
+            current_dir=self.model.current_dir,
+            file_type_list=self.model.plan_spreadsheet_data_types,
+        )
+        res = dlg.exec()
+        if res:
+            self.model.current_dir = dlg.current_dir
+            file_path = dlg.file_path
+            data_type = dlg.file_type
+            try:
+                self.model.queue_upload_spreadsheet(file_path=file_path, data_type=data_type)
+            except Exception as ex:
+                print(f"Failed to load plans from spreadsheet: {ex}")
 
     def _pb_add_to_queue_clicked(self):
         """
@@ -2217,3 +2343,97 @@ class QtRePlanEditor(QWidget):
     def _edit_queue_item(self, queue_item):
         self._switch_tab("edit")
         self._plan_editor.edit_queue_item(queue_item)
+
+
+class DialogBatchUpload(QDialog):
+    def __init__(self, parent=None, *, current_dir=None, file_type_list=None):
+
+        super().__init__(parent)
+        self._current_dir = current_dir
+        self._file_name = None
+        self._file_path = None
+        self._file_type_list = file_type_list or []
+        self._file_type = None
+
+        self.setWindowTitle("Batch Upload")
+
+        self.setMinimumWidth(500)
+        # self.setMinimumHeight(200)
+
+        self._pb_open_file = PushButtonMinimumWidth("..")
+        self._pb_open_file.clicked.connect(self._pb_open_file_clicked)
+        self._le_file_name = LineEditReadOnly()
+        self._cb_file_types = QComboBox()
+
+        self.grpUploadSpreadsheet = QGroupBox("Load Plans from Spreadsheet")
+
+        vbox = QVBoxLayout()
+        hbox = QHBoxLayout()
+        hbox.addWidget(self._pb_open_file)
+        hbox.addWidget(self._le_file_name)
+        vbox.addLayout(hbox)
+
+        if self._file_type_list:
+            self._cb_file_types.addItems(self._file_type_list)
+
+            hbox = QHBoxLayout()
+            hbox.addWidget(QLabel("Spreadsheet Type:"))
+            hbox.addWidget(self._cb_file_types, stretch=1)
+            hbox.addStretch(1)
+            vbox.addLayout(hbox)
+
+        self.grpUploadSpreadsheet.setLayout(vbox)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.grpUploadSpreadsheet)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.pb_ok = button_box.button(QDialogButtonBox.Ok)
+        self.pb_ok.setDefault(False)
+        self.pb_ok.setAutoDefault(False)
+        self.pb_ok.setEnabled(False)
+        self.pb_cancel = button_box.button(QDialogButtonBox.Cancel)
+        self.pb_cancel.setDefault(True)
+        self.pb_cancel.setAutoDefault(True)
+
+        button_box.accepted.connect(self._pb_ok_clicked)
+        button_box.rejected.connect(self.reject)
+
+        vbox.addWidget(button_box)
+
+        self.setLayout(vbox)
+
+    @property
+    def file_path(self):
+        return self._file_path
+
+    @property
+    def current_dir(self):
+        return self._current_dir
+
+    @property
+    def file_type(self):
+        return self._file_type
+
+    def _pb_open_file_clicked(self):
+        if not self._current_dir:
+            self._current_dir = os.getcwd()
+        file_paths = QFileDialog.getOpenFileName(
+            self,
+            "Select Spreadsheet File",
+            self._current_dir,
+            "xlsx (*.xlsx);; All (*)",
+            None,
+            QFileDialog.DontUseNativeDialog,
+        )
+        file_path = file_paths[0]
+        if file_path:
+            self._file_path = file_path
+            self._current_dir, _ = os.path.split(file_path)
+            self._le_file_name.setText(self._current_dir)
+            self.pb_ok.setEnabled(True)
+
+    def _pb_ok_clicked(self):
+        ind = self._cb_file_types.currentIndex()
+        self._file_type = None if ind < 0 else self._file_type_list[ind]
+        self.accept()
