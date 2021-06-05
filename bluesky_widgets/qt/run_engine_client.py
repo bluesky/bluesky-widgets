@@ -725,7 +725,7 @@ class QtRePlanQueue(QWidget):
         self._n_table_items = 0  # The number of items in the table
         self._selected_items_pos = []  # Selected items (list of table rows)
 
-        self._pb_move_up = PushButtonMinimumWidth("Move Up")
+        self._pb_move_up = PushButtonMinimumWidth("Up")
         self._pb_move_down = PushButtonMinimumWidth("Down")
         self._pb_move_to_top = PushButtonMinimumWidth("Top")
         self._pb_move_to_bottom = PushButtonMinimumWidth("Bottom")
@@ -836,9 +836,9 @@ class QtRePlanQueue(QWidget):
         # If the selected queue item is not in the table anymore (e.g. sent to execution),
         #   then ignore the drop event, since the item can not be moved.
         if self.model.selected_queue_item_uids:
-            item_uid_to_replace = self.model.queue_item_pos_to_uid(row)
+            uid_ref_item = self.model.queue_item_pos_to_uid(row)
             try:
-                self.model.queue_item_move_in_place_of(item_uid_to_replace)
+                self.model.queue_items_move_in_place_of(uid_ref_item)
             except Exception as ex:
                 print(f"Exception: {ex}")
 
@@ -962,31 +962,31 @@ class QtRePlanQueue(QWidget):
 
     def _pb_move_up_clicked(self):
         try:
-            self.model.queue_item_move_up()
+            self.model.queue_items_move_up()
         except Exception as ex:
             print(f"Exception: {ex}")
 
     def _pb_move_down_clicked(self):
         try:
-            self.model.queue_item_move_down()
+            self.model.queue_items_move_down()
         except Exception as ex:
             print(f"Exception: {ex}")
 
     def _pb_move_to_top_clicked(self):
         try:
-            self.model.queue_item_move_to_top()
+            self.model.queue_items_move_to_top()
         except Exception as ex:
             print(f"Exception: {ex}")
 
     def _pb_move_to_bottom_clicked(self):
         try:
-            self.model.queue_item_move_to_bottom()
+            self.model.queue_items_move_to_bottom()
         except Exception as ex:
             print(f"Exception: {ex}")
 
     def _pb_delete_plan_clicked(self):
         try:
-            self.model.queue_item_remove()
+            self.model.queue_items_remove()
         except Exception as ex:
             print(f"Exception: {ex}")
 
