@@ -944,12 +944,11 @@ class QtRePlanQueue(QWidget):
             self._block_table_selection_processing = True
             self._table.clearSelection()
             for row in rows:
+                if self._table.currentRow() not in rows:
+                    self._table.setCurrentCell(rows[-1], 0)
                 for col in range(self._table.columnCount()):
                     item = self._table.item(row, col)
                     item.setSelected(True)
-
-            if self._table.currentRow() not in rows:
-                self._table.setCurrentCell(rows[-1], 0)
 
             row_visible = rows[-1]
             item_visible = self._table.item(row_visible, 0)

@@ -898,7 +898,7 @@ class RunEngineClient:
         if not items:
             return
 
-        sel_item_uids = self._selected_queue_item_uids.copy()
+        sel_item_uids = self.selected_queue_item_uids.copy()
 
         if sel_item_uids:
             # Insert after the last item in the selected batch
@@ -937,7 +937,6 @@ class RunEngineClient:
                     f"{pprint.pformat(response)}. Can not update item selection in the queue table. "
                     f"Exception: {ex}"
                 )
-            print(f"sel_item_uids = {sel_item_uids}")  ##
             self.selected_queue_item_uids = sel_item_uids
 
     def queue_upload_spreadsheet(self, *, file_path, data_type=None):
