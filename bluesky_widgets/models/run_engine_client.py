@@ -894,69 +894,51 @@ class RunEngineClient:
         See the documentation for ``queue_item_add_batch`` 0MQ API of Queue Server.
         The newly inserted items becomes selected.
         """
-        # TODO: this is temporary solution using multiple calls to 'queue_item_add' API
-        #       to submit plans one by one. The permanent solution will use 'queue_item_add_batch'
-        #       API to submit the plans in one batch. Advantages of 'queue_item_add_batch' API
-        #       is that the complete batch of the plans is validated and either inserted in the
-        #       queue or rejected. Current implementation of 'queue_item_add_batch' API does not
-        #       accept additional parameters that specify the position of inserted plans in the queue,
-        #       therefore the plans are always added to the back of the queue. Full functionality
-        #       of the widget requires the items to be inserted after the current selection,
-        #       therefore batch submission needs to be simulated using mutliple calls to
-        #       'queue_item_add' API. If the batch contains a plan that is rejected by the server,
-        #       only the plans that are preceding the invalid plan will be submitted.
-        #       The function should be modified when 'queue_item_add_batch' is extended.
-
         # Do nothing if no items are to be inserted
         if not items:
             return
 
-        if self._selected_queue_item_uids:
+        sel_item_uids = self._selected_queue_item_uids.copy()
+
+        if sel_item_uids:
             # Insert after the last item in the selected batch
-            sel_item_uid = self._selected_queue_item_uids[-1]
+            sel_item_uid = sel_item_uids[-1]
         else:
             # No selection: push to the back of the queue
             sel_item_uid = None
 
-        self._selected_queue_item_uids = []
-
-        sel_item_uids = []
-        for item in items:
-            queue_is_empty = not len(self._plan_queue_items)
-            if not params:
-                if queue_is_empty or not sel_item_uid:
-                    # Push button to the back of the queue
-                    params = {}
-                else:
-                    params = {"after_uid": sel_item_uid}
-
-            # We are submitting a plan as a new plan, so all unnecessary data will be stripped
-            #   and new item UID will be assigned.
-            request_params = {
-                "item": item,
-                "user": self._user_name,
-                "user_group": self._user_group,
-            }
-            request_params.update(params)
-            response = self._client.send_message(method="queue_item_add", params=request_params)
-            self.load_re_manager_status(unbuffered=True)
-            if not response["success"]:
-                raise RuntimeError(f"Failed to add item to the queue: {response['msg']}")
+        queue_is_empty = not len(self._plan_queue_items)
+        if not params:
+            if queue_is_empty or not sel_item_uid:
+                # Push button to the back of the queue
+                params = {}
             else:
-                try:
-                    # The 'item' and 'item_uid' should always be included in the returned item in case of success.
-                    sel_item_uid = response["item"]["item_uid"]
-                    sel_item_uids.append(sel_item_uid)
-                except KeyError as ex:
-                    print(
-                        f"Item or item UID is not found in the server response {pprint.pformat(response)}. "
-                        f"Can not update item selection in the queue table. Exception: {ex}"
-                    )
-                self.selected_queue_item_uids = sel_item_uids
+                params = {"after_uid": sel_item_uid}
 
-            # 'params' are used only for the first inserted item. The remaining items are inserter
-            #   after the first item. So clear the parameters
-            params = None
+        # We are submitting the plans in the batch as new plans, so all unnecessary
+        #   data will be stripped and the new item UID will be assigned.
+        request_params = {
+            "items": items,
+            "user": self._user_name,
+            "user_group": self._user_group,
+        }
+        request_params.update(params)
+        response = self._client.send_message(method="queue_item_add_batch", params=request_params)
+        self.load_re_manager_status(unbuffered=True)
+        if not response["success"]:
+            raise RuntimeError(f"Failed to add the batch of item to the queue: {response['msg']}")
+        else:
+            try:
+                # The 'item' and 'item_uid' should always be included in the returned item in case of success.
+                sel_item_uids = [_["item_uid"] for _ in response["items"]]
+            except KeyError as ex:
+                print(
+                    f"Item or item UID is not found in some of the items returned by the server "
+                    f"{pprint.pformat(response)}. Can not update item selection in the queue table. "
+                    f"Exception: {ex}"
+                )
+            print(f"sel_item_uids = {sel_item_uids}")  ##
+            self.selected_queue_item_uids = sel_item_uids
 
     def queue_upload_spreadsheet(self, *, file_path, data_type=None):
         # TODO: significant part of this function is duplication of the code from
