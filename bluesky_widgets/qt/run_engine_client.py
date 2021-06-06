@@ -658,20 +658,6 @@ class QueueTableWidget(QTableWidget):
         )
         self._scroll_timer.start(timeout)
 
-    def scrollTo(self, index, hint):
-        """
-        Prevent horizontal autoscrolling when clicking on columns that don't fit
-        horizontally within the displayed region of the table. Autoscrolling
-        causes annoying behavor of the table widget. Without it, the table
-        is always scrolled to the left to make the first column visible whenever
-        the row is selected (programmatically or by clicking on the row).
-
-        No significant issues in table behavior were noticed during the brief test.
-        There could be a better solution to resolve the issue.
-        """
-        if hint != QAbstractItemView.EnsureVisible:
-            super().scrollTo(index, hint)
-
 
 class PushButtonMinimumWidth(QPushButton):
     """
@@ -724,6 +710,10 @@ class QtRePlanQueue(QWidget):
         self._table.setAcceptDrops(False)
         self._table.setDropIndicatorShown(True)
         self._table.setShowGrid(True)
+
+        # Prevents horizontal autoscrolling when clicking on an item (column) that
+        # doesn't fit horizontally the displayed view of the table (annoying behavior)
+        self._table.setAutoScroll(False)
 
         self._table.setAlternatingRowColors(True)
 
@@ -951,6 +941,9 @@ class QtRePlanQueue(QWidget):
 
         rows = [self.model.queue_item_uid_to_pos(_) for _ in selected_item_uids]
 
+        # Keep horizontal scroll value while the selection is changed (more consistent behavior)
+        scroll_value = self._table.horizontalScrollBar().value()
+
         if not rows:
             self._table.clearSelection()
             self._selected_items_pos = []
@@ -970,6 +963,8 @@ class QtRePlanQueue(QWidget):
             self._block_table_selection_processing = False
 
             self._selected_items_pos = rows
+
+        self._table.horizontalScrollBar().setValue(scroll_value)
 
         self.model.selected_queue_item_uids = selected_item_uids
         self._update_button_states()
@@ -1060,6 +1055,10 @@ class QtRePlanHistory(QWidget):
         self._table.setSelectionMode(QTableWidget.ContiguousSelection)
         self._table.setShowGrid(True)
         self._table.setAlternatingRowColors(True)
+
+        # Prevents horizontal autoscrolling when clicking on an item (column) that
+        # doesn't fit horizontally the displayed view of the table (annoying behavior)
+        self._table.setAutoScroll(False)
 
         self._table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -1217,6 +1216,9 @@ class QtRePlanHistory(QWidget):
     def slot_change_selection(self, selected_item_pos):
         rows = selected_item_pos
 
+        # Keep horizontal scroll value while the selection is changed (more consistent behavior)
+        scroll_value = self._table.horizontalScrollBar().value()
+
         if not rows:
             self._table.clearSelection()
             self._selected_items_pos = []
@@ -1236,6 +1238,8 @@ class QtRePlanHistory(QWidget):
             self._table.scrollToItem(item_visible, QAbstractItemView.EnsureVisible)
             self._block_table_selection_processing = False
             self._selected_items_pos = rows
+
+        self._table.horizontalScrollBar().setValue(scroll_value)
 
         self.model.selected_history_item_pos = selected_item_pos
         self._update_button_states()
