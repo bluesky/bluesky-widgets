@@ -658,6 +658,20 @@ class QueueTableWidget(QTableWidget):
         )
         self._scroll_timer.start(timeout)
 
+    def scrollTo(self, index, hint):
+        """
+        Prevent horizontal autoscrolling when clicking on columns that don't fit
+        horizontally within the displayed region of the table. Autoscrolling
+        causes annoying behavor of the table widget. Without it, the table
+        is always scrolled to the left to make the first column visible whenever
+        the row is selected (programmatically or by clicking on the row).
+
+        No significant issues in table behavior were noticed during the brief test.
+        There could be a better solution to resolve the issue.
+        """
+        if hint != QAbstractItemView.EnsureVisible:
+            super().scrollTo(index, hint)
+
 
 class PushButtonMinimumWidth(QPushButton):
     """
