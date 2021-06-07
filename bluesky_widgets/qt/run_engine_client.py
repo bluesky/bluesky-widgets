@@ -2081,7 +2081,6 @@ class _QtReEditor(QWidget):
         # self._combo_item_list.setSizePolicy(QComboBox.AdjustToContents)
         self._combo_item_list.currentIndexChanged.connect(self._combo_item_list_sel_changed)
 
-        self._pb_new_item = QPushButton("New")
         self._lb_item_source = QLabel(self._current_item_source)
 
         # Start with 'detailed' view (show optional parameters)
@@ -2096,7 +2095,6 @@ class _QtReEditor(QWidget):
         self._pb_reset = QPushButton("Reset")
         self._pb_cancel = QPushButton("Cancel")
 
-        self._pb_new_item.clicked.connect(self._pb_new_item_clicked)
         self._pb_batch_upload.clicked.connect(self._pb_batch_upload_clicked)
 
         self._pb_add_to_queue.clicked.connect(self._pb_add_to_queue_clicked)
@@ -2112,7 +2110,6 @@ class _QtReEditor(QWidget):
         hbox.addWidget(self._rb_item_instruction)
         hbox.addWidget(self._combo_item_list)
         hbox.addStretch(1)
-        hbox.addWidget(self._pb_new_item)
         hbox.addWidget(self._lb_item_source)
         vbox.addLayout(hbox)
 
@@ -2174,8 +2171,6 @@ class _QtReEditor(QWidget):
         self._rb_item_plan.setEnabled(not self._edit_mode_enabled)
         self._rb_item_instruction.setEnabled(not self._edit_mode_enabled)
         self._combo_item_list.setEnabled(not self._edit_mode_enabled)
-        self._pb_new_item.setEnabled(not self._edit_mode_enabled)
-        self._pb_new_item.setVisible(not self._edit_mode_enabled)
 
         self._pb_batch_upload.setEnabled(is_connected)
 
@@ -2254,14 +2249,6 @@ class _QtReEditor(QWidget):
     def _slot_parameters_valid(self, is_valid):
         self._editor_state_valid = is_valid
         self._update_widget_state()
-
-    def _pb_new_item_clicked(self):
-        item_type = self._current_item_type
-        item_name = self._combo_item_list.currentText()
-        if item_name:
-            new_item = {"item_type": item_type, "name": item_name}
-            self._current_item_source = "NEW ITEM"
-            self._edit_item(new_item)
 
     def _pb_batch_upload_clicked(self):
         dlg = DialogBatchUpload(
