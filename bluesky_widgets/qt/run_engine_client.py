@@ -2184,6 +2184,10 @@ class _QtReEditor(QWidget):
         self._lb_item_source.setText(self._current_item_source)
 
     def edit_queue_item(self, queue_item):
+        """
+        Calling this function while another plan is being edited will cancel editing, discard results
+        and open another plan for editing.
+        """
         self._current_item_source = "QUEUE ITEM"
         self._edit_item(queue_item)
 
@@ -2213,6 +2217,7 @@ class _QtReEditor(QWidget):
     def _switch_to_editing_mode(self):
         if not self._edit_mode_enabled:
             self._edit_mode_enabled = True
+            self._current_item_source = "NEW ITEM"
             self._update_widget_state()
 
     def _show_item_preview(self):
