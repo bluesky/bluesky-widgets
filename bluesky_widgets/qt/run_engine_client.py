@@ -1451,6 +1451,8 @@ class _QtRePlanEditorTable(QTableWidget):
 
     signal_parameters_valid = Signal(bool)
     signal_item_description_changed = Signal(str)
+    # The following signal is emitted only if the cell manually modified
+    signal_cell_modified = Signal()
 
     def __init__(self, model, parent=None, *, editable=False, detailed=True):
         super().__init__(parent)
@@ -1461,6 +1463,7 @@ class _QtRePlanEditorTable(QTableWidget):
         self._text_color_invalid = QBrush(QColor(255, 0, 0))
 
         self._validation_disabled = False
+        self._enable_signal_cell_modified = True
 
         self._queue_item = None  # Copy of the displayed queue item
         self._params = []
@@ -1733,6 +1736,7 @@ class _QtRePlanEditorTable(QTableWidget):
                 return str(v)
 
         self._validation_disabled = True
+        self._enable_signal_cell_modified = False
         self.clearContents()
 
         params = self._params
@@ -1811,6 +1815,7 @@ class _QtRePlanEditorTable(QTableWidget):
 
         self._validation_disabled = False
         self._validate_cell_values()
+        self._enable_signal_cell_modified = True
 
     def show_item(self, *, item, editable=None):
         if editable is not None:
@@ -1891,10 +1896,15 @@ class _QtRePlanEditorTable(QTableWidget):
                         self._params[row]["value"] = self._params[row]["parameters"].default
 
                     self._params[row]["is_value_set"] = is_checked
-                    self._show_row_value(row=row)
 
-            elif column == 2:
+                    self._enable_signal_cell_modified = False
+                    self._show_row_value(row=row)
+                    self._enable_signal_cell_modified = True
+
+            if column in (1, 2):
                 self._validate_cell_values()
+                if self._enable_signal_cell_modified:
+                    self.signal_cell_modified.emit()
         except ValueError:
             pass
 
@@ -2054,8 +2064,10 @@ class _QtReEditor(QWidget):
         self._current_instruction_name = ""
         self._current_item_source = ""  # Values: "", "NEW ITEM", "QUEUE ITEM"
 
-        self._queue_item_loaded = False
+        self._edit_mode_enabled = False
         self._editor_state_valid = False
+
+        self._ignore_combo_item_list_sel_changed = False
 
         self._rb_item_plan = QRadioButton("Plan")
         self._rb_item_plan.setChecked(True)
@@ -2069,13 +2081,13 @@ class _QtReEditor(QWidget):
         # self._combo_item_list.setSizePolicy(QComboBox.AdjustToContents)
         self._combo_item_list.currentIndexChanged.connect(self._combo_item_list_sel_changed)
 
-        self._pb_new_item = QPushButton("New")
         self._lb_item_source = QLabel(self._current_item_source)
 
         # Start with 'detailed' view (show optional parameters)
         self._wd_editor = _QtRePlanEditorTable(self.model, editable=False, detailed=True)
         self._wd_editor.signal_parameters_valid.connect(self._slot_parameters_valid)
         self._wd_editor.signal_item_description_changed.connect(self._slot_item_description_changed)
+        self._wd_editor.signal_cell_modified.connect(self._switch_to_editing_mode)
 
         self._pb_batch_upload = QPushButton("Batch Upload")
         self._pb_add_to_queue = QPushButton("Add to Queue")
@@ -2083,7 +2095,6 @@ class _QtReEditor(QWidget):
         self._pb_reset = QPushButton("Reset")
         self._pb_cancel = QPushButton("Cancel")
 
-        self._pb_new_item.clicked.connect(self._pb_new_item_clicked)
         self._pb_batch_upload.clicked.connect(self._pb_batch_upload_clicked)
 
         self._pb_add_to_queue.clicked.connect(self._pb_add_to_queue_clicked)
@@ -2099,7 +2110,6 @@ class _QtReEditor(QWidget):
         hbox.addWidget(self._rb_item_instruction)
         hbox.addWidget(self._combo_item_list)
         hbox.addStretch(1)
-        hbox.addWidget(self._pb_new_item)
         hbox.addWidget(self._lb_item_source)
         vbox.addLayout(hbox)
 
@@ -2158,11 +2168,9 @@ class _QtReEditor(QWidget):
 
         is_connected = bool(self.model.re_manager_connected)
 
-        self._rb_item_plan.setEnabled(not self._queue_item_loaded)
-        self._rb_item_instruction.setEnabled(not self._queue_item_loaded)
-        self._combo_item_list.setEnabled(not self._queue_item_loaded)
-        self._pb_new_item.setEnabled(not self._queue_item_loaded)
-        self._pb_new_item.setVisible(not self._queue_item_loaded)
+        self._rb_item_plan.setEnabled(not self._edit_mode_enabled)
+        self._rb_item_instruction.setEnabled(not self._edit_mode_enabled)
+        self._combo_item_list.setEnabled(not self._edit_mode_enabled)
 
         self._pb_batch_upload.setEnabled(is_connected)
 
@@ -2170,16 +2178,20 @@ class _QtReEditor(QWidget):
         self._pb_save_item.setEnabled(
             self._editor_state_valid and is_connected and self._current_item_source == "QUEUE ITEM"
         )
-        self._pb_reset.setEnabled(self._queue_item_loaded)
-        self._pb_cancel.setEnabled(self._queue_item_loaded)
+        self._pb_reset.setEnabled(self._edit_mode_enabled)
+        self._pb_cancel.setEnabled(self._edit_mode_enabled)
 
         self._lb_item_source.setText(self._current_item_source)
 
     def edit_queue_item(self, queue_item):
+        """
+        Calling this function while another plan is being edited will cancel editing, discard results
+        and open another plan for editing.
+        """
         self._current_item_source = "QUEUE ITEM"
         self._edit_item(queue_item)
 
-    def _edit_item(self, queue_item):
+    def _edit_item(self, queue_item, *, edit_mode=True):
         self._queue_item_name = queue_item.get("name", None)
         self._queue_item_type = queue_item.get("item_type", None)
 
@@ -2192,11 +2204,20 @@ class _QtReEditor(QWidget):
                 self._current_plan_name = self._queue_item_name
                 self._rb_item_plan.setChecked(True)
 
+            self._ignore_combo_item_list_sel_changed = True
             self._set_allowed_item_list()
+            self._ignore_combo_item_list_sel_changed = False
 
             self._wd_editor.show_item(item=queue_item, editable=True)
 
-            self._queue_item_loaded = True
+            self._edit_mode_enabled = bool(edit_mode)
+            self._update_widget_state()
+
+    @Slot()
+    def _switch_to_editing_mode(self):
+        if not self._edit_mode_enabled:
+            self._edit_mode_enabled = True
+            self._current_item_source = "NEW ITEM"
             self._update_widget_state()
 
     def _show_item_preview(self):
@@ -2207,7 +2228,7 @@ class _QtReEditor(QWidget):
         item_type = self._current_item_type
         if item_name:
             item = {"item_type": item_type, "name": item_name}
-            self._wd_editor.show_item(item=item, editable=False)
+            self._edit_item(queue_item=item, edit_mode=False)
 
     def _save_selected_item_name(self):
         item_name = self._combo_item_list.currentText()
@@ -2234,14 +2255,6 @@ class _QtReEditor(QWidget):
         self._editor_state_valid = is_valid
         self._update_widget_state()
 
-    def _pb_new_item_clicked(self):
-        item_type = self._current_item_type
-        item_name = self._combo_item_list.currentText()
-        if item_name:
-            new_item = {"item_type": item_type, "name": item_name}
-            self._current_item_source = "NEW ITEM"
-            self._edit_item(new_item)
-
     def _pb_batch_upload_clicked(self):
         dlg = DialogBatchUpload(
             current_dir=self.model.current_dir,
@@ -2266,7 +2279,7 @@ class _QtReEditor(QWidget):
             self.model.queue_item_add(item=item)
             self._wd_editor.show_item(item=None)
             self.signal_switch_tab.emit("view")
-            self._queue_item_loaded = False
+            self._edit_mode_enabled = False
             self._current_item_source = ""
             self._update_widget_state()
             self._show_item_preview()
@@ -2283,7 +2296,7 @@ class _QtReEditor(QWidget):
             self.model.queue_item_update(item=item)
             self._wd_editor.show_item(item=None)
             self.signal_switch_tab.emit("view")
-            self._queue_item_loaded = False
+            self._edit_mode_enabled = False
             self._current_item_source = ""
             self._update_widget_state()
             self._show_item_preview()
@@ -2298,7 +2311,7 @@ class _QtReEditor(QWidget):
 
     def _pb_cancel_clicked(self):
         self._wd_editor.show_item(item=None)
-        self._queue_item_loaded = False
+        self._edit_mode_enabled = False
         self._queue_item_type = ""
         self._queue_item_name = ""
         self._current_item_source = ""
@@ -2318,7 +2331,7 @@ class _QtReEditor(QWidget):
         self._save_selected_item_name()
         # We don't process the case when the list of allowed plans changes and the selected
         #   item is not in the list. But this is not a practical case.
-        if not self._queue_item_loaded:
+        if not self._ignore_combo_item_list_sel_changed:
             self._show_item_preview()
 
     def _on_allowed_plans_changed(self, allowed_plans):
