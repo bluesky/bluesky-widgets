@@ -32,7 +32,7 @@ from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor
 
 from bluesky_widgets.qt.threading import FunctionWorker
-from bluesky_queueserver.manager.profile_ops import _construct_parameters
+from bluesky_queueserver.manager.profile_ops import construct_parameters
 
 
 class LineEditExtended(QLineEdit):
@@ -1632,9 +1632,7 @@ class _QtRePlanEditorTable(QTableWidget):
         # print(f"plan_params={pprint.pformat(plan_params)}")
         if item_editable:
             # Construct parameters (list of inspect.Parameter objects)
-            parameters, created_type_list = _construct_parameters(item_params.get("parameters", {}))
-            # print(f"parameters = {parameters}")
-            # print(f"default = {[_.default for _ in parameters]}")
+            parameters = construct_parameters(item_params.get("parameters", {}))
         else:
             parameters = []
             for key, val in item_kwargs.items():
