@@ -688,7 +688,7 @@ class QtRePlanQueue(QWidget):
         # Set True to block processing of table selection change events
         self._block_table_selection_processing = False
 
-        self._registered_plan_editors = []
+        self._registered_item_editors = []
 
         # Local copy of the plan queue items for operations performed locally
         #   in the Qt Widget code without calling the model. Using local copy that
@@ -800,25 +800,26 @@ class QtRePlanQueue(QWidget):
 
     @property
     def registered_item_editors(self):
-        return self._registered_plan_editors
-
-    def register_item_editor(self, editor_activator):
         """
-        Add editor to the list of registered plan editors. The function accepts a callable, which
-        accepts dictionary of item parameters as an argument and returns boolean value ``True`` if
-        the editor accepts the item. When user double-clicks the table row, the editors from the list
-        are called one by one until the plan is accepted. The editor that accepted the plan is expected
-        to become active and allow users to change plan parameters. Typically the editors should be
-        registered in the order starting from custom editors designed for editing specific plans
-        proceeding to generic editors that will accept any plan that was rejected by custom editors.
+        Returns reference to the list of registered plan editors. The reference is not editable,
+        but the items can be added or removed from the list using ``append``, ``pop`` and ``clear``
+        methods.
 
-        Parameters
-        ----------
-        editor_activator : callable
-            Callable that accepts the dictionary of item parameters, attempts to open item in
-            the item (plan) editor and returns boolean value if the editor accepted the item.
+        Editors may be added to the list of registered plan editors by inserting/appending reference
+        to a callable. The must accepts dictionary of item parameters as an argument and return
+        boolean value ``True`` if the editor accepts the item. When user double-clicks the table row,
+        the editors from the list are called one by one until the plan is accepted. The first editor
+        that accepts the plan must be activated and allow users to change plan parameters. Typically
+        the editors should be registered in the order starting from custom editors designed for
+        editing specific plans proceeding to generic editors that will accept any plan that was
+        rejected by custom editors.
+
+        Returns
+        -------
+        list(callable)
+            List of references to registered editors. List is empty if no editors are registered.
         """
-        self._registered_plan_editors.append(editor_activator)
+        return self._registered_item_editors
 
     def on_update_widgets(self, event):
         # None should be converted to False:
