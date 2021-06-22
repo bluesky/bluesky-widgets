@@ -32,7 +32,7 @@ from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor
 
 from bluesky_widgets.qt.threading import FunctionWorker
-from bluesky_queueserver.manager.profile_ops import _construct_parameters
+from bluesky_queueserver.manager.profile_ops import construct_parameters
 
 
 class LineEditExtended(QLineEdit):
@@ -688,6 +688,14 @@ class QtRePlanQueue(QWidget):
         # Set True to block processing of table selection change events
         self._block_table_selection_processing = False
 
+        self._registered_item_editors = []
+
+        # Local copy of the plan queue items for operations performed locally
+        #   in the Qt Widget code without calling the model. Using local copy that
+        #   precisely matches the contents displayed in the table is more reliable
+        #   for local operations (e.g. calling editor when double-clicking the row).
+        self._plan_queue_items = []
+
         self._table_column_labels = (
             "",
             "Name",
@@ -786,8 +794,32 @@ class QtRePlanQueue(QWidget):
         self._table.itemSelectionChanged.connect(self.on_item_selection_changed)
         self._table.verticalScrollBar().valueChanged.connect(self.on_vertical_scrollbar_value_changed)
         self._table.verticalScrollBar().rangeChanged.connect(self.on_vertical_scrollbar_range_changed)
+        self._table.cellDoubleClicked.connect(self._on_table_cell_double_clicked)
 
         self._update_button_states()
+
+    @property
+    def registered_item_editors(self):
+        """
+        Returns reference to the list of registered plan editors. The reference is not editable,
+        but the items can be added or removed from the list using ``append``, ``pop`` and ``clear``
+        methods.
+
+        Editors may be added to the list of registered plan editors by inserting/appending reference
+        to a callable. The must accepts dictionary of item parameters as an argument and return
+        boolean value ``True`` if the editor accepts the item. When user double-clicks the table row,
+        the editors from the list are called one by one until the plan is accepted. The first editor
+        that accepts the plan must be activated and allow users to change plan parameters. Typically
+        the editors should be registered in the order starting from custom editors designed for
+        editing specific plans proceeding to generic editors that will accept any plan that was
+        rejected by custom editors.
+
+        Returns
+        -------
+        list(callable)
+            List of references to registered editors. List is empty if no editors are registered.
+        """
+        return self._registered_item_editors
 
     def on_update_widgets(self, event):
         # None should be converted to False:
@@ -871,6 +903,10 @@ class QtRePlanQueue(QWidget):
         #   when 'scroll_value==0': if the top plan is visible, it should remain visible
         #   even if additional plans are added to the queue.
         self._block_table_selection_processing = True
+
+        # Create local copy of the plan queue items for operations performed locally
+        #   within the widget without involving the model.
+        self._plan_queue_items = copy.deepcopy(plan_queue_items)
 
         scroll_value = self._table.verticalScrollBar().value()
         scroll_maximum = self._table.verticalScrollBar().maximum()
@@ -968,6 +1004,34 @@ class QtRePlanQueue(QWidget):
 
         self.model.selected_queue_item_uids = selected_item_uids
         self._update_button_states()
+
+    def _on_table_cell_double_clicked(self, n_row, n_col):
+        """
+        Double-clicking of an item of the table widget opens the item in Plan Editor.
+        """
+        # We use local copy of the queue here
+        try:
+            queue_item = self._plan_queue_items[n_row]
+        except IndexError:
+            queue_item = None
+        registered_editors = self.registered_item_editors
+
+        # Do nothing if item is not found or there are no registered editors
+        if not queue_item or not registered_editors:
+            return
+
+        item_accepted = False
+        for editor_activator in registered_editors:
+            try:
+                item_accepted = editor_activator(queue_item)
+            except Exception:
+                print(f"Editor failed to start for the item {queue_item['name']}")
+
+            if item_accepted:
+                break
+
+        if not item_accepted:
+            print(f"Item {queue_item['name']} was rejected by all registered editors")
 
     def _pb_move_up_clicked(self):
         try:
@@ -1569,9 +1633,7 @@ class _QtRePlanEditorTable(QTableWidget):
         # print(f"plan_params={pprint.pformat(plan_params)}")
         if item_editable:
             # Construct parameters (list of inspect.Parameter objects)
-            parameters, created_type_list = _construct_parameters(item_params.get("parameters", {}))
-            # print(f"parameters = {parameters}")
-            # print(f"default = {[_.default for _ in parameters]}")
+            parameters = construct_parameters(item_params.get("parameters", {}))
         else:
             parameters = []
             for key, val in item_kwargs.items():
@@ -2361,7 +2423,7 @@ class QtRePlanEditor(QWidget):
         vbox.addWidget(self._tab_widget)
         self.setLayout(vbox)
 
-        self._plan_viewer.signal_edit_queue_item.connect(self._edit_queue_item)
+        self._plan_viewer.signal_edit_queue_item.connect(self.edit_queue_item)
         self._plan_editor.signal_switch_tab.connect(self._switch_tab)
 
     @Slot(str)
@@ -2370,7 +2432,7 @@ class QtRePlanEditor(QWidget):
         self._tab_widget.setCurrentWidget(tabs[tab])
 
     @Slot(object)
-    def _edit_queue_item(self, queue_item):
+    def edit_queue_item(self, queue_item):
         self._switch_tab("edit")
         self._plan_editor.edit_queue_item(queue_item)
 
