@@ -32,7 +32,7 @@ from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor
 
 from bluesky_widgets.qt.threading import FunctionWorker
-from bluesky_queueserver.manager.profile_ops import construct_parameters
+from bluesky_queueserver import construct_parameters, format_text_descriptions
 
 
 class LineEditExtended(QLineEdit):
@@ -1616,10 +1616,7 @@ class _QtRePlanEditorTable(QTableWidget):
             else:
                 item_params = self.model.get_allowed_instruction_parameters(name=item_name)
             item_editable = (item_name is not None) and (item_params is not None)
-            params_descriptions = self.model.extract_descriptions_from_item_parameters(item_parameters=item_params)
-            params_descriptions = self.model.format_item_parameter_descriptions(
-                item_descriptions=params_descriptions
-            )
+            params_descriptions = format_text_descriptions(item_parameters=item_params, use_html=True)
         else:
             raise RuntimeError(f"Unknown item type '{item_type}'")
 
