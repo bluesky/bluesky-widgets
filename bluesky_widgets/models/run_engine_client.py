@@ -6,8 +6,7 @@ import time
 import importlib
 
 from bluesky_live.event import EmitterGroup, Event
-from bluesky_queueserver.manager.comms import ZMQCommSendThreads, CommTimeoutError
-from bluesky_queueserver.manager.profile_ops import bind_plan_arguments
+from bluesky_queueserver import ZMQCommSendThreads, CommTimeoutError, bind_plan_arguments
 from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
 
 
@@ -302,131 +301,6 @@ class RunEngineClient:
             dictionary of instruction parameters or ``None`` if the plan is not in the list.
         """
         return self._allowed_instructions.get(name, None)
-
-    def extract_descriptions_from_item_parameters(self, *, item_parameters):
-        """
-        Extract descriptions from the dictionary of item parameters. The descriptions
-        includes: item name/description, each parameter name/type/description.
-        The descriptions are presented in humanly readable text form, which is convenient
-        for user presentation.
-
-        TODO: potentially move this function to Queue Server code (file 'profile_ops.py')
-
-        Parameters
-        ----------
-        item_parameters : dict
-            dictionary of item parameters (element of the list of allowed plans/instructions)
-
-        Returns
-        -------
-        dict
-            dictionary of descriptions
-        """
-        if not item_parameters:
-            return {}
-
-        descriptions = {}
-
-        # Plan description
-        item_name = item_parameters.get("name", "")
-        item_description = item_parameters.get("description", None)
-        item_description = item_description if item_description else ""
-        item_description = str(item_description)
-
-        descriptions = {
-            "name": item_name,
-            "description": item_description,
-            "parameters": {},
-        }
-
-        parameters = item_parameters.get("parameters", {})
-        for p in parameters:
-            p_name = p.get("name", "")
-
-            p_type, p_description, p_default = None, None, None
-
-            custom = p.get("custom", None)
-            if custom is not None:
-                p_type = custom.get("annotation", None)
-                if p_type is not None:
-                    devices = custom.get("devices", "")
-                    if devices:
-                        p_type = str(p_type) + "\n" + pprint.pformat(devices)
-
-                p_description = custom.get("description", None)
-
-            if p_type is None:
-                p_type = p.get("annotation", "")
-
-            if p_description is None:
-                p_description = p.get("description", None)
-            p_description = p_description if p_description else ""
-            p_description = str(p_description)
-
-            try:
-                d_tmp = p["default"]
-                p_default = str(d_tmp)
-                if p_default:
-                    p_default = f"'{p_default}'" if isinstance(d_tmp, str) else p_default
-            except Exception:
-                p_default = ""
-
-            descriptions["parameters"][p_name] = {}
-            descriptions["parameters"][p_name]["name"] = p_name
-            descriptions["parameters"][p_name]["type"] = p_type
-            descriptions["parameters"][p_name]["description"] = p_description
-            descriptions["parameters"][p_name]["default"] = p_default
-
-        return descriptions
-
-    def format_item_parameter_descriptions(self, *, item_descriptions, use_html=True):
-        """
-        Format plan parameter descriptions obtained from ``extract_descriptions_from_plan_parameters``.
-        Returns description of the plan and each parameter represented as formatted strings
-        containing plan name/description and parameter name/type/description. The text is ready
-        for presentation in user interfaces.
-
-        TODO: potentially move this function or its modification to
-              Queue Server code (file 'profile_ops.py')
-        """
-
-        if not item_descriptions:
-            return {}
-
-        start_bold = "<b>" if use_html else ""
-        stop_bold = "</b>" if use_html else ""
-        start_it = "<i>" if use_html else ""
-        stop_it = "</i>" if use_html else ""
-        new_line = "<br>" if use_html else ""
-
-        not_available = "Description is not available"
-
-        descriptions = {}
-
-        item_name = item_descriptions.get("name", "")
-        item_description = item_descriptions.get("description", "")
-        item_description = item_description.replace("\n", new_line)
-        s = f"{start_it}Name:{stop_it} {start_bold}{item_name}{stop_bold}{new_line}{item_description}"
-
-        descriptions["description"] = s if s else not_available
-
-        descriptions["parameters"] = {}
-        for _, p in item_descriptions["parameters"].items():
-            p_name = p["name"] or "-"
-            p_type = p["type"] or "-"
-            p_default = p["default"] or "-"
-            p_description = p["description"]
-            p_description = p_description.replace("\n", new_line)
-            s = (
-                f"{start_it}Name:{stop_it} {start_bold}{p_name}{stop_bold}{new_line}"
-                f"{start_it}Type:{stop_it} {start_bold}{p_type}{stop_bold}{new_line}"
-                f"{start_it}Default:{stop_it} {start_bold}{p_default}{stop_bold}{new_line}"
-                f"{p_description}"
-            )
-
-            descriptions["parameters"][p_name] = s if s else not_available
-
-        return descriptions
 
     def get_allowed_plan_names(self):
         return list(self._allowed_plans.keys()) if self._allowed_plans else []
