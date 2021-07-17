@@ -67,7 +67,10 @@ class RemoteDispatcher(QObject):
         our_prefix = self._prefix  # local var to save an attribute lookup
         # TODO Think about back pressure.
         while True:
-            message = self._socket.recv()
+            try:
+                message = self._socket.recv(zmq.NOBLOCK)
+            except zmq.ZMQError:
+                break
             if not message:
                 break
             prefix, name, doc = message.split(b" ", 2)
@@ -94,6 +97,9 @@ class RemoteDispatcher(QObject):
         self._work_loop()
 
     def _work_loop(self):
+        if self.closed:
+            # Prevent the loop from continuing after stop is called
+            return
         worker = create_worker(
             self._receive_data,
         )
