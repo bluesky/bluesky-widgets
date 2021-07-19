@@ -2549,7 +2549,7 @@ class QtReConsoleMonitor(QWidget):
         self._text_edit.setPalette(p)
 
         # Monospace fonts are needed to display elements such as progress bars
-        self._text_edit.setFontFamily("monospaced")
+        self._text_edit.setFontFamily("monospace")
 
         self._text_edit.verticalScrollBar().sliderPressed.connect(self._slider_pressed)
         self._text_edit.verticalScrollBar().sliderReleased.connect(self._slider_released)
