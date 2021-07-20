@@ -6,7 +6,7 @@ import time
 import importlib
 
 from bluesky_live.event import EmitterGroup, Event
-from bluesky_queueserver import ZMQCommSendThreads, CommTimeoutError, bind_plan_arguments
+from bluesky_queueserver import ZMQCommSendThreads, CommTimeoutError, bind_plan_arguments, ReceiveConsoleOutput
 from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
 
 
@@ -17,6 +17,8 @@ class RunEngineClient:
     zmq_server_address : str or None
         Address of ZMQ server (Run Engine Manager). If None, then the default address defined
         in RE Manager code is used. (Default address is ``tcp://localhost:60615``).
+    zmq_subscribe_address : str or None
+        ZMQ address of the socket used by RE Manager to publishe console output.
     user_name : str
         Name of the user submitting the plan. The name is saved as a parameter of the queue item
         and identifies the user submitting the plan (may be important in multiuser systems).
@@ -27,9 +29,15 @@ class RunEngineClient:
         ``user_group_permissions.yaml`` (see documentation for RE Manager).
     """
 
-    def __init__(self, zmq_server_address=None, user_name="GUI Client", user_group="admin"):
+    def __init__(
+        self, zmq_server_address=None, zmq_subscribe_address=None, user_name="GUI Client", user_group="admin"
+    ):
         self._client = ZMQCommSendThreads(zmq_server_address=zmq_server_address)
         self.set_map_param_labels_to_keys()
+
+        # Address of remote 0MQ socket used to publish RE Manager console output
+        self._zmq_subscribe_addr = zmq_subscribe_address
+        self._stop_console_monitor = False
 
         # User name and group are hard coded for now
         self._user_name = user_name
@@ -1188,3 +1196,31 @@ class RunEngineClient:
         )
         if not response["success"]:
             raise RuntimeError(f"Failed to add plan to the queue: {response['msg']}")
+
+    # ============================================================================
+    #                        RE Manager console output
+
+    def start_console_output_monitoring(self):
+        self._stop_console_monitor = False
+        self._rco = ReceiveConsoleOutput(zmq_subscribe_addr=self._zmq_subscribe_addr, timeout=200)
+
+    def stop_console_output_monitoring(self):
+        self._stop_console_monitor = True
+
+    # def console_monitoring_thread(self, *, callback):
+    def console_monitoring_thread(self):
+
+        while True:
+            try:
+                payload = self._rco.recv()
+                time, msg = payload.get("time", None), payload.get("msg", None)
+                return time, msg
+
+            except TimeoutError:
+                pass
+            except Exception as ex:
+                print(f"Exception occurred: {ex}")
+
+            if self._stop_console_monitor:
+                del self._rco
+                break

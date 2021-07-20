@@ -29,7 +29,7 @@ from qtpy.QtWidgets import (
     QDialogButtonBox,
 )
 from qtpy.QtCore import Qt, Signal, Slot, QTimer
-from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor
+from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor, QIntValidator
 
 from bluesky_widgets.qt.threading import FunctionWorker
 from bluesky_queueserver import construct_parameters, format_text_descriptions
@@ -2526,3 +2526,190 @@ class DialogBatchUpload(QDialog):
         ind = self._cb_file_types.currentIndex()
         self._file_type = None if ind < 0 else self._file_type_list[ind]
         self.accept()
+
+
+class QtReConsoleMonitor(QWidget):
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        self._max_lines = 1000
+
+        self._text = ""
+        self._text_list = []  # List of lines
+        self._text_line = 0  # Number of current line
+        self._text_ind = 0  # Index in the current line
+        self._text_scroll_max = 0  # Total number of displayed lines
+
+        self._text_edit = QTextEdit()
+        self._text_edit.setReadOnly(True)
+        # Set background color the same as for disabled window.
+        p = self._text_edit.palette()
+        p.setColor(QPalette.Base, p.color(QPalette.Disabled, QPalette.Base))
+        self._text_edit.setPalette(p)
+
+        # Monospace fonts are needed to display elements such as progress bars
+        self._text_edit.setFontFamily("monospace")
+
+        self._text_edit.verticalScrollBar().sliderPressed.connect(self._slider_pressed)
+        self._text_edit.verticalScrollBar().sliderReleased.connect(self._slider_released)
+        self._is_slider_pressed = False
+
+        self._pb_clear = PushButtonMinimumWidth("Clear")
+        self._pb_clear.clicked.connect(self._pb_clear_clicked)
+        self._lb_max_lines = QLabel("Max. Lines:")
+        self._le_max_lines = QLineEdit()
+        self._le_max_lines.setMaximumWidth(60)
+        self._le_max_lines.setAlignment(Qt.AlignHCenter)
+        self._le_max_lines.setText(f"{self._max_lines}")
+        self._le_max_lines.editingFinished.connect(self._le_max_lines_editing_finished)
+
+        self._le_max_lines_min = 10
+        self._le_max_lines_max = 10000
+        le_max_lines_validator = QIntValidator()
+        self._le_max_lines.setValidator(le_max_lines_validator)
+
+        self._autoscroll_enabled = True
+        self._cb_autoscroll = QCheckBox("Autoscroll")
+        self._cb_autoscroll.setCheckState(Qt.Checked)
+        self._cb_autoscroll.stateChanged.connect(self._cb_pause_autoscroll_state_changed)
+
+        vbox = QVBoxLayout()
+        hbox = QHBoxLayout()
+        hbox.addWidget(self._cb_autoscroll)
+        hbox.addStretch()
+        hbox.addWidget(self._lb_max_lines)
+        hbox.addWidget(self._le_max_lines)
+        hbox.addWidget(self._pb_clear)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self._text_edit)
+        self.setLayout(vbox)
+
+        self.model = model
+        self.model.start_console_output_monitoring()
+        self._start_thread()
+
+    def _finished_receiving_console_output(self):
+        self._start_thread()
+
+    def _update_console_output(self, result):
+        time, msg = result
+
+        pattern_new_line = "\n"
+        pattern_cr = "\r"
+        pattern_up_one_line = "\x1B\x5B\x41"  # ESC [#A
+
+        patterns = {"new_line": pattern_new_line, "cr": pattern_cr, "one_line_up": pattern_up_one_line}
+
+        while msg:
+            indices = {k: msg.find(v) for k, v in patterns.items()}
+            indices_nonzero = [_ for _ in indices.values() if (_ >= 0)]
+            next_ind = min(indices_nonzero) if indices_nonzero else len(msg)
+
+            # The following algorithm requires that there is at least one line in the list.
+            if not self._text_list:
+                self._text_list = [""]
+
+            if next_ind != 0:
+                # Add a line to the current line and position
+                substr = msg[:next_ind]
+                msg = msg[next_ind:]
+
+                # Extend the current line with spaces if needed
+                line_len = len(self._text_list[self._text_line])
+                if line_len < self._text_ind:
+                    self._text_list[self._text_line] += " " * self._text_ind - line_len
+
+                line = self._text_list[self._text_line]
+                self._text_list[self._text_line] = (
+                    line[: self._text_ind] + substr + line[self._text_ind + len(substr) :]
+                )
+
+            elif indices["new_line"] == 0:
+                self._text_line += 1
+                if self._text_line >= len(self._text_list):
+                    self._text_list.insert(self._text_line, "")
+                self._text_ind = 0
+                msg = msg[len(patterns["new_line"]) :]
+
+            elif indices["cr"] == 0:
+                self._text_ind = 0
+                msg = msg[len(patterns["cr"]) :]
+
+            elif indices["one_line_up"] == 0:
+                if self._text_line:
+                    self._text_line -= 1
+                msg = msg[len(patterns["one_line_up"]) :]
+
+        self._adjust_text_list_size()
+        self._display_text()
+
+    def _display_text(self):
+        if self._is_slider_pressed:
+            return
+
+        sval = self._text_edit.verticalScrollBar().value()
+        smax = self._text_edit.verticalScrollBar().maximum()
+        te_scrolled_to_bottom = (sval == smax) and self._autoscroll_enabled
+
+        if self._text_list and self._text_list[-1] == "":
+            self._text = "\n".join(self._text_list[:-1])
+        else:
+            self._text = "\n".join(self._text_list)
+        self._text_edit.setText(self._text)
+
+        scroll_max_new = self._text_edit.verticalScrollBar().maximum()
+        sval_new = scroll_max_new if te_scrolled_to_bottom else sval
+        self._text_edit.verticalScrollBar().setValue(sval_new)
+
+    def _pb_clear_clicked(self):
+        self._text = ""
+        self._text_list = []  # List of lines
+        self._text_line = 0  # Number of current line
+        self._text_ind = 0  # Index in the current line
+        self._text_scroll_max = 0  # Total number of displayed lines
+        self._text_edit.setText(self._text)
+
+    def _le_max_lines_editing_finished(self):
+        v = int(self._le_max_lines.text())
+        v = max(v, self._le_max_lines_min)
+        v = min(v, self._le_max_lines_max)
+        self._le_max_lines.setText(f"{v}")
+
+        if v != self._max_lines:
+            self._max_lines = v
+            print(f"v={v}")
+            self._adjust_text_list_size()
+            self._display_text()
+
+    def _cb_pause_autoscroll_state_changed(self, state):
+        self._autoscroll_enabled = state == Qt.Checked
+
+    def _slider_pressed(self):
+        self._is_slider_pressed = True
+
+    def _slider_released(self):
+        self._is_slider_pressed = False
+        self._adjust_text_list_size()
+        self._display_text()
+
+    def _adjust_text_list_size(self):
+        # There still should be some limit to the number of lines even if scrolling is paused
+        max_lines = self._max_lines if self._autoscroll_enabled else self._le_max_lines_max + 100
+
+        if len(self._text_list) > max_lines:
+            # Remove extra lines from the beginning of the list
+            n_remove = len(self._text_list) - max_lines
+            # In majority of cases only 1 (or a few) elements are removed
+            for _ in range(n_remove):
+                self._text_list.pop(0)
+            self._text_line = max(self._text_line - n_remove, 0)
+
+    def _start_thread(self):
+        self._thread = FunctionWorker(self.model.console_monitoring_thread)
+        self._thread.returned.connect(self._update_console_output)
+        self._thread.finished.connect(self._finished_receiving_console_output)
+        self._thread.start()
+
+    def __del__(self):
+        self.model.stop_console_output_monitoring()
