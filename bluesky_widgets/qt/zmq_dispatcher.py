@@ -7,7 +7,7 @@ from ..qt.threading import create_worker
 from qtpy.QtCore import QTimer, QObject
 
 
-LOADING_LATENCY = 0.01
+LOADING_LATENCY = 10 # msec
 
 
 class RemoteDispatcher(QObject):
@@ -58,7 +58,6 @@ class RemoteDispatcher(QObject):
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
         self.closed = False
-        self._timer = QTimer(self)
         self._dispatcher = Dispatcher()
         self.subscribe = self._dispatcher.subscribe
         self._waiting_for_start = True
@@ -104,7 +103,7 @@ class RemoteDispatcher(QObject):
             self._receive_data,
         )
         # Schedule this method to be run again after a brief wait.
-        worker.finished.connect(lambda: self._timer.singleShot(LOADING_LATENCY, self._work_loop))
+        worker.finished.connect(lambda: QTimer.singleShot(LOADING_LATENCY, self._work_loop))
         worker.yielded.connect(self._process_result)
         worker.start()
 
