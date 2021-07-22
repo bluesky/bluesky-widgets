@@ -7,7 +7,7 @@ from ..qt.threading import create_worker
 from qtpy.QtCore import QTimer, QObject
 
 
-LOADING_LATENCY = 10 # msec
+LOADING_LATENCY = 10  # msec
 
 
 class RemoteDispatcher(QObject):
