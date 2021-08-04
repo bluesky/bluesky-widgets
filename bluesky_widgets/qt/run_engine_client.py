@@ -1697,7 +1697,7 @@ class _QtRePlanEditorTable(QTableWidget):
 
         # Collect 'args'
         args = []
-        if n_var_pos > 0:
+        if n_var_pos >= 0:
             if not isinstance(params[n_var_pos]["value"], (list, tuple)):
                 raise ValueError(f"Invalid type of VAR_POSITIONAL argument: {params[n_var_pos]['value']}")
             for n in range(n_var_pos):
@@ -1714,7 +1714,7 @@ class _QtRePlanEditorTable(QTableWidget):
             if params[n]["is_value_set"] and (params[n]["value"] != inspect.Parameter.empty):
                 kwargs[params[n]["parameters"].name] = params[n]["value"]
 
-        if n_var_kwd > 0:
+        if n_var_kwd >= 0:
             if not isinstance(params[n_var_kwd]["value"], dict):
                 raise ValueError(f"Invalid type of VAR_KEYWORD argument: {params[n_var_kwd]['value']}")
             kwargs.update(params[n_var_kwd]["value"])
