@@ -9,7 +9,7 @@ about their Artists.
 import collections
 import uuid as uuid_module
 
-from ..utils.event import EmitterGroup, Event
+from ..utils.event import EmitterGroup, Event, debounce
 from ..utils.list import EventedList
 from ..utils.dict_view import UpdateOnlyDict, DictView
 
@@ -435,7 +435,7 @@ class ArtistSpec(BaseSpec):
         live = run_is_live_and_not_completed(run)
         line = cls(update, label=label, style=style, live=live)
         if live:
-            run.events.new_data.connect(line.events.new_data)
+            run.events.new_data.connect(debounce(line.events.new_data, wait=1))
             run.events.completed.connect(line.events.completed)
         return line
 
