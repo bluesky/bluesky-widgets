@@ -101,6 +101,7 @@ class NapariDatabroker(napari.Viewer):
 
 with napari.gui_qt():
     viewer = NapariDatabroker()
+    viewer.grid.enabled = True
     viewer.window.add_dock_widget(QtSearchListWithButton(viewer.searches), area="right")
 
     # Initialize with a two search tabs: one with some generated example data...
