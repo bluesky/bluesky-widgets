@@ -1,4 +1,5 @@
 import pickle
+import time
 
 from bluesky.run_engine import Dispatcher, DocumentNames
 import zmq
@@ -7,7 +8,7 @@ from ..qt.threading import create_worker
 from qtpy.QtCore import QTimer, QObject
 
 
-LOADING_LATENCY = 0.01
+LOADING_LATENCY = 0.01  # sec
 
 
 class RemoteDispatcher(QObject):
@@ -58,7 +59,6 @@ class RemoteDispatcher(QObject):
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
         self.closed = False
-        self._timer = QTimer(self)
         self._dispatcher = Dispatcher()
         self.subscribe = self._dispatcher.subscribe
         self._waiting_for_start = True
@@ -70,9 +70,13 @@ class RemoteDispatcher(QObject):
             try:
                 message = self._socket.recv(zmq.NOBLOCK)
             except zmq.ZMQError:
-                break
+                time.sleep(LOADING_LATENCY)
+                yield
+                continue
             if not message:
-                break
+                time.sleep(LOADING_LATENCY)
+                yield
+                continue
             prefix, name, doc = message.split(b" ", 2)
             name = name.decode()
             if (not our_prefix) or prefix == our_prefix:
@@ -83,7 +87,9 @@ class RemoteDispatcher(QObject):
                         # We subscribed midstream and are seeing documents for
                         # which we do not have the full run. Wait for a 'start'
                         # doc.
-                        return
+                        time.sleep(LOADING_LATENCY)
+                        yield
+                        continue
                 doc = self._deserializer(doc)
             yield name, doc
 
@@ -104,7 +110,7 @@ class RemoteDispatcher(QObject):
             self._receive_data,
         )
         # Schedule this method to be run again after a brief wait.
-        worker.finished.connect(lambda: self._timer.singleShot(LOADING_LATENCY, self._work_loop))
+        worker.finished.connect(lambda: QTimer.singleShot(int(LOADING_LATENCY * 1000), self._work_loop))
         worker.yielded.connect(self._process_result)
         worker.start()
 
