@@ -15,10 +15,5 @@ Fixed
 - Increased the timer for recieving data in the zmq dispatcher
   to prevent high memory and CPU usage (#150).
 
-Changed
--------
-
-- The ``LOADING_LATENCY`` for the zmq dispatcher is now in msec (#150).
-
 Initial Release (2020-07-17)
 ============================
