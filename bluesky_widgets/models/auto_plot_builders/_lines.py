@@ -26,6 +26,7 @@ class AutoLines(AutoPlotter):
         # Map (stream_name, x, tuple_of_tuple_of_ys) to line of Lines instances for each group of y.
         self._lines_instances = {}
         self._max_runs = max_runs
+        self.figures.events.removed.connect(self._on_figure_removed)
 
     @property
     def max_runs(self):
@@ -38,6 +39,15 @@ class AutoLines(AutoPlotter):
                 for builder in builders:
                     builder.max_runs = value
         self._max_runs = value
+
+    def _on_figure_removed(self, event):
+        super()._on_figure_removed(event)
+        figure = event.item
+        for key, plot_builders in self._lines_instances.items():
+            for plot_builder in plot_builders:
+                if figure == plot_builder.figure:
+                    key_to_remove = key
+        self._lines_instances.pop(key_to_remove)
 
     def handle_new_stream(self, run, stream_name, **kwargs):
         """
