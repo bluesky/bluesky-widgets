@@ -816,7 +816,8 @@ class RunEngineClient:
                 )
             self.selected_queue_item_uids = sel_item_uids
 
-    def queue_upload_spreadsheet(self, *, file_path, data_type=None):
+    def queue_upload_spreadsheet(self, *, file_path, data_type=None, **kwargs):
+        # ``kwargs``` are passed to the custom spreadsheet processing function
         # TODO: significant part of this function is duplication of the code from
         #   ``bluesky_queueserver.server.server``. Implement reusable function as part of
         #   Queue Server API.
@@ -849,7 +850,7 @@ class RunEngineClient:
                 # Try applying  the custom processing function. Some additional useful data is passed to
                 #   the function. Unnecessary parameters can be ignored.
                 item_list = custom_code_module.spreadsheet_to_plan_list(
-                    spreadsheet_file=f, file_name=f_name, data_type=data_type, user=self._user_name
+                    spreadsheet_file=f, file_name=f_name, data_type=data_type, user=self._user_name, **kwargs
                 )
                 # The function is expected to return None if it rejects the file (based on 'data_type').
                 #   Then try to apply the default processing function.
