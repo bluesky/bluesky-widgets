@@ -74,6 +74,10 @@ class RunEngineClient:
         self.qserver_custom_module_name = None
         # List of spreadsheet data types
         self.plan_spreadsheet_data_types = None
+        # Dictionary of additional parameters: key - parameter name, value - a dictionary with
+        #   the following key/value pairs: "text" - text description of the parameter to use in the form,
+        #   "values" -  a list or a tuple of values, "type" - type of the value.
+        self.plan_spreadsheet_additional_parameters = {}
 
         # TODO: in the future the list of allowed instructions should be requested from the server
         self._allowed_instructions = {
