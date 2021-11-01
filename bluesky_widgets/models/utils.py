@@ -94,13 +94,17 @@ def construct_namespace(run, stream_names):
     """
     namespace = dict(_base_namespace)  # shallow copy
     with lock_if_live(run):
+        run_start_time = run.metadata["start"]["time"]
         # Add columns from streams in stream_names. Earlier entries will get
         # precedence.
         for stream_name in reversed(stream_names):
             ds = run[stream_name].to_dask()
             namespace.update({column: ds[column] for column in ds})
             namespace.update({column: ds[column] for column in ds.coords})
+        namespace["time"] = namespace["time"] - run_start_time
         namespace.update({stream_name: run[stream_name].to_dask() for stream_name in stream_names})
+        for stream_name in stream_names:
+            namespace[stream_name]["time"] = namespace[stream_name]["time"] - run_start_time
     namespace.update({"run": run})
     return namespace
 
