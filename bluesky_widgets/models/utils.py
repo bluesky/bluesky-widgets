@@ -101,7 +101,8 @@ def construct_namespace(run, stream_names):
             ds = run[stream_name].to_dask()
             namespace.update({column: ds[column] for column in ds})
             namespace.update({column: ds[column] for column in ds.coords})
-        namespace["time"] = namespace["time"] - run_start_time
+        if "time" in namespace:
+            namespace["time"] = namespace["time"] - run_start_time
         namespace.update({stream_name: run[stream_name].to_dask() for stream_name in stream_names})
         for stream_name in stream_names:
             namespace[stream_name]["time"] = namespace[stream_name]["time"] - run_start_time
