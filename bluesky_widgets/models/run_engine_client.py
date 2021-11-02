@@ -74,6 +74,10 @@ class RunEngineClient:
         self.qserver_custom_module_name = None
         # List of spreadsheet data types
         self.plan_spreadsheet_data_types = None
+        # Dictionary of additional parameters: key - parameter name, value - a dictionary with
+        #   the following key/value pairs: "text" - text description of the parameter to use in the form,
+        #   "values" -  a list or a tuple of values, "type" - type of the value.
+        self.plan_spreadsheet_additional_parameters = {}
 
         # TODO: in the future the list of allowed instructions should be requested from the server
         self._allowed_instructions = {
@@ -816,7 +820,8 @@ class RunEngineClient:
                 )
             self.selected_queue_item_uids = sel_item_uids
 
-    def queue_upload_spreadsheet(self, *, file_path, data_type=None):
+    def queue_upload_spreadsheet(self, *, file_path, data_type=None, **kwargs):
+        # ``kwargs``` are passed to the custom spreadsheet processing function
         # TODO: significant part of this function is duplication of the code from
         #   ``bluesky_queueserver.server.server``. Implement reusable function as part of
         #   Queue Server API.
@@ -828,6 +833,7 @@ class RunEngineClient:
         with open(file_path, "rb") as f:
             custom_code_module_name = self.qserver_custom_module_name
 
+            custom_code_module = None
             if custom_code_module_name:
                 try:
                     print(f"Importing custom module '{custom_code_module_name}' ...")
@@ -836,7 +842,6 @@ class RunEngineClient:
                     print(f"Module '{custom_code_module_name}' was imported successfully.")
                     # logger.info("Module '%s' was imported successfully.", custom_code_module_name)
                 except Exception as ex:
-                    custom_code_module = None
                     print(f"Failed to import custom instrument module '{custom_code_module_name}': {ex}")
                     # logger.error("Failed to import custom instrument module '%s':
                     # %s", custom_code_module_name, ex)
@@ -849,7 +854,7 @@ class RunEngineClient:
                 # Try applying  the custom processing function. Some additional useful data is passed to
                 #   the function. Unnecessary parameters can be ignored.
                 item_list = custom_code_module.spreadsheet_to_plan_list(
-                    spreadsheet_file=f, file_name=f_name, data_type=data_type, user=self._user_name
+                    spreadsheet_file=f, file_name=f_name, data_type=data_type, user=self._user_name, **kwargs
                 )
                 # The function is expected to return None if it rejects the file (based on 'data_type').
                 #   Then try to apply the default processing function.

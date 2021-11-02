@@ -27,6 +27,7 @@ from qtpy.QtWidgets import (
     QDialog,
     QFileDialog,
     QDialogButtonBox,
+    QFormLayout,
 )
 from qtpy.QtCore import Qt, Signal, Slot, QTimer
 from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor, QIntValidator
@@ -2318,14 +2319,18 @@ class _QtReEditor(QWidget):
         dlg = DialogBatchUpload(
             current_dir=self.model.current_dir,
             file_type_list=self.model.plan_spreadsheet_data_types,
+            additional_parameters=self.model.plan_spreadsheet_additional_parameters,
         )
         res = dlg.exec()
         if res:
             self.model.current_dir = dlg.current_dir
             file_path = dlg.file_path
             data_type = dlg.file_type
+            additional_parameters = dlg.additional_parameters
             try:
-                self.model.queue_upload_spreadsheet(file_path=file_path, data_type=data_type)
+                self.model.queue_upload_spreadsheet(
+                    file_path=file_path, data_type=data_type, **additional_parameters
+                )
             except Exception as ex:
                 print(f"Failed to load plans from spreadsheet: {ex}")
 
@@ -2435,7 +2440,7 @@ class QtRePlanEditor(QWidget):
 
 
 class DialogBatchUpload(QDialog):
-    def __init__(self, parent=None, *, current_dir=None, file_type_list=None):
+    def __init__(self, parent=None, *, current_dir=None, file_type_list=None, additional_parameters=None):
 
         super().__init__(parent)
         self._current_dir = current_dir
@@ -2443,6 +2448,8 @@ class DialogBatchUpload(QDialog):
         self._file_path = None
         self._file_type_list = file_type_list or []
         self._file_type = None
+        self._additional_parameters = additional_parameters
+        self._additional_parameters_set = {}
 
         self.setWindowTitle("Batch Upload")
 
@@ -2470,6 +2477,26 @@ class DialogBatchUpload(QDialog):
             hbox.addWidget(self._cb_file_types, stretch=1)
             hbox.addStretch(1)
             vbox.addLayout(hbox)
+
+        self._cb_additional_params = {}
+
+        if self._additional_parameters:
+            form = QFormLayout()
+            for p_name, p_value in self._additional_parameters.items():
+                try:
+                    if ("values" in p_value) and isinstance(p_value["values"], (list, tuple)):
+                        lb = QLabel(f"{p_value['text']}:")
+                        cb = QComboBox()
+                        cb.addItems([str(_) for _ in p_value["values"]])
+                        self._cb_additional_params[p_name] = cb
+                        form.addRow(lb, cb)
+                    else:
+                        raise ValueError("Dialog box parameter value '{p_name}={p_value}' has incorrect form.")
+                except Exception as ex:
+                    print(f"Error occurred while processing parameter '{p_name}={p_value}': {ex}")
+
+            if self._cb_additional_params:
+                vbox.addLayout(form)
 
         self.grpUploadSpreadsheet.setLayout(vbox)
 
@@ -2504,6 +2531,10 @@ class DialogBatchUpload(QDialog):
     def file_type(self):
         return self._file_type
 
+    @property
+    def additional_parameters(self):
+        return self._additional_parameters_set
+
     def _pb_open_file_clicked(self):
         if not self._current_dir:
             self._current_dir = os.getcwd()
@@ -2525,6 +2556,14 @@ class DialogBatchUpload(QDialog):
     def _pb_ok_clicked(self):
         ind = self._cb_file_types.currentIndex()
         self._file_type = None if ind < 0 else self._file_type_list[ind]
+
+        self._additional_parameters_set = {}
+        for p, p_cb in self._cb_additional_params.items():
+            ind = p_cb.currentIndex()
+            v = None if ind < 0 else self._additional_parameters[p]["values"][ind]
+            if v is not None:
+                self._additional_parameters_set[p] = v
+
         self.accept()
 
 
