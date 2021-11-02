@@ -67,3 +67,22 @@ def test_decrease_max_runs():
     assert len(model.figures[0].axes[0].artists) == MAX_RUNS
 
     view.close()
+
+
+def test_removed_figures():
+    "Test that a new figure is created after closing a tab/removing a figure."
+    model = AutoLines(max_runs=MAX_RUNS)
+    view = HeadlessFigures(model.figures)
+    model.add_run(runs[0])  # One figure, 3 plot_builders
+    assert len(model.plot_builders) == 3
+    assert len(model.figures) == 1
+    # Remove the figure. No figures or plot_builders should be left.
+    del model.figures[0]
+    assert len(model.plot_builders) == 0
+    assert len(model.figures) == 0
+    # Add the runs back and a new figure should be created.
+    model.add_run(runs[0])
+    assert len(model.plot_builders) == 3
+    assert len(model.figures) == 1
+
+    view.close()
