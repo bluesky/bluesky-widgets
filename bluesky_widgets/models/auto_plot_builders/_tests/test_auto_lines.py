@@ -84,3 +84,5 @@ def test_removed_figures():
     model.add_run(runs[0])
     assert len(model.plot_builders) == 3
     assert len(model.figures) == 1
+
+    view.close()
