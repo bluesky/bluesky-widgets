@@ -36,6 +36,7 @@ def gui_qt(app_name):
         # if this is the first time the Qt app is being instantiated, we set
         # the name, so that we know whether to raise_ in Window.show()
         app = QApplication([app_name])
+        app.setApplicationName(app_name)
         global _our_app_name
         _our_app_name = app_name
     else:
