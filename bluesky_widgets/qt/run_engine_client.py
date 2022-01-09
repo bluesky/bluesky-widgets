@@ -169,6 +169,7 @@ class QtReManagerConnection(QWidget):
         # Thread used to initiate periodic status updates
         self._thread = None
         self.updates_activated = False
+        self._deactivate_updates = False
         self.update_period = 1  # Status update period in seconds
 
         self._update_widget_states()
@@ -176,8 +177,10 @@ class QtReManagerConnection(QWidget):
         self.signal_update_widget.connect(self.slot_update_widgets)
 
     def _update_widget_states(self):
-        self._pb_re_manager_connect.setEnabled(not self.updates_activated)
-        self._pb_re_manager_disconnect.setEnabled(self.updates_activated)
+        connect_active = not self.updates_activated and not self._deactivate_updates
+        disconnect_active = self.updates_activated and not self._deactivate_updates
+        self._pb_re_manager_connect.setEnabled(connect_active)
+        self._pb_re_manager_disconnect.setEnabled(disconnect_active)
 
         # We don't know if the server is online or offline:
         self._lb_connected.setText("-----")
@@ -198,13 +201,15 @@ class QtReManagerConnection(QWidget):
 
     def _pb_re_manager_connect_clicked(self):
         self.updates_activated = True
+        self._deactivate_updates = False
         self.model.clear_connection_status()
         self._update_widget_states()
         self.model.manager_connecting_ops()
         self._start_thread()
 
     def _pb_re_manager_disconnect_clicked(self):
-        self.updates_activated = False
+        self._deactivate_updates = True
+        self._update_widget_states()
 
     def _start_thread(self):
         self._thread = FunctionWorker(self._reload_status)
@@ -212,10 +217,12 @@ class QtReManagerConnection(QWidget):
         self._thread.start()
 
     def _reload_complete(self):
-        if self.updates_activated:
+        if not self._deactivate_updates:
             self._start_thread()
         else:
             self.model.clear_connection_status()
+            self.updates_activated = False
+            self._deactivate_updates = False
             self._update_widget_states()
 
     def _reload_status(self):
