@@ -685,6 +685,7 @@ class QtRePlanQueue(QWidget):
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
+        self._monitor_mode = False
 
         # Set True to block processing of table selection change events
         self._block_table_selection_processing = False
@@ -800,6 +801,20 @@ class QtRePlanQueue(QWidget):
         self._update_button_states()
 
     @property
+    def monitor_mode(self):
+        return self._monitor_mode
+
+    @monitor_mode.setter
+    def monitor_mode(self, monitor):
+        self._monitor_mode = bool(monitor)
+        self._update_widgets()
+
+        if monitor:
+            self._table.cellDoubleClicked.disconnect(self._on_table_cell_double_clicked)
+        else:
+            self._table.cellDoubleClicked.connect(self._on_table_cell_double_clicked)
+
+    @property
     def registered_item_editors(self):
         """
         Returns reference to the list of registered plan editors. The reference is not editable,
@@ -827,18 +842,25 @@ class QtRePlanQueue(QWidget):
         is_connected = bool(event.is_connected)
         self.signal_update_widgets.emit(is_connected)
 
-    @Slot(bool)
-    def slot_update_widgets(self, is_connected):
+    def _update_widgets(self, is_connected=None):
+        if is_connected is None:
+            is_connected = bool(self.model.re_manager_connected)
+
         # Disable drops if there is no connection to RE Manager
-        self._table.setDragEnabled(is_connected)
-        self._table.setAcceptDrops(is_connected)
+        self._table.setDragEnabled(is_connected and not self._monitor_mode)
+        self._table.setAcceptDrops(is_connected and not self._monitor_mode)
 
         self._update_button_states()
+
+    @Slot(bool)
+    def slot_update_widgets(self, is_connected):
+        self._update_widgets(is_connected)
 
     def _update_button_states(self):
         is_connected = bool(self.model.re_manager_connected)
         status = self.model.re_manager_status
         loop_mode_on = status["plan_queue_mode"]["loop"] if status else False
+        mon = self._monitor_mode
 
         n_items = self._n_table_items
         selected_items_pos = self._selected_items_pos
@@ -847,19 +869,19 @@ class QtRePlanQueue(QWidget):
         sel_top = len(selected_items_pos) and (selected_items_pos[0] == 0)
         sel_bottom = len(selected_items_pos) and (selected_items_pos[-1] == n_items - 1)
 
-        self._pb_move_up.setEnabled(is_connected and is_sel and not sel_top)
-        self._pb_move_down.setEnabled(is_connected and is_sel and not sel_bottom)
-        self._pb_move_to_top.setEnabled(is_connected and is_sel and not sel_top)
-        self._pb_move_to_bottom.setEnabled(is_connected and is_sel and not sel_bottom)
+        self._pb_move_up.setEnabled(is_connected and not mon and is_sel and not sel_top)
+        self._pb_move_down.setEnabled(is_connected and not mon and is_sel and not sel_bottom)
+        self._pb_move_to_top.setEnabled(is_connected and not mon and is_sel and not sel_top)
+        self._pb_move_to_bottom.setEnabled(is_connected and not mon and is_sel and not sel_bottom)
 
-        self._pb_clear_queue.setEnabled(is_connected and n_items)
+        self._pb_clear_queue.setEnabled(is_connected and not mon and n_items)
         self._pb_deselect.setEnabled(is_sel)
 
-        self._pb_loop_on.setEnabled(is_connected)
+        self._pb_loop_on.setEnabled(is_connected and not mon)
         self._pb_loop_on.setChecked(loop_mode_on)
 
-        self._pb_delete_plan.setEnabled(is_connected and is_sel)
-        self._pb_duplicate_plan.setEnabled(is_connected and is_sel)
+        self._pb_delete_plan.setEnabled(is_connected and not mon and is_sel)
+        self._pb_duplicate_plan.setEnabled(is_connected and not mon and is_sel)
 
     def on_vertical_scrollbar_value_changed(self, value):
         max = self._table.verticalScrollBar().maximum()
@@ -1095,6 +1117,7 @@ class QtRePlanHistory(QWidget):
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
+        self._monitor_mode = False
 
         # Set True to block processing of table selection change events
         self._block_table_selection_processing = False
@@ -1174,6 +1197,15 @@ class QtRePlanHistory(QWidget):
 
         self._update_button_states()
 
+    @property
+    def monitor_mode(self):
+        return self._monitor_mode
+
+    @monitor_mode.setter
+    def monitor_mode(self, monitor):
+        self._monitor_mode = bool(monitor)
+        self._update_button_states()
+
     def on_vertical_scrollbar_value_changed(self, value):
         max = self._table.verticalScrollBar().maximum()
         self._table_scrolled_to_bottom = value == max
@@ -1193,12 +1225,13 @@ class QtRePlanHistory(QWidget):
         is_connected = bool(self.model.re_manager_connected)
         n_items = self._n_table_items
         n_selected_items = self._selected_items_pos
+        mon = self._monitor_mode
 
         is_sel = bool(n_selected_items)
 
-        self._pb_copy_to_queue.setEnabled(is_connected and is_sel)
+        self._pb_copy_to_queue.setEnabled(is_connected and not mon and is_sel)
         self._pb_deselect_all.setEnabled(is_sel)
-        self._pb_clear_history.setEnabled(is_connected and n_items)
+        self._pb_clear_history.setEnabled(is_connected and not mon and n_items)
 
     def on_plan_history_changed(self, event):
         plan_history_items = event.plan_history_items
@@ -1334,6 +1367,9 @@ class QtReRunningPlan(QWidget):
     def __init__(self, model, parent=None):
         super().__init__(parent)
         self.model = model
+
+        self._monitor_mode = False
+
         self._text_edit = QTextEdit()
         self._text_edit.setReadOnly(True)
         # Set background color the same as for disabled window.
@@ -1342,7 +1378,6 @@ class QtReRunningPlan(QWidget):
         self._text_edit.setPalette(p)
 
         self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
-
         self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
 
         vbox = QVBoxLayout()
@@ -1363,6 +1398,15 @@ class QtReRunningPlan(QWidget):
 
         self.model.events.status_changed.connect(self.on_update_widgets)
         self.signal_update_widgets.connect(self.slot_update_widgets)
+
+    @property
+    def monitor_mode(self):
+        return self._monitor_mode
+
+    @monitor_mode.setter
+    def monitor_mode(self, monitor):
+        self._monitor_mode = bool(monitor)
+        self._update_button_states()
 
     def on_running_item_changed(self, event):
         running_item = event.running_item
@@ -1449,7 +1493,7 @@ class QtReRunningPlan(QWidget):
         is_connected = bool(self.model.re_manager_connected)
         is_plan_running = self._is_item_running
 
-        self._pb_copy_to_queue.setEnabled(is_connected and is_plan_running)
+        self._pb_copy_to_queue.setEnabled(is_connected and is_plan_running and not self._monitor_mode)
 
     def _pb_copy_to_queue_clicked(self):
         try:
@@ -2576,12 +2620,14 @@ class QtReConsoleMonitor(QWidget):
 
         self._text = ""
         self._text_list = []  # List of lines
+        self._text_updated = False  # Indicates that the new text data was received
         self._text_line = 0  # Number of current line
         self._text_ind = 0  # Index in the current line
         self._text_scroll_max = 0  # Total number of displayed lines
 
         self._text_edit = QTextEdit()
         self._text_edit.setReadOnly(True)
+
         # Set background color the same as for disabled window.
         p = self._text_edit.palette()
         p.setColor(QPalette.Base, p.color(QPalette.Disabled, QPalette.Base))
@@ -2593,6 +2639,7 @@ class QtReConsoleMonitor(QWidget):
         self._text_edit.verticalScrollBar().sliderPressed.connect(self._slider_pressed)
         self._text_edit.verticalScrollBar().sliderReleased.connect(self._slider_released)
         self._is_slider_pressed = False
+        self._te_scrolled_to_bottom = True
 
         self._pb_clear = PushButtonMinimumWidth("Clear")
         self._pb_clear.clicked.connect(self._pb_clear_clicked)
@@ -2627,11 +2674,21 @@ class QtReConsoleMonitor(QWidget):
         self.model = model
         self.model.start_console_output_monitoring()
         self._start_thread()
+        self._start_timer()
+
+    def _start_timer(self):
+        # Timer is used to initiate periodic updates of the QTextEdit widget
+        QTimer.singleShot(200, self._update_console_output)
 
     def _finished_receiving_console_output(self):
         self._start_thread()
 
-    def _update_console_output(self, result):
+    def _process_new_console_output(self, result):
+        """
+        The function is processing incoming messages and updates ``self._text_list``.
+        It does not update the widget after each message, because the rate of the messages
+        may be very high.
+        """
         time, msg = result
 
         pattern_new_line = "\n"
@@ -2680,16 +2737,21 @@ class QtReConsoleMonitor(QWidget):
                     self._text_line -= 1
                 msg = msg[len(patterns["one_line_up"]) :]
 
-        self._adjust_text_list_size()
-        self._display_text()
+        self._text_updated = True
+
+    def _update_console_output(self):
+        if self._text_updated:
+            self._text_updated = False
+            self._adjust_text_list_size()
+            self._display_text()
+
+        self._start_timer()
 
     def _display_text(self):
         if self._is_slider_pressed:
             return
 
         sval = self._text_edit.verticalScrollBar().value()
-        smax = self._text_edit.verticalScrollBar().maximum()
-        te_scrolled_to_bottom = (sval == smax) and self._autoscroll_enabled
 
         if self._text_list and self._text_list[-1] == "":
             self._text = "\n".join(self._text_list[:-1])
@@ -2697,9 +2759,12 @@ class QtReConsoleMonitor(QWidget):
             self._text = "\n".join(self._text_list)
         self._text_edit.setText(self._text)
 
-        scroll_max_new = self._text_edit.verticalScrollBar().maximum()
-        sval_new = scroll_max_new if te_scrolled_to_bottom else sval
-        self._text_edit.verticalScrollBar().setValue(sval_new)
+        def set_scroller():
+            scroll_max_new = self._text_edit.verticalScrollBar().maximum()
+            sval_new = scroll_max_new if self._te_scrolled_to_bottom else sval
+            self._text_edit.verticalScrollBar().setValue(sval_new)
+
+        set_scroller()
 
     def _pb_clear_clicked(self):
         self._text = ""
@@ -2709,6 +2774,9 @@ class QtReConsoleMonitor(QWidget):
         self._text_scroll_max = 0  # Total number of displayed lines
         self._text_edit.setText(self._text)
 
+        # Assume that we want to keep displaying text at the bottom if autoscroll is enabled
+        self._te_scrolled_to_bottom = self._autoscroll_enabled
+
     def _le_max_lines_editing_finished(self):
         v = int(self._le_max_lines.text())
         v = max(v, self._le_max_lines_min)
@@ -2717,17 +2785,24 @@ class QtReConsoleMonitor(QWidget):
 
         if v != self._max_lines:
             self._max_lines = v
-            print(f"v={v}")
             self._adjust_text_list_size()
             self._display_text()
 
     def _cb_pause_autoscroll_state_changed(self, state):
         self._autoscroll_enabled = state == Qt.Checked
+        self._te_scrolled_to_bottom = self._is_slider_at_bottom()
 
     def _slider_pressed(self):
         self._is_slider_pressed = True
 
+    def _is_slider_at_bottom(self):
+        sval = self._text_edit.verticalScrollBar().value()
+        smax = self._text_edit.verticalScrollBar().maximum()
+        return (sval == smax) and self._autoscroll_enabled
+
     def _slider_released(self):
+        self._te_scrolled_to_bottom = self._is_slider_at_bottom()
+
         self._is_slider_pressed = False
         self._adjust_text_list_size()
         self._display_text()
@@ -2744,9 +2819,12 @@ class QtReConsoleMonitor(QWidget):
                 self._text_list.pop(0)
             self._text_line = max(self._text_line - n_remove, 0)
 
+    def resizeEvent(self, event):
+        self._display_text()
+
     def _start_thread(self):
         self._thread = FunctionWorker(self.model.console_monitoring_thread)
-        self._thread.returned.connect(self._update_console_output)
+        self._thread.returned.connect(self._process_new_console_output)
         self._thread.finished.connect(self._finished_receiving_console_output)
         self._thread.start()
 
