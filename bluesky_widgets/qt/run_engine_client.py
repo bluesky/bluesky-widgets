@@ -176,6 +176,8 @@ class QtReManagerConnection(QWidget):
         self.model.events.status_changed.connect(self.on_update_widgets)
         self.signal_update_widget.connect(self.slot_update_widgets)
 
+        self._first_connection = False
+
     def _update_widget_states(self):
         connect_active = not self.updates_activated and not self._deactivate_updates
         disconnect_active = self.updates_activated and not self._deactivate_updates
@@ -204,7 +206,18 @@ class QtReManagerConnection(QWidget):
         self._deactivate_updates = False
         self.model.clear_connection_status()
         self._update_widget_states()
-        self.model.manager_connecting_ops()
+
+        # TODO: If the history contains large number of plans and the program is
+        #   disconnected and connected again (Disconnect then Connect buttons), the program
+        #   is likely to freeze (on the stage of inserting items into the table).
+        #   `self._first_connection` is used to prevent data from reloading if this is not
+        #   the first connection. The data is still reloaded once status is checked.
+        #   The reason why the program is freezing is not apparent and it would be useful
+        #   to find the exact reason why this is happening.
+        if not self._first_connection:
+            self.model.manager_connecting_ops()
+            self._first_connection = True
+
         self._start_thread()
 
     def _pb_re_manager_disconnect_clicked(self):
