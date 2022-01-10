@@ -414,7 +414,7 @@ class RunEngineClient:
         try:
             key_seq = self._map_column_labels_to_keys[label]
         except KeyError:
-            raise KeyError("Label 'label' is not found in the map dictionary")
+            raise KeyError(f"Label '{label}' is not found in the map dictionary")
 
         # Follow the path in the dictionary. 'KeyError' exception is raised if a key does not exist
         try:
