@@ -60,6 +60,7 @@ setup(
     packages=find_packages(exclude=["docs", "tests"]),
     entry_points={
         "console_scripts": [
+            "queue-monitor = bluesky_widgets.apps.queue_monitor.main:main"
             # 'command = some.module:some_function',
         ],
     },
