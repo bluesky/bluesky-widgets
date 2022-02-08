@@ -79,6 +79,9 @@ class RunEngineClient:
         #   "values" -  a list or a tuple of values, "type" - type of the value.
         self.plan_spreadsheet_additional_parameters = {}
 
+        # Indicates if operation of destroying an environment is activated.
+        self._env_destroy_activated = False
+
         # TODO: in the future the list of allowed instructions should be requested from the server
         self._allowed_instructions = {
             "queue_stop": {
@@ -998,6 +1001,8 @@ class RunEngineClient:
                 raise RuntimeError("Failed to start RE Worker: timeout occurred")
             time.sleep(0.5)
 
+        self.activate_env_destroy(False)
+
     def environment_close(self, timeout=0):
         """
         Close RE Worker environment. Blocks until operation is complete or timeout expires.
@@ -1038,6 +1043,19 @@ class RunEngineClient:
                 raise RuntimeError("Failed to start RE Worker: timeout occurred")
             time.sleep(0.5)
 
+        self.activate_env_destroy(False)
+
+    @property
+    def env_destroy_activated(self):
+        return self._env_destroy_activated
+
+    def activate_env_destroy(self, state):
+        self._env_destroy_activated = bool(state)
+        self.events.status_changed(
+            status=self._re_manager_status,
+            is_connected=self._re_manager_connected,
+        )
+
     def environment_destroy(self, timeout=0):
         """
         Destroy (unresponsive) RE Worker environment. The function is intended for the cases when
@@ -1055,6 +1073,9 @@ class RunEngineClient:
         -------
         None
         """
+        if not self._env_destroy_activated:
+            raise RuntimeError("'Destroy Environment' operation is not activated and can not be executed")
+
         # Check if RE Worker environment already exists and RE manager is idle.
         self.load_re_manager_status()
         status = self._re_manager_status
@@ -1077,6 +1098,8 @@ class RunEngineClient:
             if timeout and (time.time() > t_stop):
                 raise RuntimeError("Failed to start RE Worker: timeout occurred")
             time.sleep(0.5)
+
+        self.activate_env_destroy(False)
 
     # ============================================================================
     #                        Queue Control
