@@ -288,9 +288,10 @@ class QtReEnvironmentControls(QWidget):
         # 'is_connected' takes values True, False
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
+        env_destroy_activated = self.model.env_destroy_activated
         self._pb_env_open.setEnabled(is_connected and not worker_exists and (manager_state == "idle"))
         self._pb_env_close.setEnabled(is_connected and worker_exists and (manager_state == "idle"))
-        self._pb_env_destroy.setEnabled(is_connected and worker_exists)
+        self._pb_env_destroy.setEnabled(is_connected and worker_exists and env_destroy_activated)
 
     def _pb_env_open_clicked(self):
         try:
