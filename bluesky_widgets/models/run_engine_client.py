@@ -992,14 +992,14 @@ class RunEngineClient:
         # Wait for the environment to be created.
         if timeout:
             t_stop = time.time() + timeout
-        while True:
-            self.load_re_manager_status()
-            status2 = self._re_manager_status
-            if status2["worker_environment_exists"] and status2["manager_state"] == "idle":
-                break
-            if timeout and (time.time() > t_stop):
-                raise RuntimeError("Failed to start RE Worker: timeout occurred")
-            time.sleep(0.5)
+            while True:
+                self.load_re_manager_status()
+                status2 = self._re_manager_status
+                if status2["worker_environment_exists"] and status2["manager_state"] == "idle":
+                    break
+                if timeout and (time.time() > t_stop):
+                    raise RuntimeError("Failed to start RE Worker: timeout occurred")
+                time.sleep(0.5)
 
         self.activate_env_destroy(False)
 
