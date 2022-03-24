@@ -16,7 +16,7 @@ qtpy
 sphinx
 # These are dependencies of various sphinx extensions for documentation.
 ipython
-matplotlib
+matplotlib>=3.3.0
 numpydoc
 sphinx-copybutton
 sphinx_rtd_theme
