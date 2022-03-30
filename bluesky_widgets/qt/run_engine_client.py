@@ -2267,14 +2267,19 @@ class _QtReEditor(QWidget):
         #   The first item in the list is selected if the value is set to "".
         #   No element selected if the element with the given name is not in the list.
 
+        def lower(s):
+            return s.lower()
+
         if self._current_item_type == "plan":
             allowed_item_names = self.model.get_allowed_plan_names()
+            allowed_item_names.sort(key=lower)
             if (not self._current_plan_name) and (allowed_item_names):
                 self._current_plan_name = allowed_item_names[0]
             item_name = self._current_plan_name
 
         elif self._current_item_type == "instruction":
             allowed_item_names = self.model.get_allowed_instruction_names()
+            allowed_item_names.sort(key=lower)
             if (not self._current_instruction_name) and (allowed_item_names):
                 self._current_instruction_name = allowed_item_names[0]
             item_name = self._current_instruction_name

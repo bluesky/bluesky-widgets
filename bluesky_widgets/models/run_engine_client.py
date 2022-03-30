@@ -50,7 +50,9 @@ class RunEngineClient:
         self._re_manager_status_update_period = 0.2
 
         self._allowed_devices = {}
+        self._allowed_devices_uid = ""
         self._allowed_plans = {}
+        self._allowed_plans_uid = ""
         self._plan_queue_items = []
         # Dictionary key: item uid, value: item pos in queue:
         self._plan_queue_items_pos = {}
@@ -155,6 +157,12 @@ class RunEngineClient:
                 new_history_uid = self._re_manager_status.get("plan_history_uid", "")
                 if new_history_uid != self._plan_history_uid:
                     self.load_plan_history()
+                new_allowed_plans_uid = self._re_manager_status.get("plans_allowed_uid", "")
+                if new_allowed_plans_uid != self._allowed_plans_uid:
+                    self.load_allowed_plans()
+                new_allowed_devices_uid = self._re_manager_status.get("devices_allowed_uid", "")
+                if new_allowed_devices_uid != self._allowed_devices_uid:
+                    self.load_allowed_devices()
 
             except CommTimeoutError:
                 self._re_manager_connected = False
@@ -176,6 +184,7 @@ class RunEngineClient:
                 raise RuntimeError(f"Failed to load list of allowed devices: {result['msg']}")
             self._allowed_devices.clear()
             self._allowed_devices.update(result["devices_allowed"])
+            self._allowed_devices_uid = result["devices_allowed_uid"]
             self.events.allowed_devices_changed(allowed_devices=self._allowed_devices)
         except Exception as ex:
             print(f"Exception: {ex}")
@@ -191,6 +200,7 @@ class RunEngineClient:
                 raise RuntimeError(f"Failed to load list of allowed plans: {result['msg']}")
             self._allowed_plans.clear()
             self._allowed_plans.update(result["plans_allowed"])
+            self._allowed_plans_uid = result["plans_allowed_uid"]
             self.events.allowed_plans_changed(allowed_plans=self._allowed_plans)
         except Exception as ex:
             print(f"Exception: {ex}")
