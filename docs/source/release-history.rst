@@ -2,6 +2,15 @@
 Release History
 ===============
 
+v0.0.12 (2022-04-05)
+====================
+
+Added
+-----
+
+- RE Manager Widgets: the list of available plans in the combo box of plan editor
+  is now automatically updated when it is changed at the server.
+
 v0.0.11 (2022-03-23)
 ====================
 
