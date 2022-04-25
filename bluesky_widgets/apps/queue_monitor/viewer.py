@@ -14,8 +14,8 @@ class ViewerModel:
 
     def __init__(self):
         self.run_engine = RunEngineClient(
-            zmq_server_address=SETTINGS.zmq_re_manager_control_addr,
-            zmq_subscribe_address=SETTINGS.zmq_re_manager_publish_addr,
+            zmq_control_addr=SETTINGS.zmq_re_manager_control_addr,
+            zmq_info_addr=SETTINGS.zmq_re_manager_info_addr,
         )
 
 
