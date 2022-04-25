@@ -14,10 +14,10 @@ class RunEngineClient:
     """
     Parameters
     ----------
-    zmq_server_address : str or None
+    zmq_control_addr : str or None
         Address of ZMQ server (Run Engine Manager). If None, then the default address defined
         in RE Manager code is used. (Default address is ``tcp://localhost:60615``).
-    zmq_subscribe_address : str or None
+    zmq_info_addr : str or None
         ZMQ address of the socket used by RE Manager to publishe console output.
     user_name : str
         Name of the user submitting the plan. The name is saved as a parameter of the queue item
@@ -29,14 +29,12 @@ class RunEngineClient:
         ``user_group_permissions.yaml`` (see documentation for RE Manager).
     """
 
-    def __init__(
-        self, zmq_server_address=None, zmq_subscribe_address=None, user_name="GUI Client", user_group="admin"
-    ):
-        self._client = ZMQCommSendThreads(zmq_server_address=zmq_server_address)
+    def __init__(self, zmq_control_addr=None, zmq_info_addr=None, user_name="GUI Client", user_group="admin"):
+        self._client = ZMQCommSendThreads(zmq_server_address=zmq_control_addr)
         self.set_map_param_labels_to_keys()
 
         # Address of remote 0MQ socket used to publish RE Manager console output
-        self._zmq_subscribe_addr = zmq_subscribe_address
+        self._zmq_info_addr = zmq_info_addr
         self._stop_console_monitor = False
 
         # User name and group are hard coded for now
@@ -1240,7 +1238,7 @@ class RunEngineClient:
 
     def start_console_output_monitoring(self):
         self._stop_console_monitor = False
-        self._rco = ReceiveConsoleOutput(zmq_subscribe_addr=self._zmq_subscribe_addr, timeout=200)
+        self._rco = ReceiveConsoleOutput(zmq_subscribe_addr=self._zmq_info_addr, timeout=200)
 
     def stop_console_output_monitoring(self):
         self._stop_console_monitor = True
