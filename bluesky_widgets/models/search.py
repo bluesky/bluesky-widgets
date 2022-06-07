@@ -238,7 +238,7 @@ class SearchInput:
             if not text:
                 self._query["fields"].pop(field, None)
             else:
-                self._query["fields"][fields] = text
+                self._query["fields"][field] = text
         self.events.query(query=self._query)
 
     def on_text(self, event):
