@@ -680,7 +680,7 @@ class RasteredImages:
     @extent.setter
     def extent(self, value):
         self._extent = value
-        for artist in self.axes.artist:
+        for artist in self.axes.artists:
             if isinstance(artist, Image):
                 artist.style.update({"extent": value})
 
