@@ -70,6 +70,7 @@ class QtFigures(QTabWidget):
             self._add_figure(figure_spec)
         self._threadsafe_connect(model.events.added, self._on_figure_added)
         self._threadsafe_connect(model.events.removed, self._on_figure_removed)
+        self._threadsafe_connect(model.events.active_index, self._on_active_index_changed)
 
         # This setup for self._threadsafe_connect.
 
@@ -158,6 +159,10 @@ class QtFigures(QTabWidget):
     def _on_tab_changed(self, index):
         "Update the active_index in the FigureList."
         self.model.active_index = index
+
+    def _on_active_index_changed(self, event):
+        "Activate tab based on the updated active index in the FigureList."
+        self.setCurrentIndex(event.value)
 
 
 class QtFigure(QWidget):
