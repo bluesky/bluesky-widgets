@@ -103,6 +103,39 @@ def test_extent_setting(non_snaking_run, FigureView):
     view.close()
 
 
+def test_show_colorbar_setting(non_snaking_run, FigureView):
+    """
+    Test if ``RasteredImages.show_colorbar`` is properly set.
+    """
+    run = non_snaking_run
+    axes = Axes()
+    Figure((axes,), title="")
+    model = RasteredImages("ccd", shape=(2, 2), axes=axes, show_colorbar=True)
+    view = FigureView(model.figure)
+    model.add_run(run)
+
+    def check_artists(value):
+        image_found = False
+        for artist in axes.artists:
+            if isinstance(artist, Image):
+                assert "show_colorbar" in artist.style
+                assert artist.style["show_colorbar"] == value
+                image_found = True
+        if not image_found:
+            assert "No Image found in the list of artists"
+
+    assert model.show_colorbar is True
+    check_artists(True)
+
+    # Check if setting the property changes the style of the artists in the next image
+    model.show_colorbar = False
+    model.add_run(run)
+    assert model.show_colorbar is False
+    check_artists(False)
+
+    view.close()
+
+
 def test_non_snaking_image_data(non_snaking_run, FigureView):
     run = non_snaking_run
     model = RasteredImages("ccd", shape=(2, 2))
