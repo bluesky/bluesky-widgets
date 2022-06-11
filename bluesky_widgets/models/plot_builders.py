@@ -567,6 +567,8 @@ class RasteredImages:
     y_positive : String, optional
         Defines the positive direction of the y axis, takes the values 'up'
         (default) or 'down'.
+    show_colorbar: boolean
+        Show colorbar for the image.
 
     Attributes
     ----------
@@ -604,6 +606,7 @@ class RasteredImages:
         extent=None,
         x_positive="right",
         y_positive="up",
+        show_colorbar=False,
     ):
         super().__init__()
 
@@ -645,6 +648,7 @@ class RasteredImages:
         self._extent = extent
         self._x_positive = x_positive
         self._y_positive = y_positive
+        self._show_colorbar = bool(show_colorbar)
 
         self._run_manager = RunManager(max_runs, needs_streams)
         self._run_manager.events.run_ready.connect(self._add_image)
@@ -680,7 +684,7 @@ class RasteredImages:
     @extent.setter
     def extent(self, value):
         self._extent = value
-        for artist in self.axes.artist:
+        for artist in self.axes.artists:
             if isinstance(artist, Image):
                 artist.style.update({"extent": value})
 
@@ -726,10 +730,28 @@ class RasteredImages:
             self.axes.y_limits = (ymin, ymax)
             self._y_positive = value
 
+    @property
+    def show_colorbar(self):
+        """
+        Display colorbar for the new images (``True``) or show the images without colorbar (``False``).
+        The setting does not influence the image that is already being displayed. The property
+        may be used to modify the value that was passed with the respective parameter of the constructor.
+        """
+        return self._show_colorbar
+
+    @show_colorbar.setter
+    def show_colorbar(self, show_colorbar):
+        self._show_colorbar = bool(show_colorbar)
+
     def _add_image(self, event):
         run = event.run
         func = functools.partial(self._transform, field=self.field)
-        style = {"cmap": self._cmap, "clim": self._clim, "extent": self._extent}
+        style = {
+            "cmap": self._cmap,
+            "clim": self._clim,
+            "extent": self._extent,
+            "show_colorbar": self._show_colorbar,
+        }
         image = Image.from_run(func, run, label=self.field, style=style)
         self._run_manager.track_artist(image, [run])
         md = run.metadata["start"]

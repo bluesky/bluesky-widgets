@@ -6,6 +6,7 @@ from bluesky_kafka.tests.conftest import (  # noqa
     hw,
     pytest_addoption,
     kafka_bootstrap_servers,
+    broker_authorization_config,
     publisher_factory,
     temporary_topics,
 )

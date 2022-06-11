@@ -164,6 +164,10 @@ class MatplotlibAxes:
         artist_spec = event.item
         # Remove the artist from our caches.
         artist = self._artists.pop(artist_spec.uuid)
+        # Remove colorbar if it exists
+        if hasattr(artist, "_bsw_colorbar"):
+            cb = getattr(artist, "_bsw_colorbar")
+            cb.remove()
         # Remove it from the canvas.
         artist.remove()
         self._update_and_draw()
@@ -196,6 +200,12 @@ class MatplotlibAxes:
 
     def _construct_image(self, *, array, label, style):
         artist = self.axes.imshow(array, label=label)
+
+        if style.get("show_colorbar", False):
+            cb = self.axes.figure.colorbar(artist)
+            # Keep the reference to the colorbar so that it could be removed with the artist
+            setattr(artist, "_bsw_colorbar", cb)  # bsw - bluesky-widgets
+
         self.axes.relim()  # Recompute data limits.
         self.axes.autoscale_view()  # Rescale the view using those new limits.
         self.draw_idle()
