@@ -175,6 +175,7 @@ class QtFigure(QWidget):
         super().__init__(parent)
         self.model = model
         self.figure = matplotlib.figure.Figure()
+        self.figure.set_tight_layout(True)
         # TODO Let Figure give different options to subplots here,
         # but verify that number of axes created matches the number of axes
         # specified.
