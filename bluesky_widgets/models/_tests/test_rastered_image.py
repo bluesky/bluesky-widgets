@@ -3,7 +3,7 @@ import pytest
 import numpy
 
 from ..plot_builders import RasteredImages
-from ..plot_specs import Axes, Figure
+from ..plot_specs import Axes, Image, Figure
 
 
 @pytest.fixture
@@ -67,6 +67,39 @@ def test_x_y_limits_change_x_y_positive(non_snaking_run, FigureView):
     model.axes.x_limits = model.axes.y_limits = (-0.5, 1.5)
     assert model.x_positive == "right"
     assert model.y_positive == "up"
+    view.close()
+
+
+def test_extent_setting(non_snaking_run, FigureView):
+    """
+    Test if ``RasteredImages.extent`` is properly set.
+    """
+    run = non_snaking_run
+    axes = Axes()
+    Figure((axes,), title="")
+    extent1 = (0, 1, 4, 5)
+    model = RasteredImages("ccd", shape=(2, 2), axes=axes, extent=extent1)
+    view = FigureView(model.figure)
+    model.add_run(run)
+
+    def check_artists(ext):
+        image_found = False
+        for artist in axes.artists:
+            if isinstance(artist, Image):
+                assert "extent" in artist.style
+                assert artist.style["extent"] == ext
+                image_found = True
+        if not image_found:
+            assert "No Image found in the list of artists"
+
+    assert model.extent == extent1
+    check_artists(extent1)
+
+    extent2 = (1, 2, 6, 7)
+    model.extent = extent2
+    assert model.extent == extent2
+    check_artists(extent2)
+
     view.close()
 
 
