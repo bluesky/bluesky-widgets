@@ -733,9 +733,9 @@ class RasteredImages:
     @property
     def show_colorbar(self):
         """
-        Include colorbar with the next displayed image (``True``) or show the image without
-        colorbar. The setting does not influence the image that is already being displayed.
-        The property may be used to modify the respective parameter of the constructor.
+        Display colorbar for the new images (``True``) or show the images without colorbar (``False``).
+        The setting does not influence the image that is already being displayed. The property
+        may be used to modify the value that was passed with the respective parameter of the constructor.
         """
         return self._show_colorbar
 
