@@ -9,6 +9,8 @@ from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver import ZMQCommSendThreads, CommTimeoutError, bind_plan_arguments, ReceiveConsoleOutput
 from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
 
+from bluesky_queueserver_api.zmq import REManagerAPI
+
 
 class RunEngineClient:
     """
@@ -30,7 +32,7 @@ class RunEngineClient:
     """
 
     def __init__(self, zmq_control_addr=None, zmq_info_addr=None, user_name="GUI Client", user_group="admin"):
-        self._client = ZMQCommSendThreads(zmq_server_address=zmq_control_addr)
+        self._client = REManagerAPI(zmq_control_addr=zmq_control_addr, zmq_info_addr=zmq_info_addr) ## ZMQCommSendThreads(zmq_server_address=zmq_control_addr)
         self.set_map_param_labels_to_keys()
 
         # Address of remote 0MQ socket used to publish RE Manager console output
@@ -113,9 +115,10 @@ class RunEngineClient:
 
     def clear(self):
         # Clear the queue.
-        response = self._client.send_message(method="queue_clear")
-        if not response["success"]:
-            raise RuntimeError(f"Failed to clear the plan queue: {response['msg']}")
+        try:
+            self._client.queue_clear()
+        except Exception as ex:
+            raise RuntimeError(f"Failed to clear the plan queue: {ex}") from ex
 
     def clear_connection_status(self):
         """
@@ -141,7 +144,7 @@ class RunEngineClient:
             status = self._re_manager_status.copy()
             accessible = self._re_manager_connected
             try:
-                new_manager_status = self._client.send_message(method="status", raise_exceptions=True)
+                new_manager_status = self._client.status()
                 self._re_manager_status.clear()
                 self._re_manager_status.update(new_manager_status)
                 self._re_manager_connected = True
