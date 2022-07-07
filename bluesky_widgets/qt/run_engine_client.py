@@ -1075,7 +1075,7 @@ class QtRePlanQueue(QWidget):
                 break
 
         if not item_accepted:
-            print(f"Item {queue_item['name']} was rejected by all registered editors")
+            print(f"Item {queue_item['name']!r} was rejected by all registered editors")
 
     def _pb_move_up_clicked(self):
         try:
@@ -2507,6 +2507,7 @@ class QtRePlanEditor(QWidget):
     def edit_queue_item(self, queue_item):
         self._switch_tab("edit")
         self._plan_editor.edit_queue_item(queue_item)
+        return True  # Indicates that the plan was accepted
 
 
 class DialogBatchUpload(QDialog):
