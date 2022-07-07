@@ -16,6 +16,8 @@ class ViewerModel:
         self.run_engine = RunEngineClient(
             zmq_control_addr=SETTINGS.zmq_re_manager_control_addr,
             zmq_info_addr=SETTINGS.zmq_re_manager_info_addr,
+            http_server_uri=SETTINGS.http_server_uri,
+            http_server_api_key=SETTINGS.http_server_api_key,
         )
 
 

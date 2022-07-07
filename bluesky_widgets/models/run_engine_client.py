@@ -8,30 +8,57 @@ import importlib
 from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver import bind_plan_arguments
 from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
-from bluesky_queueserver_api.zmq import REManagerAPI
+from bluesky_queueserver_api.zmq import REManagerAPI as REManagerAPI_ZMQ
+from bluesky_queueserver_api.http import REManagerAPI as REManagerAPI_HTTP
 
 
 class RunEngineClient:
     """
     Parameters
     ----------
-    zmq_control_addr : str or None
+    zmq_control_addr: str or None
         Address of ZMQ server (Run Engine Manager). If None, then the default address defined
         in RE Manager code is used. (Default address is ``tcp://localhost:60615``).
-    zmq_info_addr : str or None
+    zmq_info_addr: str or None
         ZMQ address of the socket used by RE Manager to publishe console output.
+    http_server_uri: str or None
+        URI of HTTP server, e.g. ``http://localhost:60610``. If the URI is passed, then HTTP server
+        is used for communication with Queue Server. Otherwise the specified or default 0MQ control
+        and info addresses are used.
     user_name : str
         Name of the user submitting the plan. The name is saved as a parameter of the queue item
         and identifies the user submitting the plan (may be important in multiuser systems).
-    user_group : str
+    user_group: str
         Name of the user group. User group is saved as a parameter of a queue item. Each user group
         can be assigned permissions to use a restricted set of plans and pass a restricted set of
         devices as plan parameters. Groups and group permissions are defined in the file
         ``user_group_permissions.yaml`` (see documentation for RE Manager).
     """
 
-    def __init__(self, zmq_control_addr=None, zmq_info_addr=None, user_name="GUI Client", user_group="admin"):
-        self._client = REManagerAPI(zmq_control_addr=zmq_control_addr, zmq_info_addr=zmq_info_addr)
+    def __init__(
+        self,
+        zmq_control_addr=None,
+        zmq_info_addr=None,
+        http_server_uri=None,
+        http_server_api_key=None,
+        user_name="GUI Client",
+        user_group="admin",
+    ):
+        if http_server_uri and (zmq_control_addr or zmq_info_addr):
+            raise ValueError(
+                "Invalid parameters: mutually excluseve HTTP Server URI and 0MQ control and/or info "
+                "address are specified simultaneously."
+            )
+        if http_server_uri:
+            print(f"HTTP server address: {http_server_uri}")
+            self._client = REManagerAPI_HTTP(http_server_uri=http_server_uri)
+            if http_server_api_key:
+                self._client.set_authorization_key(api_key=http_server_api_key)
+        else:
+            print(f"0MQ control server address: {zmq_control_addr or 'default'}")
+            print(f"0MQ info server address: {zmq_info_addr or 'default'}")
+            self._client = REManagerAPI_ZMQ(zmq_control_addr=zmq_control_addr, zmq_info_addr=zmq_info_addr)
+
         self.set_map_param_labels_to_keys()
 
         # Address of remote 0MQ socket used to publish RE Manager console output
