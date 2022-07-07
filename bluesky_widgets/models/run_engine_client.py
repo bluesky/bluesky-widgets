@@ -166,11 +166,14 @@ class RunEngineClient:
         self.load_plan_history()
 
     def load_re_manager_status(self, *, unbuffered=False):
+        # TODO: the new API include efficient implementation of status management, there is no
+        #       need to manage status in the application. The following code should be rewritten
+        #       to take advantage of the existing API features.
         if unbuffered or (time.time() - self._re_manager_status_time > self._re_manager_status_update_period):
             status = self._re_manager_status.copy()
             accessible = self._re_manager_connected
             try:
-                new_manager_status = self._client.status(reload=unbuffered)
+                new_manager_status = self._client.status()
                 self._re_manager_status.clear()
                 self._re_manager_status.update(new_manager_status)
                 self._re_manager_connected = True
