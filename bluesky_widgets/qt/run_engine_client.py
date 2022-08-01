@@ -1035,7 +1035,10 @@ class QtRePlanQueue(QWidget):
                     self._table.setCurrentCell(rows[-1], 0)
                 for col in range(self._table.columnCount()):
                     item = self._table.item(row, col)
-                    item.setSelected(True)
+                    if item:
+                        item.setSelected(True)
+                    else:
+                        print(f"Plan Queue Table: attempting to select non-existing item: row={row} col={col}")
 
             row_visible = rows[-1]
             item_visible = self._table.item(row_visible, 0)
@@ -1347,7 +1350,10 @@ class QtRePlanHistory(QWidget):
             for row in rows:
                 for col in range(self._table.columnCount()):
                     item = self._table.item(row, col)
-                    item.setSelected(True)
+                    if item:
+                        item.setSelected(True)
+                    else:
+                        print(f"Plan Queue Table: attempting to select non-existing item: row={row} col={col}")
 
             if self._table.currentRow() not in rows:
                 self._table.setCurrentCell(rows[-1], 0)
