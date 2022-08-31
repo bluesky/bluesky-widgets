@@ -1165,7 +1165,7 @@ class RunEngineClient:
 
     def queue_stop_cancel(self):
         try:
-            self._client.send_message(method="queue_stop_cancel")
+            self._client.queue_stop_cancel()
         except Exception as ex:
             raise RuntimeError(f"Failed to cancel request to stop the queue: {ex}") from ex
 
