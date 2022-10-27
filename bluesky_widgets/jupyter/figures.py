@@ -1,4 +1,5 @@
 from ipywidgets import widgets
+from IPython.display import display
 import ipympl.backend_nbagg
 import matplotlib.figure
 
@@ -46,9 +47,10 @@ class JupyterFigures(widgets.Tab):
     A Jupyter (ipywidgets) view for a FigureList model.
     """
 
-    def __init__(self, model: FigureList, *args, **kwargs):
+    def __init__(self, model: FigureList, *args, display_in_current_output=False, **kwargs):
         _initialize_mpl()
         super().__init__(*args, **kwargs)
+        self.display_in_current_output = display_in_current_output
         self.model = model
         # Map Figure UUID to widget with JupyterFigureTab
         self._figures = {}
@@ -71,6 +73,8 @@ class JupyterFigures(widgets.Tab):
         "Add a new tab with a matplotlib Figure."
         tab = _JupyterFigureTab(figure_spec, parent=self)
         self._figures[figure_spec.uuid] = tab
+        if self.display_in_current_output:
+            display(tab.figure.canvas)
         self.children = (*self.children, tab)
         index = len(self.children) - 1
         self.set_title(index, figure_spec.title)
