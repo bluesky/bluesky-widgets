@@ -18,7 +18,7 @@ from bluesky_widgets.models.plot_builders import Lines
 from bluesky_widgets.qt.figures import QtFigure
 from bluesky_widgets.qt import gui_qt
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads
-from bluesky_queueserver_api._default import default_user_group
+from bluesky_queueserver_api._defaults import default_user_group
 
 import sys
 import time

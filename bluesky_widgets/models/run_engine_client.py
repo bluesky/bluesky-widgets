@@ -11,7 +11,7 @@ from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
 from bluesky_queueserver_api.zmq import REManagerAPI as REManagerAPI_ZMQ
 from bluesky_queueserver_api.http import REManagerAPI as REManagerAPI_HTTP
 
-from bluesky_queueserver_api._default import default_user_group
+from bluesky_queueserver_api._defaults import default_user_group
 
 class RunEngineClient:
     """
