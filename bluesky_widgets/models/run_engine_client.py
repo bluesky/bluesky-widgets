@@ -11,6 +11,7 @@ from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
 from bluesky_queueserver_api.zmq import REManagerAPI as REManagerAPI_ZMQ
 from bluesky_queueserver_api.http import REManagerAPI as REManagerAPI_HTTP
 
+from bluesky_queueserver_api._default import default_user_group
 
 class RunEngineClient:
     """
@@ -42,7 +43,7 @@ class RunEngineClient:
         http_server_uri=None,
         http_server_api_key=None,
         user_name="GUI Client",
-        user_group="admin",
+        user_group=default_user_group,
     ):
         if http_server_uri and (zmq_control_addr or zmq_info_addr):
             raise ValueError(
