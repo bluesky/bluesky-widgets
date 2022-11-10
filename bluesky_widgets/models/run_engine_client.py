@@ -13,6 +13,7 @@ from bluesky_queueserver_api.http import REManagerAPI as REManagerAPI_HTTP
 
 from bluesky_queueserver_api._defaults import default_user_group
 
+
 class RunEngineClient:
     """
     Parameters
