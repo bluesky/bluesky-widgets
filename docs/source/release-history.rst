@@ -2,6 +2,26 @@
 Release History
 ===============
 
+v0.0.14 (2022-11-17)
+====================
+
+Changed
+-------
+
+- No wait for completion of operations ``Pause: Deferred`` and ``Pause: Immediate``.
+  GUI remains unblocked.
+
+- The default group name used for user group permissions is changed from hardcoded
+  ``admin`` to the group name used by default by ``bluesky-queueserver-api`` package
+  (``primary``).
+
+Fixed
+-----
+
+- Behavior of the ``Stop`` button (request/cancel stopping the queue). The button 
+  is now fully functional.
+
+
 v0.0.13 (2022-08-01)
 ====================
 
