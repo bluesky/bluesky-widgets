@@ -1210,10 +1210,19 @@ class RunEngineClient:
         except Exception as ex:
             raise RuntimeError(f"Failed to pause the running plan: {ex}") from ex
 
-        def condition(status):
-            return status["manager_state"] in ("idle", "paused")
+        # NOTE: it is unlikely that we need to wait for completion of pausing operation.
+        #   1. The operation may take significant time to complete, meanwhile GUI will stay
+        #      frozen.
+        #   2. Requesting pause multiple times does not cause any issues.
+        #   3. Waiting for completion prevents users from requesting immediate pause once
+        #      the deferred pause is requested. This means that if the scan is stuck and never
+        #      reaches the next setpoint, the users can not try immediate pause or do any other
+        #      operation without restarting GUI.
 
-        self._wait_for_completion(condition=condition, msg="pause the running plan", timeout=timeout)
+        # def condition(status):
+        #     return status["manager_state"] in ("idle", "paused")
+
+        # self._wait_for_completion(condition=condition, msg="pause the running plan", timeout=timeout)
 
     def re_resume(self, timeout=0):
         """
