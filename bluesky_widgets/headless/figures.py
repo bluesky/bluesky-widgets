@@ -31,7 +31,6 @@ class HeadlessFigures:
     """
 
     def __init__(self, model: FigureList):
-
         self.model = model
         # Map Figure UUID to widget with HeadlessFigure
         self._figures = {}

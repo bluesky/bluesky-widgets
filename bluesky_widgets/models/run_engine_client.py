@@ -1251,7 +1251,6 @@ class RunEngineClient:
         self._wait_for_completion(condition=condition, msg="resume execution of the plan", timeout=timeout)
 
     def _re_continue_plan(self, *, action, timeout=0):
-
         if action not in ("stop", "abort", "halt"):
             raise RuntimeError(f"Unrecognized action '{action}'")
 
@@ -1288,7 +1287,6 @@ class RunEngineClient:
 
     # def console_monitoring_thread(self, *, callback):
     def console_monitoring_thread(self):
-
         while True:
             try:
                 payload = self._client.console_monitor.next_msg(timeout=0.2)

@@ -44,7 +44,6 @@ class Window:
     """
 
     def __init__(self, qt_widget, *, show):
-
         self.qt_widget = qt_widget
 
         self._qt_window = QMainWindow()

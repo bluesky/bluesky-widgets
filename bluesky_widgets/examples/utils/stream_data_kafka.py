@@ -23,7 +23,6 @@ log = logging.getLogger(__name__)
 
 
 def stream_example_data(quiet=False):
-
     bootstrap_servers = "127.0.0.1:9092"
 
     producer_config = {

@@ -29,7 +29,6 @@ def pytest_collection_modifyitems(session, config, items):
     # actually ensure that qtbot is applied.
 
     if importlib.util.find_spec("qtpy"):
-
         from bluesky_widgets.qt.figures import QtFigure
 
         for item in items:
@@ -43,17 +42,14 @@ def pytest_collection_modifyitems(session, config, items):
 
 _figure_view_params = []
 if importlib.util.find_spec("qtpy"):
-
     from bluesky_widgets.qt.figures import QtFigure
 
     _figure_view_params.append(QtFigure)
 if importlib.util.find_spec("ipywidgets"):
-
     from bluesky_widgets.jupyter.figures import JupyterFigure
 
     _figure_view_params.append(JupyterFigure)
 if importlib.util.find_spec("matplotlib"):
-
     from bluesky_widgets.headless.figures import HeadlessFigure
 
     _figure_view_params.append(HeadlessFigure)
@@ -66,17 +62,14 @@ def FigureView(request):
 
 _figure_views_params = []
 if importlib.util.find_spec("qtpy"):
-
     from bluesky_widgets.qt.figures import QtFigures
 
     _figure_views_params.append(QtFigures)
 if importlib.util.find_spec("ipywidgets"):
-
     from bluesky_widgets.jupyter.figures import JupyterFigures
 
     _figure_views_params.append(JupyterFigures)
 if importlib.util.find_spec("matplotlib"):
-
     from bluesky_widgets.headless.figures import HeadlessFigures
 
     _figure_views_params.append(HeadlessFigures)
