@@ -444,12 +444,10 @@ class QtReExecutionControls(QWidget):
         # 'is_connected' takes values True, False
         worker_exists = status.get("worker_environment_exists", False)
         manager_state = status.get("manager_state", None)
-        self._pb_plan_pause_deferred.setEnabled(
-            is_connected and worker_exists and (manager_state == "executing_queue")
-        )
-        self._pb_plan_pause_immediate.setEnabled(
-            is_connected and worker_exists and (manager_state == "executing_queue")
-        )
+        re_state = status.get("re_state", None)
+        pause_enable = manager_state == "executing_queue" or re_state == "running"
+        self._pb_plan_pause_deferred.setEnabled(is_connected and worker_exists and pause_enable)
+        self._pb_plan_pause_immediate.setEnabled(is_connected and worker_exists and pause_enable)
         self._pb_plan_resume.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_stop.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_abort.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
