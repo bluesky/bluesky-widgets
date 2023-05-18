@@ -13,7 +13,6 @@ random_img = SynSignal(func=lambda: np.random.random((5, 10, 10)), name="random_
 
 
 def get_catalog():
-
     RE = RunEngine()
 
     mds = f"mongodb://localhost:27017/databroker-test-{uuid.uuid4()}"

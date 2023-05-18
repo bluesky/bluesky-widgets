@@ -33,7 +33,6 @@ def test_publisher_and_qt_remote_dispatcher(
     """
 
     with temporary_topics(topics=["test.qt.remote.dispatcher"]) as (topic,):
-
         bluesky_publisher = publisher_factory(
             topic=topic,
             key=f"{topic}.key",

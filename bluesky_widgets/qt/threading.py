@@ -22,7 +22,6 @@ def as_generator_function(func: Callable) -> Callable:
 
 
 class WorkerBaseSignals(QObject):
-
     started = Signal()  # emitted when the work is started
     finished = Signal()  # emitted when the work is finished
     returned = Signal(object)  # emitted with return value
@@ -213,7 +212,6 @@ class FunctionWorker(WorkerBase):
 
 
 class GeneratorWorkerSignals(WorkerBaseSignals):
-
     yielded = Signal(object)  # emitted with yielded values (if generator used)
     paused = Signal()  # emitted when a running job has successfully paused
     resumed = Signal()  # emitted when a paused job has successfully resumed

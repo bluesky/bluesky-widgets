@@ -685,7 +685,6 @@ class PushButtonMinimumWidth(QPushButton):
     """
 
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
         text = self.text()
         font = self.font()
@@ -696,7 +695,6 @@ class PushButtonMinimumWidth(QPushButton):
 
 
 class QtRePlanQueue(QWidget):
-
     signal_update_widgets = Signal(bool)
     signal_update_selection = Signal(object)
     signal_plan_queue_changed = Signal(object, object)
@@ -1016,7 +1014,6 @@ class QtRePlanQueue(QWidget):
 
     @Slot(object)
     def slot_change_selection(self, selected_item_uids):
-
         rows = [self.model.queue_item_uid_to_pos(_) for _ in selected_item_uids]
 
         # Keep horizontal scroll value while the selection is changed (more consistent behavior)
@@ -1440,7 +1437,6 @@ class QtReRunningPlan(QWidget):
 
     @Slot(object, object)
     def slot_running_item_changed(self, running_item, run_list):
-
         running_item_uid = running_item.get("item_uid", "")
         is_new_item = running_item_uid != self._running_item_uid
         self._running_item_uid = running_item_uid
@@ -1582,7 +1578,6 @@ class QtReRunningPlan(QWidget):
 
 
 class _QtRePlanEditorTable(QTableWidget):
-
     signal_parameters_valid = Signal(bool)
     signal_item_description_changed = Signal(str)
     # The following signal is emitted only if the cell manually modified
@@ -1673,7 +1668,6 @@ class _QtRePlanEditorTable(QTableWidget):
         self.setRowCount(0)
 
     def _item_to_params(self, item):
-
         if item is None:
             return [], {}, [], []
 
@@ -2020,7 +2014,6 @@ class _QtRePlanEditorTable(QTableWidget):
             if column == 1:
                 is_checked = table_item.checkState() == Qt.Checked
                 if self._params[row]["is_value_set"] != is_checked:
-
                     if is_checked and self._params[row]["value"] == inspect.Parameter.empty:
                         self._params[row]["value"] = self._params[row]["parameters"].default
 
@@ -2039,7 +2032,6 @@ class _QtRePlanEditorTable(QTableWidget):
 
 
 class _QtReViewer(QWidget):
-
     signal_update_widgets = Signal()
     signal_update_selection = Signal(int)
     signal_edit_queue_item = Signal(object)
@@ -2176,7 +2168,6 @@ class _QtReViewer(QWidget):
 
 
 class _QtReEditor(QWidget):
-
     signal_update_widgets = Signal()
     signal_switch_tab = Signal(str)
     signal_allowed_plan_changed = Signal()
@@ -2299,7 +2290,6 @@ class _QtReEditor(QWidget):
         self._combo_item_list.setCurrentIndex(index)
 
     def _update_widget_state(self):
-
         is_connected = bool(self.model.re_manager_connected)
 
         self._rb_item_plan.setEnabled(not self._edit_mode_enabled)
@@ -2330,7 +2320,6 @@ class _QtReEditor(QWidget):
         self._queue_item_type = queue_item.get("item_type", None)
 
         if self._queue_item_name and self._queue_item_type and self._queue_item_type in ("plan", "instruction"):
-
             if self._queue_item_type == "instruction":
                 self._current_instruction_name = self._queue_item_name
                 self._rb_item_instruction.setChecked(True)
@@ -2516,7 +2505,6 @@ class QtRePlanEditor(QWidget):
 
 class DialogBatchUpload(QDialog):
     def __init__(self, parent=None, *, current_dir=None, file_type_list=None, additional_parameters=None):
-
         super().__init__(parent)
         self._current_dir = current_dir
         self._file_name = None
