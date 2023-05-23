@@ -91,7 +91,7 @@ class RemoteDispatcher(QObject):
                         yield
                         continue
                 doc = self._deserializer(doc)
-            yield name, doc
+            self._dispatcher.process(DocumentNames[name], doc)
 
     def start(self):
         if self.closed:
@@ -111,14 +111,7 @@ class RemoteDispatcher(QObject):
         )
         # Schedule this method to be run again after a brief wait.
         worker.finished.connect(lambda: QTimer.singleShot(int(LOADING_LATENCY * 1000), self._work_loop))
-        worker.yielded.connect(self._process_result)
         worker.start()
-
-    def _process_result(self, result):
-        if result is None:
-            return
-        name, doc = result
-        self._dispatcher.process(DocumentNames[name], doc)
 
     def stop(self):
         self.closed = True

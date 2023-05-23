@@ -10,7 +10,7 @@ from ..qt.threading import create_worker
 
 logger = logging.getLogger(name="bluesky_widgets.qt.kafka_dispatcher")
 
-LOADING_LATENCY = 0.01
+LOADING_LATENCY = 100
 
 
 class QtRemoteDispatcher(QObject):
@@ -116,7 +116,12 @@ class QtRemoteDispatcher(QObject):
                                 # doc.
                                 logger.debug("keep waiting for a start document")
                                 return
-                        yield self._dispatcher._bluesky_consumer.consumer, msg.topic(), name, document
+                        self._dispatcher.process_document(
+                            consumer=self._dispatcher._bluesky_consumer.consumer,
+                            topic=msg.topic(),
+                            name=name,
+                            document=document,
+                        )
                     except Exception as exc:
                         logger.exception(exc)
             except Exception as exc:
@@ -147,15 +152,8 @@ class QtRemoteDispatcher(QObject):
                 functools.partial(self._work_loop, continue_polling),
             )
         )
-        self.worker.yielded.connect(self._process_result)
 
         self.worker.start()
-
-    def _process_result(self, result):
-        if result is None:
-            return
-        consumer, topic, name, document = result
-        self._dispatcher.process_document(consumer=consumer, topic=topic, name=name, document=document)
 
     def stop(self):
         logger.debug("QtRemoteDispatcher.stop")
