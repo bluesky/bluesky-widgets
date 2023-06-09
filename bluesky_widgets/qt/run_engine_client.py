@@ -501,7 +501,7 @@ class QtReStatusMonitor(QWidget):
         self._lb_manager_state_text = "Manager state: "
         self._lb_re_state_text = "RE state: "
         self._lb_items_in_history_text = "Items in history: "
-        self._lb_queue_is_running_text = "Queue is running: "
+        self._lb_queue_autostart_enabled_text = "Queue AUTOSTART: "
         self._lb_queue_stop_pending_text = "Queue STOP pending: "
         self._lb_items_in_queue_text = "Items in queue: "
         self._lb_queue_loop_mode_text = "Queue LOOP mode: "
@@ -510,7 +510,7 @@ class QtReStatusMonitor(QWidget):
         self._lb_manager_state = QLabel(self._lb_manager_state_text + "-")
         self._lb_re_state = QLabel(self._lb_re_state_text + "-")
         self._lb_items_in_history = QLabel(self._lb_items_in_history_text + "-")
-        self._lb_queue_is_running = QLabel(self._lb_queue_is_running_text + "-")
+        self._lb_queue_autostart_enabled = QLabel(self._lb_queue_autostart_enabled_text + "-")
         self._lb_queue_stop_pending = QLabel(self._lb_queue_stop_pending_text + "-")
         self._lb_items_in_queue = QLabel(self._lb_items_in_queue_text + "-")
         self._lb_queue_loop_mode = QLabel(self._lb_queue_loop_mode_text + "-")
@@ -529,7 +529,7 @@ class QtReStatusMonitor(QWidget):
         hbox.addSpacing(10)
 
         vbox = QVBoxLayout()
-        vbox.addWidget(self._lb_queue_is_running)
+        vbox.addWidget(self._lb_queue_autostart_enabled)
         vbox.addWidget(self._lb_queue_stop_pending)
         vbox.addWidget(self._lb_queue_loop_mode)
         vbox.addWidget(self._lb_items_in_queue)
@@ -560,7 +560,7 @@ class QtReStatusMonitor(QWidget):
         re_state = status.get("re_state", None)
         items_in_history = status.get("items_in_history", None)
         items_in_queue = status.get("items_in_queue", None)
-        queue_is_running = bool(status.get("running_item_uid", False))
+        queue_autostart_enabled = bool(status.get("queue_autostart_enabled", False))
         queue_stop_pending = status.get("queue_stop_pending", None)
 
         queue_mode = status.get("plan_queue_mode", None)
@@ -584,9 +584,9 @@ class QtReStatusMonitor(QWidget):
         )
         self._set_label_text(self._lb_items_in_queue, self._lb_items_in_queue_text, str(items_in_queue))
         self._set_label_text(
-            self._lb_queue_is_running,
-            self._lb_queue_is_running_text,
-            "YES" if queue_is_running else "NO",
+            self._lb_queue_autostart_enabled,
+            self._lb_queue_autostart_enabled_text,
+            "ON" if queue_autostart_enabled else "OFF",
         )
         self._set_label_text(
             self._lb_queue_stop_pending,
