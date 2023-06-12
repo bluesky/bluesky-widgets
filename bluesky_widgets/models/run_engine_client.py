@@ -1171,6 +1171,12 @@ class RunEngineClient:
         except Exception as ex:
             raise RuntimeError(f"Failed to cancel request to stop the queue: {ex}") from ex
 
+    def queue_autostart(self, enable):
+        try:
+            self._client.queue_autostart(enable=enable)
+        except Exception as ex:
+            raise RuntimeError(f"Failed to enable autostart mode: {ex}") from ex
+
     # ============================================================================
     #                        RE Control
 
