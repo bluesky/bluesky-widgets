@@ -429,6 +429,10 @@ class QtReExecutionControls(QWidget):
         self._pb_plan_pause_immediate.setEnabled(False)
         self._pb_plan_pause_immediate.clicked.connect(self._pb_plan_pause_immediate_clicked)
 
+        self._pb_kernel_interrupt = QPushButton("Ctrl-C")
+        self._pb_kernel_interrupt.setEnabled(False)
+        self._pb_kernel_interrupt.clicked.connect(self._pb_kernel_interrupt_clicked)
+
         self._pb_plan_resume = QPushButton("Resume")
         self._pb_plan_resume.setEnabled(False)
         self._pb_plan_resume.clicked.connect(self._pb_plan_resume_clicked)
@@ -452,7 +456,10 @@ class QtReExecutionControls(QWidget):
         hbox.addWidget(self._pb_plan_pause_deferred)
         hbox.addWidget(self._pb_plan_pause_immediate)
         vbox.addLayout(hbox)
-        vbox.addWidget(self._pb_plan_resume)
+        hbox = QHBoxLayout()
+        hbox.addWidget(self._pb_plan_resume)
+        hbox.addWidget(self._pb_kernel_interrupt)
+        vbox.addLayout(hbox)
         hbox = QHBoxLayout()
         hbox.addWidget(self._pb_plan_stop)
         hbox.addWidget(self._pb_plan_abort)
@@ -479,12 +486,20 @@ class QtReExecutionControls(QWidget):
         manager_state = status.get("manager_state", None)
         re_state = status.get("re_state", None)
         pause_enable = manager_state == "executing_queue" or re_state == "running"
+        ip_kernel_state = status.get("ip_kernel_state", None)
         self._pb_plan_pause_deferred.setEnabled(is_connected and worker_exists and pause_enable)
         self._pb_plan_pause_immediate.setEnabled(is_connected and worker_exists and pause_enable)
         self._pb_plan_resume.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_stop.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_abort.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_halt.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
+        self._pb_kernel_interrupt.setEnabled(
+            is_connected
+            and worker_exists
+            and (manager_state != "executing_queue")
+            and (re_state != "running")
+            and (ip_kernel_state in ("idle", "busy"))
+        )
 
     def _pb_plan_pause_deferred_clicked(self):
         try:
@@ -495,6 +510,12 @@ class QtReExecutionControls(QWidget):
     def _pb_plan_pause_immediate_clicked(self):
         try:
             self.model.re_pause(option="immediate")
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_kernel_interrupt_clicked(self):
+        try:
+            self.model.kernel_interrupt()
         except Exception as ex:
             print(f"Exception: {ex}")
 
@@ -1416,7 +1437,7 @@ class QtRePlanHistory(QWidget):
 
 
 class QtReRunningPlan(QWidget):
-    signal_update_widgets = Signal()
+    signal_update_widgets = Signal(bool, object)
     signal_running_item_changed = Signal(object, object)
 
     def __init__(self, model, parent=None):
@@ -1435,10 +1456,15 @@ class QtReRunningPlan(QWidget):
         self._pb_copy_to_queue = PushButtonMinimumWidth("Copy to Queue")
         self._pb_copy_to_queue.clicked.connect(self._pb_copy_to_queue_clicked)
 
+        self._pb_environment_update = QPushButton("Update Environment")
+        self._pb_environment_update.setEnabled(False)
+        self._pb_environment_update.clicked.connect(self._pb_environment_update_clicked)
+
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
         hbox.addWidget(QLabel("RUNNING PLAN"))
         hbox.addStretch(1)
+        hbox.addWidget(self._pb_environment_update)
         hbox.addWidget(self._pb_copy_to_queue)
         vbox.addLayout(hbox)
         vbox.addWidget(self._text_edit)
@@ -1446,7 +1472,7 @@ class QtReRunningPlan(QWidget):
 
         self._is_item_running = False
         self._running_item_uid = ""
-        self._update_button_states()
+        self._update_copy_button_state()
 
         self.model.events.running_item_changed.connect(self.on_running_item_changed)
         self.signal_running_item_changed.connect(self.slot_running_item_changed)
@@ -1461,7 +1487,7 @@ class QtReRunningPlan(QWidget):
     @monitor_mode.setter
     def monitor_mode(self, monitor):
         self._monitor_mode = bool(monitor)
-        self._update_button_states()
+        self._update_copy_button_state()
 
     def on_running_item_changed(self, event):
         running_item = event.running_item
@@ -1530,28 +1556,51 @@ class QtReRunningPlan(QWidget):
         self._text_edit.setHtml(s_running_item + s_run_list)
 
         self._is_item_running = bool(running_item)
-        self._update_button_states()
+        self._update_copy_button_state()
 
         scroll_maximum_new = self._text_edit.verticalScrollBar().maximum()
         scroll_value_new = scroll_maximum_new if tb_scrolled_to_bottom else scroll_value
         self._text_edit.verticalScrollBar().setValue(scroll_value_new)
 
     def on_update_widgets(self, event):
-        self.signal_update_widgets.emit()
+        is_connected = bool(event.is_connected)
+        status = event.status
+        self.signal_update_widgets.emit(is_connected, status)
 
-    @Slot()
-    def slot_update_widgets(self):
-        self._update_button_states()
+    @Slot(bool, object)
+    def slot_update_widgets(self, is_connected, status):
+        is_connected = bool(is_connected)
+        worker_environment_exists = bool(status.get("worker_environment_exists", False))
+        manager_state = status.get("manager_state", "idle")
+        worker_state = status.get("worker_environment_state", "idle")
+        ip_kernel_state = status.get("ip_kernel_state", None)
+        monitor_mode = self._monitor_mode
 
-    def _update_button_states(self):
-        is_connected = bool(self.model.re_manager_connected)
+        self._pb_environment_update.setEnabled(
+            not monitor_mode
+            and is_connected
+            and worker_environment_exists
+            and manager_state in ("idle",)
+            and worker_state == "idle"
+            and ip_kernel_state != "busy"
+        )
+
+        self._update_copy_button_state()
+
+    def _update_copy_button_state(self):
         is_plan_running = self._is_item_running
-
-        self._pb_copy_to_queue.setEnabled(is_connected and is_plan_running and not self._monitor_mode)
+        monitor_mode = self._monitor_mode
+        self._pb_copy_to_queue.setEnabled(is_plan_running and not monitor_mode)
 
     def _pb_copy_to_queue_clicked(self):
         try:
             self.model.running_item_add_to_queue()
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_environment_update_clicked(self):
+        try:
+            self.model.environment_update()
         except Exception as ex:
             print(f"Exception: {ex}")
 
