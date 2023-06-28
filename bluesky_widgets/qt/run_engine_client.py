@@ -429,6 +429,10 @@ class QtReExecutionControls(QWidget):
         self._pb_plan_pause_immediate.setEnabled(False)
         self._pb_plan_pause_immediate.clicked.connect(self._pb_plan_pause_immediate_clicked)
 
+        self._pb_kernel_interrupt = QPushButton("Ctrl-C")
+        self._pb_kernel_interrupt.setEnabled(False)
+        self._pb_kernel_interrupt.clicked.connect(self._pb_kernel_interrupt_clicked)
+
         self._pb_plan_resume = QPushButton("Resume")
         self._pb_plan_resume.setEnabled(False)
         self._pb_plan_resume.clicked.connect(self._pb_plan_resume_clicked)
@@ -452,7 +456,10 @@ class QtReExecutionControls(QWidget):
         hbox.addWidget(self._pb_plan_pause_deferred)
         hbox.addWidget(self._pb_plan_pause_immediate)
         vbox.addLayout(hbox)
-        vbox.addWidget(self._pb_plan_resume)
+        hbox = QHBoxLayout()
+        hbox.addWidget(self._pb_plan_resume)
+        hbox.addWidget(self._pb_kernel_interrupt)
+        vbox.addLayout(hbox)
         hbox = QHBoxLayout()
         hbox.addWidget(self._pb_plan_stop)
         hbox.addWidget(self._pb_plan_abort)
@@ -479,12 +486,20 @@ class QtReExecutionControls(QWidget):
         manager_state = status.get("manager_state", None)
         re_state = status.get("re_state", None)
         pause_enable = manager_state == "executing_queue" or re_state == "running"
+        ip_kernel_state = status.get("ip_kernel_state", None)
         self._pb_plan_pause_deferred.setEnabled(is_connected and worker_exists and pause_enable)
         self._pb_plan_pause_immediate.setEnabled(is_connected and worker_exists and pause_enable)
         self._pb_plan_resume.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_stop.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_abort.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
         self._pb_plan_halt.setEnabled(is_connected and worker_exists and (manager_state == "paused"))
+        self._pb_kernel_interrupt.setEnabled(
+            is_connected
+            and worker_exists
+            and (manager_state != "executing_queue")
+            and (re_state != "running")
+            and (ip_kernel_state in ("idle", "busy"))
+        )
 
     def _pb_plan_pause_deferred_clicked(self):
         try:
@@ -495,6 +510,12 @@ class QtReExecutionControls(QWidget):
     def _pb_plan_pause_immediate_clicked(self):
         try:
             self.model.re_pause(option="immediate")
+        except Exception as ex:
+            print(f"Exception: {ex}")
+
+    def _pb_kernel_interrupt_clicked(self):
+        try:
+            self.model.kernel_interrupt()
         except Exception as ex:
             print(f"Exception: {ex}")
 

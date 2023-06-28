@@ -1177,6 +1177,12 @@ class RunEngineClient:
         except Exception as ex:
             raise RuntimeError(f"Failed to enable autostart mode: {ex}") from ex
 
+    def kernel_interrupt(self):
+        try:
+            self._client.kernel_interrupt(interrupt_task=True)
+        except Exception as ex:
+            raise RuntimeError(f"Failed to send interrupt request to IP Kernel: {ex}") from ex
+
     # ============================================================================
     #                        RE Control
 
