@@ -2,6 +2,24 @@
 Release History
 ===============
 
+v0.0.15 (2023-06-28)
+====================
+
+Added
+-----
+
+- ``Auto`` checkbox in ``Queue`` widgets to enable AUTOSTART mode.
+
+- AUTOSTART mode is displayed in the status monitor widget.
+
+- ``Pause`` button is now enabled whenever Run Engine is in the running state.
+
+- ``Ctrl-C`` button in ``Plan Execution`` widgets for sending interrupts to IPython kernel.
+
+- ``Update Environment`` button in ``RUNNING PLAN`` widgets, which initiates generation of
+  new lists of existing and allowed plans and devices based on contents of the worker namespace.
+
+
 v0.0.14 (2022-11-17)
 ====================
 
