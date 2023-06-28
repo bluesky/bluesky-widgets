@@ -1093,6 +1093,16 @@ class RunEngineClient:
 
         self.activate_env_destroy(False)
 
+    def environment_update(self):
+        """
+        Sends a request to update the worker environment (update lists of allowed plans and devices
+        and reference to RE)
+        """
+        try:
+            self._client.environment_update()
+        except Exception as ex:
+            raise RuntimeError(f"Failed to send interrupt request to IP Kernel: {ex}") from ex
+
     @property
     def env_destroy_activated(self):
         return self._env_destroy_activated
