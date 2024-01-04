@@ -58,8 +58,8 @@ def test_figure_title_syncing(FigureView):
 
 
 def test_short_title_syncing(FigureViews, request):
-    QtFigures = pytest.importorskip("bluesky_widgets.qt.figures.QtFigures")
-    if request.getfixturevalue("FigureViews") is not QtFigures:
+    qfigs = pytest.importorskip("bluesky_widgets.qt.figures")
+    if request.getfixturevalue("FigureViews") is not qfigs.QtFigures:
         pytest.skip("This tests details of the QtFigures view.")
     model = func(run)
     figures = FigureList([model])
@@ -80,8 +80,8 @@ def test_short_title_syncing(FigureViews, request):
 
 
 def test_non_null_short_title_syncing(FigureViews, request):
-    QtFigures = pytest.importorskip("bluesky_widgets.qt.figures.QtFigures")
-    if request.getfixturevalue("FigureViews") is not QtFigures:
+    qfigs = pytest.importorskip("bluesky_widgets.qt.figures")
+    if request.getfixturevalue("FigureViews") is not qfigs.QtFigures:
         pytest.skip("This tests details of the QtFigures view.")
     model = func(run)
     model.short_title = "short title"

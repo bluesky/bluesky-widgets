@@ -9,8 +9,8 @@ about their Artists.
 import collections
 import uuid as uuid_module
 
-from ..utils.event import EmitterGroup, Event
-from ..utils.list import EventedList
+from bluesky_live.event import EmitterGroup, Event
+from bluesky_live.list import ListModel as EventedList
 from ..utils.dict_view import UpdateOnlyDict, DictView
 
 
@@ -28,45 +28,14 @@ class BaseSpec:
         return self._uuid
 
 
-class Figure(BaseSpec):
-    """
-    Describes a Figure
+class Container(BaseSpec):
+    __slots__ = ("_title", "_short_title")
 
-    Parameters
-    ----------
-    axes : Tuple[Axes]
-    title : String
-        Figure title text
-    uuid : UUID, optional
-        Automatically assigned to provide a unique identifier for this Figure,
-        used internally to track it.
-    short_title: String, optional
-        Shorter figure title text, used in (for example) tab labels. Views
-        should fall back on ``title`` if this is None.
-    """
-
-    __slots__ = ("_axes", "_title", "_short_title")
-
-    def __init__(self, axes, *, title, uuid=None, short_title=None):
-        for ax in axes:
-            ax.set_figure(self)
-        self._axes = tuple(axes)
+    def __init__(self, *, title, uuid=None, short_title=None, **kwargs):
         self._title = title
         self._short_title = short_title
         self.events = EmitterGroup(source=self, title=Event, short_title=Event)
-        super().__init__(uuid)
-
-    @property
-    def axes(self):
-        """
-        Tuple of Axess. Set at Figure creation time and immutable.
-
-        Why is it immutable? Because rearranging Axes to make room for a new
-        one is currently painful to do in matplotlib. This constraint might be
-        relaxed in the future if the situation improves in matplotlib or if
-        support for other plotting frameworks is added to bluesky-widgets.
-        """
-        return self._axes
+        super().__init__(uuid=uuid)
 
     @property
     def title(self):
@@ -87,6 +56,90 @@ class Figure(BaseSpec):
     def short_title(self, value):
         self._short_title = value
         self.events.short_title(value=value, figure_spec=self)
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"title={self.title!r}, short_title={self.short_title!r}, "
+            f"uuid={self.uuid!r})"
+        )
+
+
+class TableContainer(Container):
+    __slots__ = ("_tables",)
+
+
+class Table(BaseSpec):
+    __slots__ = (
+        "_live",
+        "_label",
+        "_parent",
+        "_fields"
+    )
+
+    def __init__(self, *, label, fields, live=True, uuid=None, parent=None):
+        self._label = label
+        self._live = live
+        self._fields = tuple(fields)
+        self.events = EmitterGroup(
+            source=self,
+            label=Event,
+            new_data=Event,
+            completed=Event,
+            style_updated=Event,
+        )
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        self._label = value
+        self.events.label(value=value)
+
+    @property
+    def fields(self, value):
+        return self._fields
+
+
+class Figure(Container):
+    """
+    Describes a Figure
+
+    Parameters
+    ----------
+    axes : Tuple[Axes]
+    title : String
+        Figure title text
+    uuid : UUID, optional
+        Automatically assigned to provide a unique identifier for this Figure,
+        used internally to track it.
+    short_title: String, optional
+        Shorter figure title text, used in (for example) tab labels. Views
+        should fall back on ``title`` if this is None.
+    """
+
+    __slots__ = ("_axes",)
+
+    def __init__(self, axes, **kwargs):
+        for ax in axes:
+            ax.set_figure(self)
+        self._axes = tuple(axes)
+        super().__init__(**kwargs)
+
+    @property
+    def axes(self):
+        """
+        Tuple of Axess. Set at Figure creation time and immutable.
+
+        Why is it immutable? Because rearranging Axes to make room for
+        a new one is currently possible but annoying to do in
+        Matplotlib. This constraint might be relaxed in the future if
+        there is a need.
+
+        """
+        return self._axes
 
     def __repr__(self):
         return (

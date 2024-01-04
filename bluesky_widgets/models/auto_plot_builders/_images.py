@@ -4,9 +4,9 @@ from ._base import AutoPlotter
 
 class AutoImages(AutoPlotter):
     """
-    Construct figures with line plots automatically.
+    Construct figures with images automatically.
 
-    The decision of which lines to plot is based on metadata and data shape.
+    The decision of which images to plot is based on metadata and data shape.
 
     Examples
     --------

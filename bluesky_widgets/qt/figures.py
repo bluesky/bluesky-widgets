@@ -15,7 +15,7 @@ import matplotlib.figure
 
 from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
-from ..utils.event import Event
+from bluesky_live.event import Event
 from ..utils.dict_view import DictView
 
 
