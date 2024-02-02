@@ -38,11 +38,11 @@ class Query(collections.abc.Mapping):
 
     @abc.abstractproperty
     def query(self):
-        pass 
+        pass
 
     @abc.abstractproperty
     def kwargs(self):
-        pass 
+        pass
 
     def __iter__(self):
         return iter(self.query)
