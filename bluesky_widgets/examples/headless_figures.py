@@ -5,6 +5,7 @@ python -m bluesky_widgets.examples.headless_figures
 
 and it will print to stdout the names of the figures that it creates, one per line
 """
+
 import tempfile
 
 from bluesky import RunEngine

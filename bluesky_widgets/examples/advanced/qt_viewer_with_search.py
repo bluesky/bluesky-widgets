@@ -12,6 +12,7 @@ Connect a consumer to localhost:XXXXX
 
 python -m bluesky_widgets.examples.advanced.qt_viewer_with_search localhost:XXXXX
 """
+
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt
 from bluesky_widgets.models.search import SearchList, Search

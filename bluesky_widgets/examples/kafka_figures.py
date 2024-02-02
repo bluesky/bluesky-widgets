@@ -6,6 +6,7 @@ python -m bluesky_widgets.examples.kafka_figures
 For each Run, it will generate thumbnails and save them to a temporary
 directory. The filepaths will be printed to the stdout, one per line.
 """
+
 from functools import partial
 import os
 import tempfile

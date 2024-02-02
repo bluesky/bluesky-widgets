@@ -5,6 +5,7 @@ ipython --gui=qt
 
 In [1]: %run -m bluesky_widgets.examples.ipy_qt_images
 """
+
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.models.auto_plot_builders import AutoImages
 from bluesky_widgets.qt.figures import QtFigures

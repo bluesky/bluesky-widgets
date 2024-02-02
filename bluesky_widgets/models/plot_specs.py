@@ -6,6 +6,7 @@ We follow the pattern that parents know about their children but children do
 not know about their parents: thus, Figures know about their Axes and Axes know
 about their Artists.
 """
+
 import collections
 import uuid as uuid_module
 

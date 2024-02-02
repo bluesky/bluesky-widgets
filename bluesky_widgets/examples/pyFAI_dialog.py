@@ -6,6 +6,7 @@ from a new menu item in the top menu bar.
 
 The changes are marked below with comments.
 """
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
