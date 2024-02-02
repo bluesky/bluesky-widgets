@@ -92,7 +92,7 @@ class QtRemoteDispatcher(QObject):
         while continue_polling():
             try:
                 # there should maybe be a poll method on the dispatcher
-                msg = self._dispatcher._bluesky_consumer.consumer.poll(
+                msg = self._dispatcher._bluesky_consumer._consumer.poll(
                     self._dispatcher._bluesky_consumer.polling_duration
                 )
                 if msg is None:
@@ -116,7 +116,7 @@ class QtRemoteDispatcher(QObject):
                                 # doc.
                                 logger.debug("keep waiting for a start document")
                                 return
-                        yield self._dispatcher._bluesky_consumer.consumer, msg.topic(), name, document
+                        yield self._dispatcher._bluesky_consumer._consumer, msg.topic(), name, document
                     except Exception as exc:
                         logger.exception(exc)
             except Exception as exc:
