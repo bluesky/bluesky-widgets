@@ -6,6 +6,7 @@ python -m bluesky_widgets.examples.utils.stream_data_kafka
 It will publish Bluesky documents to kafka running on localhost:9092
 until stopped.
 """
+
 import asyncio
 import logging
 from functools import partial

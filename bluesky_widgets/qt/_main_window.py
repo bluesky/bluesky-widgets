@@ -2,6 +2,7 @@
 Custom Qt widgets that serve as native objects that the public-facing elements
 wrap.
 """
+
 import time
 
 from qtpy.QtWidgets import (  # noqa: E402

@@ -19,7 +19,7 @@ Vendored from databroker.queries
 
 
 class InvertedRange(ValueError):
-    ...
+   pass 
 
 
 """
@@ -38,11 +38,11 @@ class Query(collections.abc.Mapping):
 
     @abc.abstractproperty
     def query(self):
-        ...
+       pass 
 
     @abc.abstractproperty
     def kwargs(self):
-        ...
+       pass 
 
     def __iter__(self):
         return iter(self.query)

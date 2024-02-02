@@ -2,6 +2,7 @@
 This joins our Axes model to matplotlib.axes.Axes. It is used by
 bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 """
+
 import logging
 
 from .models.plot_specs import Axes, Line, Image

@@ -3,6 +3,7 @@ Displays a BlueskyRun in a QTreeView lazily populating the view. In a real
 application this would be used in conjunction with a data browser/search box or
 on the command line to explore runs.
 """
+
 from bluesky_widgets.models.run_tree import RunTree
 from bluesky_widgets.qt import Window
 from bluesky_widgets.qt import gui_qt

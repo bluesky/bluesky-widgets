@@ -3,6 +3,7 @@ Select some runs and click the button. Their IDs will be printed to the
 terminal. In a real application, this could kick off data processing, export,
 or visualization.
 """
+
 from bluesky_widgets.qt import Window, gui_qt
 from bluesky_widgets.models.search import SearchList, Search
 from bluesky_widgets.qt.search import QtSearches

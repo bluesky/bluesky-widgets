@@ -5,6 +5,7 @@ ipython --gui=qt
 
 In [1]: %run -m bluesky_widgets.examples.ipy_qt_figures
 """
+
 from bluesky import RunEngine
 from bluesky.plans import scan
 from ophyd.sim import motor, det
