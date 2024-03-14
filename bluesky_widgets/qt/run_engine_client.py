@@ -2777,9 +2777,11 @@ class QtReConsoleMonitor(QWidget):
         self._start_thread()
         self._start_timer()
 
+        self._updating_text = False
+
     def _start_timer(self):
         # Timer is used to initiate periodic updates of the QTextEdit widget
-        QTimer.singleShot(200, self._update_console_output)
+        QTimer.singleShot(195, self._update_console_output)
 
     def _finished_receiving_console_output(self):
         self._start_thread()
@@ -2842,10 +2844,14 @@ class QtReConsoleMonitor(QWidget):
 
     def _update_console_output(self):
         if self._text_updated:
-            self._text_updated = False
-            self._adjust_text_list_size()
-            self._display_text()
-
+            if not self._updating_text:
+                try:
+                    self._updating_text = True
+                    self._text_updated = False
+                    self._adjust_text_list_size()
+                    self._display_text()
+                finally:
+                    self._updating_text = False
         self._start_timer()
 
     def _display_text(self):
