@@ -40,12 +40,11 @@ __copyright__ = "European Synchrotron Radiation Facility, Grenoble, France"
 __date__ = "21/01/2020"
 __status__ = "production"
 
+import datetime
+import logging
 import os
 import sys
-import datetime
 from argparse import ArgumentParser
-
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logging.captureWarnings(True)
@@ -57,10 +56,10 @@ except ImportError:
 
 logger_uncaught = logging.getLogger("pyFAI-calib2.UNCAUGHT")
 
-import pyFAI.resources
 import pyFAI.calibrant
 import pyFAI.detectors
 import pyFAI.io.image
+import pyFAI.resources
 from pyFAI.io.ponifile import PoniFile
 
 try:
@@ -568,10 +567,9 @@ def setup_model(model, options):
     args = options.args
 
     # The module must not import the GUI
-    from pyFAI.gui.utils import units
-
     # TODO: This should be removed
     import pyFAI.gui.cli_calibration
+    from pyFAI.gui.utils import units
 
     # Settings
     settings = model.experimentSettingsModel()
@@ -793,8 +791,8 @@ def setup_model(model, options):
 
     if options.npt:
         try:
-            from pyFAI.gui.helper import model_transform
             from pyFAI.control_points import ControlPoints
+            from pyFAI.gui.helper import model_transform
 
             controlPoints = ControlPoints(filename=options.npt)
             peakSelectionModel = model.peakSelectionModel()
@@ -842,8 +840,8 @@ def main():
 
     # Make sure matplotlib is loaded first by silx
     import silx.gui.plot.matplotlib
-    from pyFAI.gui.CalibrationWindow import CalibrationWindow
     from pyFAI.gui.CalibrationContext import CalibrationContext
+    from pyFAI.gui.CalibrationWindow import CalibrationWindow
 
     sys.excepthook = logUncaughtExceptions
     if options.qtargs is None:
@@ -863,13 +861,12 @@ def main():
 
     # Begin modifications for bluesky_widgets
 
-    from qtpy.QtWidgets import QDialog
+    from qtpy.QtWidgets import QAction, QDialog, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+
+    from bluesky_widgets.examples.utils.add_search_mixin import columns
+    from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
     from bluesky_widgets.models.search import Search
     from bluesky_widgets.qt.search import QtSearch
-    from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
-    from bluesky_widgets.examples.utils.add_search_mixin import columns
-
-    from qtpy.QtWidgets import QAction, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
     example_catalog = get_catalog()
 

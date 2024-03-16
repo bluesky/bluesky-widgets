@@ -13,12 +13,11 @@ from functools import partial
 
 import msgpack
 import msgpack_numpy as mpn
-
 from bluesky import RunEngine
-from bluesky_kafka import Publisher
-from bluesky.plans import scan
 from bluesky.plan_stubs import sleep
-from ophyd.sim import motor, det
+from bluesky.plans import scan
+from bluesky_kafka import Publisher
+from ophyd.sim import det, motor
 
 log = logging.getLogger(__name__)
 

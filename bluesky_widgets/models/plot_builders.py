@@ -4,16 +4,11 @@ import itertools
 
 import numpy
 
-from .plot_specs import (
-    Figure,
-    Axes,
-    Image,
-    Line,
-)
-from .utils import auto_label, call_or_eval, RunManager, run_is_live_and_not_completed
 from ..utils.dict_view import DictView
 from ..utils.event import EmitterGroup, Event
 from ..utils.list import EventedList
+from .plot_specs import Axes, Figure, Image, Line
+from .utils import RunManager, auto_label, call_or_eval, run_is_live_and_not_completed
 
 
 class Lines:

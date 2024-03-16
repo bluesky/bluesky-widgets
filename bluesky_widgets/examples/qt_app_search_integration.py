@@ -4,18 +4,11 @@ An example integration QtFigures into an "existing" Qt application. Run like:
 python -m bluesky_widgets.examples.qt_app_integration
 """
 
-from qtpy.QtWidgets import (
-    QApplication,
-    QPushButton,
-    QVBoxLayout,
-    QLabel,
-    QMainWindow,
-    QWidget,
-)
+from bluesky_live.event import Event
+from qtpy.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
+
 from bluesky_widgets.models.search import Search
 from bluesky_widgets.qt.search import QtSearch
-from bluesky_live.event import Event
-
 
 # Extend the search widget with a single button. In your application, you might
 # want multiple buttons that do different things.

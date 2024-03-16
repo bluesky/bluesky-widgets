@@ -1,10 +1,10 @@
-import pickle
 import multiprocessing
-from queue import Empty
+import pickle
 import threading
+from queue import Empty
 
-from bluesky.run_engine import Dispatcher, DocumentNames
 import zmq
+from bluesky.run_engine import Dispatcher, DocumentNames
 
 
 class RemoteDispatcher:

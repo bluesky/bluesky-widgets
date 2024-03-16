@@ -4,11 +4,10 @@ application this would be used in conjunction with a data browser/search box or
 on the command line to explore runs.
 """
 
-from bluesky_widgets.models.run_tree import RunTree
-from bluesky_widgets.qt import Window
-from bluesky_widgets.qt import gui_qt
-from bluesky_widgets.qt.run_tree import QtTreeView
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.models.run_tree import RunTree
+from bluesky_widgets.qt import Window, gui_qt
+from bluesky_widgets.qt.run_tree import QtTreeView
 
 
 class RunTree(RunTree):

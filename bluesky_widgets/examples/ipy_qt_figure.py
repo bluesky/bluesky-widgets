@@ -8,12 +8,12 @@ In [1]: %run -m bluesky_widgets.examples.ipy_qt_figure
 
 from bluesky import RunEngine
 from bluesky.plans import scan
-from ophyd.sim import motor, det
+from ophyd.sim import det, motor
 
-from bluesky_widgets.utils.streaming import stream_documents_into_runs
+from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.models.plot_builders import Lines
 from bluesky_widgets.qt.figures import QtFigure
-from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
 model = Lines("motor", ["det"], max_runs=3)
 view = QtFigure(model.figure)

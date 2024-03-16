@@ -1,22 +1,15 @@
 import gc
 
-from qtpy.QtWidgets import (
-    QSizePolicy,
-    QTabWidget,
-    QWidget,
-    QVBoxLayout,
-)
-from qtpy.QtCore import Signal, QObject
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar,
-)
 import matplotlib.figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from qtpy.QtCore import QObject, Signal
+from qtpy.QtWidgets import QSizePolicy, QTabWidget, QVBoxLayout, QWidget
 
-from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
-from ..utils.event import Event
+from ..models.plot_specs import Figure, FigureList
 from ..utils.dict_view import DictView
+from ..utils.event import Event
 
 
 def _initialize_matplotlib():

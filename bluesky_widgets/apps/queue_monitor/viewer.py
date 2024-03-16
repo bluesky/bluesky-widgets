@@ -1,10 +1,12 @@
+import os
+
+from qtpy.QtWidgets import QAction, QFileDialog
+
 from bluesky_widgets.models.run_engine_client import RunEngineClient
 from bluesky_widgets.qt import Window
 
-from .widgets import QtViewer
 from .settings import SETTINGS
-
-from qtpy.QtWidgets import QAction
+from .widgets import QtViewer
 
 
 class ViewerModel:
@@ -32,6 +34,8 @@ class Viewer(ViewerModel):
         # TODO Where does title thread through?
         super().__init__()
 
+        self._work_dir = os.path.expanduser("~")
+
         self._widget = QtViewer(self)
         self._window = Window(self._widget, show=show)
 
@@ -43,6 +47,17 @@ class Viewer(ViewerModel):
         self.action_activate_env_destroy.triggered.connect(self._activate_env_destroy_triggered)
         menu_item_control.addAction(self.action_activate_env_destroy)
 
+        menu_item_control = menu_bar.addMenu("Save/Restore")
+        self.action_save_history_as_txt = QAction("Save Plan History (as .txt)", self._window._qt_window)
+        self.action_save_history_as_txt.triggered.connect(self._save_history_as_txt_triggered)
+        menu_item_control.addAction(self.action_save_history_as_txt)
+        self.action_save_history_as_json = QAction("Save Plan History (as .json)", self._window._qt_window)
+        self.action_save_history_as_json.triggered.connect(self._save_history_as_json_triggered)
+        menu_item_control.addAction(self.action_save_history_as_json)
+        self.action_save_history_as_yaml = QAction("Save Plan History (as .yaml)", self._window._qt_window)
+        self.action_save_history_as_yaml.triggered.connect(self._save_history_as_yaml_triggered)
+        menu_item_control.addAction(self.action_save_history_as_yaml)
+
         self._widget.model.run_engine.events.status_changed.connect(self.on_update_widgets)
 
     def _update_action_env_destroy_state(self):
@@ -52,6 +67,33 @@ class Viewer(ViewerModel):
     def _activate_env_destroy_triggered(self):
         env_destroy_activated = self._widget.model.run_engine.env_destroy_activated
         self._widget.model.run_engine.activate_env_destroy(not env_destroy_activated)
+
+    def _save_history_as_txt_triggered(self):
+        self._save_history_to_file("txt")
+
+    def _save_history_as_json_triggered(self):
+        self._save_history_to_file("json")
+
+    def _save_history_as_yaml_triggered(self):
+        self._save_history_to_file("yaml")
+
+    def _save_history_to_file(self, file_format):
+        try:
+            fln_pattern = f"{file_format.upper()} (*.{file_format.lower()});; All (*)"
+            file_path_init = os.path.join(self._work_dir, "plan_history." + file_format.lower())
+            file_path_tuple = QFileDialog.getSaveFileName(
+                self._widget, "Save Plan History to File", file_path_init, fln_pattern
+            )
+            file_path = file_path_tuple[0]
+            if file_path:
+                file_path = file_path_tuple[0]
+                self._work_dir = os.path.dirname(file_path)
+                self._widget.model.run_engine.save_plan_history_to_file(
+                    file_path=file_path, file_format=file_format
+                )
+                print(f"Plan history was successfully saved to file {file_path!r}")
+        except Exception as ex:
+            print(f"Failed to save data to file: {ex}")
 
     def on_update_widgets(self, event):
         self._update_action_env_destroy_state()

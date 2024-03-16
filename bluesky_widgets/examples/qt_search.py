@@ -4,12 +4,13 @@ terminal. In a real application, this could kick off data processing, export,
 or visualization.
 """
 
-from bluesky_widgets.qt import Window, gui_qt
-from bluesky_widgets.models.search import SearchList, Search
-from bluesky_widgets.qt.search import QtSearches
-from bluesky_widgets.examples.utils.generate_mongo_data import get_catalog
+from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget
+
 from bluesky_widgets.examples.utils.add_search_mixin import columns
-from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
+from bluesky_widgets.examples.utils.generate_mongo_data import get_catalog
+from bluesky_widgets.models.search import Search, SearchList
+from bluesky_widgets.qt import Window, gui_qt
+from bluesky_widgets.qt.search import QtSearches
 
 
 class SearchListWithButton(SearchList):

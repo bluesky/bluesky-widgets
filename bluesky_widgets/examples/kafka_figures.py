@@ -7,18 +7,18 @@ For each Run, it will generate thumbnails and save them to a temporary
 directory. The filepaths will be printed to the stdout, one per line.
 """
 
-from functools import partial
 import os
 import tempfile
+from functools import partial
 
 import msgpack
 import msgpack_numpy as mpn
 from bluesky_kafka import RemoteDispatcher
 
-from bluesky_widgets.utils.streaming import stream_documents_into_runs
-from bluesky_widgets.models.plot_builders import AutoLines
 from bluesky_widgets.headless.figures import HeadlessFigures
+from bluesky_widgets.models.plot_builders import AutoLines
 from bluesky_widgets.models.utils import run_is_live_and_not_completed
+from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
 
 def export_thumbnails_when_complete(run):

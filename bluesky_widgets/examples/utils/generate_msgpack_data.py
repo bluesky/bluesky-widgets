@@ -1,12 +1,11 @@
 import tempfile
-from suitcase.msgpack import Serializer
-from bluesky import RunEngine
-from bluesky.plans import count, scan, grid_scan
-from ophyd.sim import det, motor, SynSignal, det4, motor1, motor2
+
 import numpy as np
-
+from bluesky import RunEngine
+from bluesky.plans import count, grid_scan, scan
 from databroker._drivers.msgpack import BlueskyMsgpackCatalog
-
+from ophyd.sim import SynSignal, det, det4, motor, motor1, motor2
+from suitcase.msgpack import Serializer
 
 random_img = SynSignal(func=lambda: np.random.random((5, 10, 10)), name="random_img")
 

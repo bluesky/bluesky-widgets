@@ -1,12 +1,12 @@
 import napari
+from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
 from bluesky_widgets.examples.utils.add_search_mixin import extract_results_row_from_run
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
 from bluesky_widgets.examples.utils.get_run_images import generate_thumbnail
 from bluesky_widgets.models.search import Search, SearchList
-from bluesky_widgets.utils.event import Event
-from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout
 from bluesky_widgets.qt.search import QtSearches
+from bluesky_widgets.utils.event import Event
 
 
 class SearchListWithButton(SearchList):

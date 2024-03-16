@@ -5,10 +5,8 @@ from bluesky import RunEngine
 from bluesky.plans import count
 
 from bluesky_widgets.models.plot_builders import Lines
-from bluesky_widgets.utils.streaming import stream_documents_into_runs
-
 from bluesky_widgets.qt.kafka_dispatcher import QtRemoteDispatcher
-
+from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
 test_logger = logging.getLogger("bluesky_widgets.qt.tests")
 

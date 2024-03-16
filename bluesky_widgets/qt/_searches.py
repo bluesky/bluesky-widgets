@@ -1,15 +1,8 @@
 import logging
 
 from qtpy.QtCore import QStringListModel
-from qtpy.QtWidgets import (
-    QComboBox,
-    QPushButton,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
-    QSpacerItem,
-    QSizePolicy,
-)
+from qtpy.QtWidgets import QComboBox, QPushButton, QSizePolicy, QSpacerItem, QTabWidget, QVBoxLayout, QWidget
+
 from ._search_input import QtSearchInput
 from ._search_results import QtSearchResults
 

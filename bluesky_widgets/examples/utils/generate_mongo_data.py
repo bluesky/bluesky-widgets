@@ -1,13 +1,12 @@
 # Based on databroker/examples/generate_mongo_data.py
-from suitcase.mongo_normalized import Serializer
-from bluesky import RunEngine
-from bluesky.plans import count, scan
-from ophyd.sim import det, motor, SynSignal
-import numpy as np
 import uuid
 
+import numpy as np
+from bluesky import RunEngine
+from bluesky.plans import count, scan
 from databroker._drivers.mongo_normalized import BlueskyMongoCatalog
-
+from ophyd.sim import SynSignal, det, motor
+from suitcase.mongo_normalized import Serializer
 
 random_img = SynSignal(func=lambda: np.random.random((5, 10, 10)), name="random_img")
 

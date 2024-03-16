@@ -1,19 +1,18 @@
 import asyncio
 import logging
+import tempfile
 from multiprocessing import Process, Queue
 from pathlib import Path
-import tempfile
 
-from bluesky.callbacks.zmq import Publisher
-from bluesky.callbacks import LiveTable
-from bluesky.preprocessors import SupplementalData
-from suitcase.jsonl import Serializer
 from bluesky import RunEngine
-from ophyd.sim import det, motor, motor1, motor2
-from bluesky.plans import scan
-from event_model import RunRouter
+from bluesky.callbacks import LiveTable
+from bluesky.callbacks.zmq import Publisher
 from bluesky.plan_stubs import sleep
-
+from bluesky.plans import scan
+from bluesky.preprocessors import SupplementalData
+from event_model import RunRouter
+from ophyd.sim import det, motor, motor1, motor2
+from suitcase.jsonl import Serializer
 
 log = logging.getLogger(__name__)
 

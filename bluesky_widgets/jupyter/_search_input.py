@@ -1,18 +1,10 @@
 import contextlib
-
-from ipywidgets.widgets import (
-    Text,
-    VBox,
-    RadioButtons,
-    HBox,
-    Label,
-    Button,
-    Layout,
-    GridBox,
-)
-from traitlets import All
-from ipydatetime import DatetimePicker
 from datetime import datetime, timedelta
+
+from ipydatetime import DatetimePicker
+from ipywidgets.widgets import Button, GridBox, HBox, Label, Layout, RadioButtons, Text, VBox
+from traitlets import All
+
 from bluesky_widgets.models.search import LOCAL_TIMEZONE
 
 

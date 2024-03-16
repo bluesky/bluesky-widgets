@@ -1,7 +1,7 @@
-from bluesky_live.run_builder import build_simple_run, RunBuilder
 import numpy
-import xarray
 import pytest
+import xarray
+from bluesky_live.run_builder import RunBuilder, build_simple_run
 
 from ..utils import call_or_eval, construct_namespace
 

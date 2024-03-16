@@ -1,8 +1,7 @@
 from bluesky_live.run_builder import build_simple_run
 
-from .. import AutoLines
 from ....headless.figures import HeadlessFigures
-
+from .. import AutoLines
 
 # Make some runs to use.
 runs = [

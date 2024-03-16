@@ -4,7 +4,7 @@ An example integration QtFigures into an "existing" Qt application. Run like:
 python -m bluesky_widgets.examples.qt_app_integration
 """
 
-from qtpy.QtWidgets import QApplication, QVBoxLayout, QLabel, QMainWindow, QWidget
+from qtpy.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
 
 
 def main():
@@ -40,8 +40,9 @@ def main():
     # over a network via publish--subscribe. See
     # bluesky_widgets.examples.advanced.qt_viewer_with_search for an example of
     # that. Here, we keep it simple.
-    from bluesky_widgets.utils.streaming import stream_documents_into_runs
     from bluesky import RunEngine
+
+    from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
     RE = RunEngine()
     RE.subscribe(stream_documents_into_runs(model.add_run))
@@ -60,7 +61,7 @@ def main():
     # the results over a network.
 
     from bluesky.plans import scan
-    from ophyd.sim import motor, det
+    from ophyd.sim import det, motor
 
     def plan():
         for i in range(1, 5):

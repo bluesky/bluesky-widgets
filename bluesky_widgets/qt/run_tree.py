@@ -1,14 +1,9 @@
 from collections import abc
 
-from qtpy import QtCore
-from qtpy.QtCore import (
-    QAbstractItemModel,
-    QModelIndex,
-    Qt,
-)
-from qtpy.QtWidgets import QAbstractItemView, QTreeView
-
 from databroker.core import BlueskyEventStream
+from qtpy import QtCore
+from qtpy.QtCore import QAbstractItemModel, QModelIndex, Qt
+from qtpy.QtWidgets import QAbstractItemView, QTreeView
 
 
 class RunTree:

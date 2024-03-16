@@ -1,5 +1,5 @@
-from bluesky_live.bluesky_run import BlueskyRun, DocumentCache
 import event_model
+from bluesky_live.bluesky_run import BlueskyRun, DocumentCache
 
 
 def stream_documents_into_runs(add_run):

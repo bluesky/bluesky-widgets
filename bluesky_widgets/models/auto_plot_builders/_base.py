@@ -1,8 +1,8 @@
 import abc
 
+from ...utils.list import EventedList
 from ..plot_specs import FigureList
 from ..utils import run_is_live_and_not_completed
-from ...utils.list import EventedList
 
 
 class AutoPlotter(abc.ABC):

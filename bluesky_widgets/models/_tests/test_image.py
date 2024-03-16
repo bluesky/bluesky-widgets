@@ -1,5 +1,5 @@
-from bluesky_live.run_builder import build_simple_run
 import numpy
+from bluesky_live.run_builder import build_simple_run
 
 from ..plot_builders import Images
 from ..plot_specs import Axes, Figure

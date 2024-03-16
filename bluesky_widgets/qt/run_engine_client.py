@@ -1,39 +1,39 @@
 import ast
-import inspect
-import time
-import pprint
 import copy
+import inspect
 import os
+import pprint
+import time
 
+from bluesky_queueserver import construct_parameters, format_text_descriptions
+from qtpy.QtCore import Qt, QTimer, Signal, Slot
+from qtpy.QtGui import QBrush, QColor, QFontMetrics, QIntValidator, QPalette
 from qtpy.QtWidgets import (
-    QWidget,
+    QAbstractItemView,
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QFormLayout,
     QGroupBox,
-    QPushButton,
-    QVBoxLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QTableView,
     QTableWidget,
     QTableWidgetItem,
-    QTableView,
-    QHeaderView,
-    QAbstractItemView,
-    QTextEdit,
     QTabWidget,
-    QRadioButton,
-    QButtonGroup,
-    QComboBox,
-    QLineEdit,
-    QCheckBox,
-    QDialog,
-    QFileDialog,
-    QDialogButtonBox,
-    QFormLayout,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from qtpy.QtCore import Qt, Signal, Slot, QTimer
-from qtpy.QtGui import QFontMetrics, QPalette, QBrush, QColor, QIntValidator
 
 from bluesky_widgets.qt.threading import FunctionWorker
-from bluesky_queueserver import construct_parameters, format_text_descriptions
 
 
 class LineEditExtended(QLineEdit):

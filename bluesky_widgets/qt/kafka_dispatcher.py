@@ -1,10 +1,9 @@
 import functools
 import logging
 
-import msgpack
-from qtpy.QtCore import QTimer, QObject
-
 import bluesky_kafka
+import msgpack
+from qtpy.QtCore import QObject, QTimer
 
 from ..qt.threading import create_worker
 

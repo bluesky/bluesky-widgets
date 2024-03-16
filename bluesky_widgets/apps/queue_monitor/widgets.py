@@ -2,27 +2,21 @@
 Extendeding and supplementing the widgets import bluesky-widgets
 """
 
-from bluesky_widgets.qt.run_engine_client import (
-    QtReEnvironmentControls,
-    QtReManagerConnection,
-    QtReQueueControls,
-    QtReExecutionControls,
-    QtReStatusMonitor,
-    QtRePlanQueue,
-    QtRePlanHistory,
-    QtReRunningPlan,
-    QtRePlanEditor,
-    QtReConsoleMonitor,
-)
-from qtpy.QtWidgets import (
-    QWidget,
-    QHBoxLayout,
-    QVBoxLayout,
-    QTabWidget,
-    QFrame,
-    QSplitter,
-)
 from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QFrame, QHBoxLayout, QSplitter, QTabWidget, QVBoxLayout, QWidget
+
+from bluesky_widgets.qt.run_engine_client import (
+    QtReConsoleMonitor,
+    QtReEnvironmentControls,
+    QtReExecutionControls,
+    QtReManagerConnection,
+    QtRePlanEditor,
+    QtRePlanHistory,
+    QtRePlanQueue,
+    QtReQueueControls,
+    QtReRunningPlan,
+    QtReStatusMonitor,
+)
 
 
 class QtOrganizeQueueWidgets(QSplitter):

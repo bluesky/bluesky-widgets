@@ -1,9 +1,9 @@
-from ipywidgets import widgets
 import ipympl.backend_nbagg
 import matplotlib.figure
+from ipywidgets import widgets
 
-from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes as _MatplotilbAxes
+from ..models.plot_specs import Figure, FigureList
 from ..utils.dict_view import DictView
 
 

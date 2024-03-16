@@ -1,9 +1,9 @@
-from bluesky_live.run_builder import RunBuilder
-import pytest
 import numpy
+import pytest
+from bluesky_live.run_builder import RunBuilder
 
 from ..plot_builders import RasteredImages
-from ..plot_specs import Axes, Image, Figure
+from ..plot_specs import Axes, Figure, Image
 
 
 @pytest.fixture

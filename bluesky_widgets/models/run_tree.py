@@ -1,4 +1,4 @@
-from ..utils.event import Event, EmitterGroup
+from ..utils.event import EmitterGroup, Event
 
 
 class RunTree:
