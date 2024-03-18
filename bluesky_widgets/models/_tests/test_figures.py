@@ -1,16 +1,8 @@
-from bluesky_live.run_builder import RunBuilder
-from bluesky_live.event import CallbackException
 import pytest
+from bluesky_live.event import CallbackException
+from bluesky_live.run_builder import RunBuilder
 
-from ...models.plot_specs import (
-    AxesAlreadySet,
-    Figure,
-    FigureList,
-    Axes,
-    Line,
-    Image,
-)
-
+from ...models.plot_specs import Axes, AxesAlreadySet, Figure, FigureList, Image, Line
 
 # Generate example data.
 with RunBuilder() as builder:

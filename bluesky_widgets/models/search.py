@@ -1,13 +1,13 @@
 import abc
 import collections.abc
-from datetime import datetime, timedelta
 import itertools
+from datetime import datetime, timedelta
 
 import dateutil.tz
 
-from ..utils.list import EventedList
-from ..utils.event import EmitterGroup, Event
 from ..utils.dict_view import UpdateOnlyDict
+from ..utils.event import EmitterGroup, Event
+from ..utils.list import EventedList
 
 LOCAL_TIMEZONE = dateutil.tz.tzlocal()
 _epoch = datetime(1970, 1, 1, 0, 0, tzinfo=LOCAL_TIMEZONE)

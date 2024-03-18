@@ -1,8 +1,8 @@
 from warnings import warn
 
-from ..plot_builders import Lines
-from ..plot_specs import Figure, Axes
 from .._heuristics import hinted_fields
+from ..plot_builders import Lines
+from ..plot_specs import Axes, Figure
 from ._base import AutoPlotter
 
 

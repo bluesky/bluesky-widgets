@@ -1,9 +1,8 @@
-from bluesky_live.run_builder import build_simple_run
 import pytest
+from bluesky_live.run_builder import build_simple_run
 
 from ..plot_builders import Lines
 from ..plot_specs import Axes, Figure
-
 
 # Make some runs to use.
 runs = [

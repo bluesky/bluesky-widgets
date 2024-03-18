@@ -1,12 +1,11 @@
 import pickle
 import time
 
-from bluesky.run_engine import Dispatcher, DocumentNames
 import zmq
+from bluesky.run_engine import Dispatcher, DocumentNames
+from qtpy.QtCore import QObject, QTimer
 
 from ..qt.threading import create_worker
-from qtpy.QtCore import QTimer, QObject
-
 
 LOADING_LATENCY = 0.01  # sec
 

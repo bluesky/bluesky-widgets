@@ -2,17 +2,10 @@ import collections
 import logging
 
 from qtpy import QtCore
-from qtpy.QtCore import (
-    QAbstractTableModel,
-    # QItemSelection,
-    # QItemSelectionModel,
-    QTimer,
-    Qt,
-)
+from qtpy.QtCore import QAbstractTableModel, Qt, QTimer  # QItemSelection,; QItemSelectionModel,
 from qtpy.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from .threading import create_worker
-
 
 logger = logging.getLogger(__name__)
 LOADING_PLACEHOLDER = "..."

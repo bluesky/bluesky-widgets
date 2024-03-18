@@ -1,9 +1,10 @@
 import collections.abc
 from pathlib import Path
+
 import matplotlib
 
-from ..models.plot_specs import Figure, FigureList
 from .._matplotlib_axes import MatplotlibAxes
+from ..models.plot_specs import Figure, FigureList
 from ..utils.dict_view import DictView
 
 

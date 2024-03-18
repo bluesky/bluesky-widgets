@@ -13,16 +13,16 @@ Connect a consumer to localhost:XXXXX
 python -m bluesky_widgets.examples.advanced.qt_viewer_with_search localhost:XXXXX
 """
 
-from bluesky_widgets.qt import Window
-from bluesky_widgets.qt import gui_qt
-from bluesky_widgets.models.search import SearchList, Search
-from bluesky_widgets.models.auto_plot_builders import AutoLines
-from bluesky_widgets.qt.search import QtSearches
-from bluesky_widgets.qt.figures import QtFigures
-from bluesky_widgets.utils.event import Event
-from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from qtpy.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+
 from bluesky_widgets.examples.utils.add_search_mixin import columns
-from qtpy.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout
+from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.models.auto_plot_builders import AutoLines
+from bluesky_widgets.models.search import Search, SearchList
+from bluesky_widgets.qt import Window, gui_qt
+from bluesky_widgets.qt.figures import QtFigures
+from bluesky_widgets.qt.search import QtSearches
+from bluesky_widgets.utils.event import Event
 
 
 class SearchListWithButton(SearchList):
@@ -121,9 +121,7 @@ def main(argv):
         # Optional: Receive live streaming data.
         if len(argv) > 1:
             from bluesky_widgets.qt.zmq_dispatcher import RemoteDispatcher
-            from bluesky_widgets.utils.streaming import (
-                stream_documents_into_runs,
-            )
+            from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
             address = argv[1]
             dispatcher = RemoteDispatcher(address)

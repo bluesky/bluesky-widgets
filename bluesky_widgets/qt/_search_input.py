@@ -1,18 +1,20 @@
 import contextlib
 from datetime import datetime, timedelta
+
 from qtpy.QtCore import QDateTime
 from qtpy.QtWidgets import (
     QButtonGroup,
     QDateTimeEdit,
-    QWidget,
-    QPushButton,
     QFormLayout,
-    QRadioButton,
     QGridLayout,
-    QLineEdit,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QWidget,
 )
+
 from ..models.search import LOCAL_TIMEZONE, secs_since_epoch
 
 

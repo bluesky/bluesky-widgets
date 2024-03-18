@@ -5,7 +5,7 @@ bluesky_widgets.qt.figures and bluesky_widgets.jupyter.figures.
 
 import logging
 
-from .models.plot_specs import Axes, Line, Image
+from .models.plot_specs import Axes, Image, Line
 
 
 class MatplotlibAxes:

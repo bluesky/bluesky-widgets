@@ -5,8 +5,8 @@ import inspect
 
 import numpy
 
-from ..utils.list import EventedList
 from ..utils.event import EmitterGroup, Event
+from ..utils.list import EventedList
 
 
 class RunList(EventedList):

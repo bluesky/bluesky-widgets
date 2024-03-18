@@ -5,7 +5,6 @@ from qtpy.QtWidgets import QApplication
 
 from .threading import wait_for_workers_to_quit
 
-
 _our_app_name = None
 
 

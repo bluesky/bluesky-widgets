@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 
-
-from ...models.plot_specs import Figure, Axes
+from ...models.plot_specs import Axes, Figure
 from ..figures import HeadlessFigure
 
 

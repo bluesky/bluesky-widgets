@@ -1,17 +1,19 @@
 import collections
 import copy
+import datetime
+import importlib
+import json
 import os.path
 import pprint
 import time
-import importlib
 
+import yaml
 from bluesky_live.event import EmitterGroup, Event
 from bluesky_queueserver import bind_plan_arguments
 from bluesky_queueserver.manager.conversions import spreadsheet_to_plan_list
-from bluesky_queueserver_api.zmq import REManagerAPI as REManagerAPI_ZMQ
-from bluesky_queueserver_api.http import REManagerAPI as REManagerAPI_HTTP
-
 from bluesky_queueserver_api._defaults import default_user_group
+from bluesky_queueserver_api.http import REManagerAPI as REManagerAPI_HTTP
+from bluesky_queueserver_api.zmq import REManagerAPI as REManagerAPI_ZMQ
 
 
 class RunEngineClient:
@@ -314,6 +316,47 @@ class RunEngineClient:
 
         except Exception as ex:
             print(f"Exception: {ex}")
+
+    def save_plan_history_to_file(self, *, file_path, file_format):
+        """
+        Save plan history to the file on locally mounted disk. The function
+        does not download the plan history from the server and can be called
+        when the client is disconnected from the server.
+
+        Parameters
+        ----------
+        file_path : str
+            Full path to the file
+        file_format : str
+            File format: "txt", "json" or "yaml"
+        """
+        file_format = file_format.lower()
+        history = copy.copy(self._plan_history_items)
+
+        if file_format == "txt":
+            with open(file_path, "wt") as f:
+                for n, plan in enumerate(history):
+                    t_start = plan.get("result", {}).get("time_start", None)
+                    t_stop = plan.get("result", {}).get("time_stop", None)
+
+                    s = f"PLAN {n + 1}"
+                    if t_start:
+                        s += f": {datetime.datetime.fromtimestamp(t_start)}"
+                        if t_stop:
+                            s += f" - {datetime.datetime.fromtimestamp(t_stop)}"
+
+                    f.write("=" * 80)
+                    f.write(f"\n{s: ^80}\n")
+                    f.write("=" * 80)
+                    f.write(f"\n{pprint.pformat(plan, width=80)}\n")
+        elif file_format == "json":
+            with open(file_path, "wt") as f:
+                json.dump(history, f, indent=2)
+        elif file_format == "yaml":
+            with open(file_path, "w") as f:
+                yaml.dump(history, f)
+        else:
+            raise ValueError(f"Unsupported output format: {file_format!r}")
 
     # ============================================================================
     #                       Useful functions

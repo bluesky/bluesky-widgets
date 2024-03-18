@@ -1,5 +1,6 @@
 import collections.abc
-from .event import Event, EmitterGroup
+
+from .event import EmitterGroup, Event
 
 
 class DictView(collections.abc.Mapping):

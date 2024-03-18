@@ -1,15 +1,13 @@
 import pytest
-
-from qtpy.QtWidgets import QApplication
-
-from bluesky_kafka.tests.conftest import (  # noqa
-    hw,
-    pytest_addoption,
-    kafka_bootstrap_servers,
+from bluesky_kafka.tests.conftest import (  # noqa F401
     broker_authorization_config,
+    hw,
+    kafka_bootstrap_servers,
     publisher_factory,
+    pytest_addoption,
     temporary_topics,
 )
+from qtpy.QtWidgets import QApplication
 
 
 @pytest.fixture

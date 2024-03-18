@@ -3,8 +3,8 @@ import os
 
 from bluesky_widgets.qt import gui_qt
 
-from .viewer import Viewer
 from .settings import SETTINGS
+from .viewer import Viewer
 
 
 def main(argv=None):

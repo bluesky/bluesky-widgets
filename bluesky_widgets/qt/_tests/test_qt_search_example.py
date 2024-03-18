@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
+
 import pytest
+
 from ...examples.qt_search import ExampleApp
 
 

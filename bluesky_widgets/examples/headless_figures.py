@@ -10,12 +10,12 @@ import tempfile
 
 from bluesky import RunEngine
 from bluesky.plans import scan
-from ophyd.sim import motor, det
+from ophyd.sim import det, motor
 
-from bluesky_widgets.utils.streaming import stream_documents_into_runs
-from bluesky_widgets.models.auto_plot_builders import AutoLines
-from bluesky_widgets.headless.figures import HeadlessFigures
 from bluesky_widgets.examples.utils.generate_msgpack_data import get_catalog
+from bluesky_widgets.headless.figures import HeadlessFigures
+from bluesky_widgets.models.auto_plot_builders import AutoLines
+from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
 model = AutoLines(max_runs=3)
 view = HeadlessFigures(model.figures)

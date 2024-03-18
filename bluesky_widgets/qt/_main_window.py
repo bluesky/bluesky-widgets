@@ -5,16 +5,9 @@ wrap.
 
 import time
 
-from qtpy.QtWidgets import (  # noqa: E402
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QHBoxLayout,
-    QLabel,
-    QStatusBar,
-    QFileDialog,
-)
 from qtpy.QtCore import Qt  # noqa: E402
+from qtpy.QtWidgets import QFileDialog  # noqa: E402
+from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMainWindow, QStatusBar, QWidget
 
 from ._event_loop import get_our_app_name
 from .threading import wait_for_workers_to_quit
@@ -172,6 +165,7 @@ class Window:
         img = self._qt_window.grab().toImage()
         if path is not None:
             from skimage.io import imsave
+
             from .utils import QImg2array  # noqa: E402
 
             imsave(path, QImg2array(img))

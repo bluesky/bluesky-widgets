@@ -1,8 +1,8 @@
-from bluesky_live.run_builder import build_simple_run
 import numpy
+from bluesky_live.run_builder import build_simple_run
 
-from .. import AutoImages
 from ....headless.figures import HeadlessFigures
+from .. import AutoImages
 
 
 def test_images():

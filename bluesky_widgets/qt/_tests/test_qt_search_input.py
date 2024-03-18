@@ -1,9 +1,11 @@
-from datetime import datetime, timedelta
 import time
+from datetime import datetime, timedelta
+
 import pytest
 from qtpy.QtCore import QDateTime
-from ...qt.search import QtSearchInput, ADA_LOVELACE_BIRTHDAY, as_qdatetime
-from ...models.search import SearchInput, LOCAL_TIMEZONE
+
+from ...models.search import LOCAL_TIMEZONE, SearchInput
+from ...qt.search import ADA_LOVELACE_BIRTHDAY, QtSearchInput, as_qdatetime
 
 
 def as_datetime(qdatetime):

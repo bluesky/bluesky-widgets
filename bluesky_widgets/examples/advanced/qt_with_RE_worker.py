@@ -12,16 +12,17 @@ Finally, start this example module, connecting to both of those.
 python -m bluesky_widgets.examples.advanced.qt_with_RE_worker tcp://localhost:60615 localhost:5578
 """  # noqa E501
 
-from bluesky_widgets.utils.streaming import stream_documents_into_runs
-from bluesky_widgets.qt.zmq_dispatcher import RemoteDispatcher
-from bluesky_widgets.models.plot_builders import Lines
-from bluesky_widgets.qt.figures import QtFigure
-from bluesky_widgets.qt import gui_qt
+import sys
+import time
+
 from bluesky_queueserver.manager.comms import ZMQCommSendThreads
 from bluesky_queueserver_api._defaults import default_user_group
 
-import sys
-import time
+from bluesky_widgets.models.plot_builders import Lines
+from bluesky_widgets.qt import gui_qt
+from bluesky_widgets.qt.figures import QtFigure
+from bluesky_widgets.qt.zmq_dispatcher import RemoteDispatcher
+from bluesky_widgets.utils.streaming import stream_documents_into_runs
 
 
 def main():

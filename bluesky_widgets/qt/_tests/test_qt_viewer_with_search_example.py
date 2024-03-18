@@ -1,4 +1,5 @@
 import pytest
+
 from ...examples.advanced.qt_viewer_with_search import ExampleApp
 
 
