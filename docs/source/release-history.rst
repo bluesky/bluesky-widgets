@@ -2,6 +2,15 @@
 Release History
 ===============
 
+v0.0.16 (2024-03-21)
+====================
+
+Added
+-----
+
+- ``queue-monitor`` app: menu items to save plan history to TXT, JSON and YAML files.
+
+
 v0.0.15 (2023-06-28)
 ====================
 
@@ -36,7 +45,7 @@ Changed
 Fixed
 -----
 
-- Behavior of the ``Stop`` button (request/cancel stopping the queue). The button 
+- Behavior of the ``Stop`` button (request/cancel stopping the queue). The button
   is now fully functional.
 
 
