@@ -26,16 +26,16 @@ class QtReIPythonConsole(QWidget):
 
     signal_update_widget = Signal(object)
 
-    def __init__(self, model):
+    def __init__(self, model, parent=None):
         """
         Initializes the IPythonConsoleTab widget, setting up the IPython console,
         kernel manager, and kernel client, and connecting them together.
         """
 
-        super().__init__()
+        super().__init__(parent)
         self.kernel_label = QLabel("Kernel Status: Not Connected")
-        self.REClientModel = model
-        self.REClientModel.events.status_changed.connect(self.on_update_widgets)
+        self.model = model
+        self.model.events.status_changed.connect(self.on_update_widgets)
         self.signal_update_widget.connect(self.slot_update_widgets)
 
         # Create main layout
@@ -108,7 +108,7 @@ class QtReIPythonConsole(QWidget):
         self.vbox.insertWidget(1, self.console)
 
         # Setup kernel connection
-        msg = self.REClientModel._client.config_get()
+        msg = self.model._client.config_get()
         connect_info = msg["config"]["ip_connect_info"]
 
         self.kernel_manager = QtKernelManager()
