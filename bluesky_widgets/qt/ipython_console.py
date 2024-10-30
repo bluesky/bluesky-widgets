@@ -28,8 +28,13 @@ class QtReIPythonConsole(QWidget):
 
     def __init__(self, model, parent=None):
         """
-        Initializes the IPythonConsoleTab widget, setting up the IPython console,
-        kernel manager, and kernel client, and connecting them together.
+        Initialize the IPython console widget in an unconnected state.
+        The connection must be initialized by pressing a button in the GUI
+
+        Parameters
+        ----------
+        model : bluesky_widgets.models.run_engine_client.RunEngineClient
+            Run engine model that provides kernel connection status and control
         """
 
         super().__init__(parent)
@@ -42,12 +47,11 @@ class QtReIPythonConsole(QWidget):
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.kernel_label)
 
-        # Create placeholder widget
+        # Create placeholder widget before console is initialized
         self.placeholder = QLabel("<i>Connect to Kernel by hitting the button when the kernel status is idle</i>")
         self.placeholder.setAlignment(Qt.AlignCenter)
         self.placeholder.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        # Add placeholder to layout
         self.vbox.addWidget(self.placeholder)
 
         # Create connect button
@@ -56,9 +60,8 @@ class QtReIPythonConsole(QWidget):
         self.connectButton.setEnabled(False)
 
         self.vbox.addWidget(self.connectButton)
-        # self.vbox.addWidget(QtReStatusMonitor(self.REClientModel))
 
-        # Initialize console reference as None
+        # Initialize console reference as None, just in case
         self.console = None
         self.kernel_manager = None
         self.kernel_client = None
@@ -84,7 +87,6 @@ class QtReIPythonConsole(QWidget):
         """
         Connects to the IPython kernel when the button is pressed.
         """
-        print("Connecting to Kernel")
 
         # Clean up existing console if it exists
         if self.console is not None:
@@ -119,7 +121,6 @@ class QtReIPythonConsole(QWidget):
         # Connect the console widget to the kernel
         self.console.kernel_manager = self.kernel_manager
         self.console.kernel_client = self.kernel_client
-        print("Done connecting to Kernel")
 
     def is_console_connected(self):
         if self.console is not None and self.console.kernel_client and self.console.kernel_client.is_alive():
