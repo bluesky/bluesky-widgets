@@ -149,6 +149,9 @@ class TiledAuthWidget(QWidget):
             self.auth_manager.api_key = key_info["secret"]
             self.auth_manager.context = context
             self.auth_manager.client = from_uri(server_url, api_key=self.auth_manager.api_key)
+
+            self.username_input.clear()
+            self.password_input.clear()
             self.logout_button.setEnabled(True)  # Enable the logout button
 
         except Exception as e:
