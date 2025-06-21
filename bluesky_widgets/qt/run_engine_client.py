@@ -2796,7 +2796,7 @@ class QtReConsoleMonitor(QWidget):
 
         pattern_new_line = "\n"
         pattern_cr = "\r"
-        pattern_up_one_line = "\x1B\x5B\x41"  # ESC [#A
+        pattern_up_one_line = "\x1b\x5b\x41"  # ESC [#A
 
         patterns = {"new_line": pattern_new_line, "cr": pattern_cr, "one_line_up": pattern_up_one_line}
 
@@ -2864,14 +2864,17 @@ class QtReConsoleMonitor(QWidget):
             self._text = "\n".join(self._text_list[:-1])
         else:
             self._text = "\n".join(self._text_list)
+        self._text_edit.setUpdatesEnabled(False)
         self._text_edit.setText(self._text)
+        self._text_edit.verticalScrollBar().setValue(sval)
 
         def set_scroller():
             scroll_max_new = self._text_edit.verticalScrollBar().maximum()
             sval_new = scroll_max_new if self._te_scrolled_to_bottom else sval
+            self._text_edit.setUpdatesEnabled(True)
             self._text_edit.verticalScrollBar().setValue(sval_new)
 
-        set_scroller()
+        QTimer.singleShot(50, set_scroller)
 
     def _pb_clear_clicked(self):
         self._text = ""

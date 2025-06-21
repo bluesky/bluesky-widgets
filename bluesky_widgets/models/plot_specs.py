@@ -17,6 +17,7 @@ from ..utils.list import EventedList
 
 class BaseSpec:
     "Just a class with a uuid attribute and some slots."
+
     __slots__ = ("_uuid", "events", "__weakref__")
 
     def __init__(self, uuid):
