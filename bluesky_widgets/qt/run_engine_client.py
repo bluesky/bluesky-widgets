@@ -31,6 +31,7 @@ from qtpy.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
     QWidget,
+    QScrollBar,
 )
 
 from bluesky_widgets.qt.threading import FunctionWorker
@@ -2864,14 +2865,17 @@ class QtReConsoleMonitor(QWidget):
             self._text = "\n".join(self._text_list[:-1])
         else:
             self._text = "\n".join(self._text_list)
+        self._text_edit.setUpdatesEnabled(False)
         self._text_edit.setText(self._text)
+        self._text_edit.verticalScrollBar().setValue(sval)
 
         def set_scroller():
             scroll_max_new = self._text_edit.verticalScrollBar().maximum()
             sval_new = scroll_max_new if self._te_scrolled_to_bottom else sval
+            self._text_edit.setUpdatesEnabled(True)
             self._text_edit.verticalScrollBar().setValue(sval_new)
 
-        set_scroller()
+        QTimer.singleShot(50, set_scroller)
 
     def _pb_clear_clicked(self):
         self._text = ""
