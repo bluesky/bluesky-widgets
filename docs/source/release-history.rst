@@ -2,6 +2,15 @@
 Release History
 ===============
 
+v0.0.17 (2025-06-23)
+====================
+
+Fixed
+-----
+
+- Fixed issue scrolling in RE Manager (Queue Server) console output widget.
+
+
 v0.0.16 (2024-03-21)
 ====================
 
