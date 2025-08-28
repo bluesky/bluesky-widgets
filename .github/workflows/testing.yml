@@ -45,9 +45,6 @@ jobs:
       shell: bash -l {0}
       run: source continuous_integration/scripts/install.sh ${{ matrix.pip-selectors }}
 
-    - name: start Kafka and Zookeeper for (some) tests
-      run: docker-compose -f continuous_integration/scripts/docker-compose-kafka.yml up -d
-
     - name: Install test requirements
       shell: bash -l {0}
       run: |
