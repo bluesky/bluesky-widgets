@@ -44,7 +44,7 @@ requirements = read_requirements("requirements.txt")
 # group? Seems a little much to ask the user to manage all this, so I am
 # erring on the side of inclusion for now.
 extras_require = {
-    key: read_requirements(f"requirements-{key}.txt") for key in ["examples", "jupyter", "pyside2", "pyqt5"]
+    key: read_requirements(f"requirements-{key}.txt") for key in ["examples", "jupyter", "pyside2", "pyqt5", "pyside6", "pyqt6"]
 }
 extras_require["complete"] = sorted(set(sum(extras_require.values(), [])))
 
