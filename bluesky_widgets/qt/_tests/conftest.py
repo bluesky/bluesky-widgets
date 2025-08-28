@@ -1,6 +1,5 @@
 import pytest
 from bluesky_kafka.tests.conftest import (  # noqa F401
-    broker_authorization_config,
     hw,
     kafka_bootstrap_servers,
     publisher_factory,
