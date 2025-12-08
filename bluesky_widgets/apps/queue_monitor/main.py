@@ -49,8 +49,8 @@ def main(argv=None):
         "--http-server-keyfile",
         default=None,
         help="Path to read to get the single-user API key.  This takes priority over "
-        "the QSERVER_HTTP_SERVER_API_KEYFILE env."
-        )
+        "the QSERVER_HTTP_SERVER_API_KEYFILE env.",
+    )
     args = parser.parse_args(argv)
 
     # The priority is first to check if an address is passed as a parameter and then
@@ -79,9 +79,8 @@ def main(argv=None):
     http_server_api_path = args.http_server_keyfile
     http_server_api_path = http_server_api_path or os.environ.get("QSERVER_HTTP_SERVER_API_KEYFILE", None)
     if http_server_api_key is None and http_server_api_path is not None:
-        with open(http_server_api_path, 'r') as fin:
+        with open(http_server_api_path, "r") as fin:
             http_server_api_key = fin.read()
-
 
     if http_server_uri:
         print("Initializing: communication with Queue Server via HTTP Server ...")
