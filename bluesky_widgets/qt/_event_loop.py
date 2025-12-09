@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 
+import qtpy
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QApplication
 
@@ -31,7 +32,10 @@ def gui_qt(app_name):
     if not app:
         # automatically determine monitor DPI.
         # Note: this MUST be set before the QApplication is instantiated
-        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        if qtpy.QT5:
+            QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        elif qtpy.QT6:
+            QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
         # if this is the first time the Qt app is being instantiated, we set
         # the name, so that we know whether to raise_ in Window.show()
         app = QApplication([app_name])

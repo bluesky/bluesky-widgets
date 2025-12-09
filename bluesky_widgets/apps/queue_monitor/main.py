@@ -41,7 +41,15 @@ def main(argv=None):
         help="Address of HTTP Server, e.g. 'http://localhost:60610'. Activates communication "
         "with Queue Server via HTTP server. If the address is passed as a CLI parameter, "
         "it overrides the address specified with QSERVER_HTTP_SERVER_URI environment variable. "
-        "Use QSERVER_HTTP_SERVER_API_KEY environment variable to pass an API key for authorization.",
+        "Use QSERVER_HTTP_SERVER_API_KEY environment variable to pass an API key for authorization "
+        "directly.  Use --http-server-keyfile or QSERVER_HTTP_SERVER_API_KEYFILE environment variable "
+        "to set the path to read for the server API key.",
+    )
+    parser.add_argument(
+        "--http-server-keyfile",
+        default=None,
+        help="Path to read to get the single-user API key.  This takes priority over "
+        "the QSERVER_HTTP_SERVER_API_KEYFILE env.",
     )
     args = parser.parse_args(argv)
 
@@ -68,6 +76,11 @@ def main(argv=None):
     http_server_uri = http_server_uri or os.environ.get("QSERVER_HTTP_SERVER_URI", None)
 
     http_server_api_key = os.environ.get("QSERVER_HTTP_SERVER_API_KEY", None)
+    http_server_api_path = args.http_server_keyfile
+    http_server_api_path = http_server_api_path or os.environ.get("QSERVER_HTTP_SERVER_API_KEYFILE", None)
+    if http_server_api_key is None and http_server_api_path is not None:
+        with open(http_server_api_path, "r") as fin:
+            http_server_api_key = fin.read()
 
     if http_server_uri:
         print("Initializing: communication with Queue Server via HTTP Server ...")
