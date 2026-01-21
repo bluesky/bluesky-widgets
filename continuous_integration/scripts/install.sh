@@ -6,7 +6,16 @@
 set -vxeuo pipefail
 
 sudo apt-get update
-sudo apt-get install qt5-default
+sudo apt-get install  -yy --no-install-recommends \
+     qtbase5-dev \
+     libxkbcommon-x11-0 \
+     libxcb-cursor0 \
+     libxcb-icccm4 \
+     libxcb-image0 \
+     libxcb-keysyms1 \
+     libxcb-randr0 \
+     libxcb-render-util0 \
+     libxcb-xinerama0
 
 # These packages are installed in the base environment but may be older
 # versions. Explicitly upgrade them because they often create

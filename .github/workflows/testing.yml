@@ -20,8 +20,8 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9"]
-        pip-selectors: ["pyqt5"]
+        python-version: ["3.10", "3.11", "3.12"]
+        pip-selectors: ["pyqt6", "pyside6", "pyqt5", "pyside2"]
 
       fail-fast: false
     steps:
@@ -44,9 +44,6 @@ jobs:
     - name: Install
       shell: bash -l {0}
       run: source continuous_integration/scripts/install.sh ${{ matrix.pip-selectors }}
-
-    - name: start Kafka and Zookeeper for (some) tests
-      run: docker-compose -f continuous_integration/scripts/docker-compose-kafka.yml up -d
 
     - name: Install test requirements
       shell: bash -l {0}

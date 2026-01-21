@@ -1,8 +1,8 @@
 import gc
 
 import matplotlib.figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from qtpy.QtCore import QObject, Signal
 from qtpy.QtWidgets import QSizePolicy, QTabWidget, QVBoxLayout, QWidget
 
@@ -13,10 +13,10 @@ from ..utils.event import Event
 
 
 def _initialize_matplotlib():
-    "Set backend to Qt5Agg and import pyplot."
+    "Set backend to Q5Agg and import pyplot."
     import matplotlib
 
-    matplotlib.use("Qt5Agg")  # must set before importing matplotlib.pyplot
+    matplotlib.use("QtAgg")  # must set before importing matplotlib.pyplot
     import matplotlib.pyplot  # noqa
 
 

@@ -125,7 +125,7 @@ class TimeRange(Query):
         if timezone is None:
             import tzlocal
 
-            timezone = tzlocal.get_localzone().zone
+            timezone = tzlocal.get_localzone().key
         self.timezone = timezone
         if since is None:
             self._since_normalized = None
