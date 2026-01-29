@@ -4,6 +4,7 @@ Vendored from napari._qt.threading
 
 import inspect
 import time
+import weakref
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, Sequence, Set, Type, Union
 
@@ -164,11 +165,18 @@ class WorkerBase(QRunnable):
         if self in WorkerBase._worker_set:
             raise RuntimeError("This worker is already started!")
 
-        # This will raise a RunTimeError if the worker is already deleted
         repr(self)
 
         WorkerBase._worker_set.add(self)
-        self.finished.connect(lambda: WorkerBase._worker_set.discard(self))
+
+        worker_ref = weakref.ref(self)
+
+        def on_finished():
+            w = worker_ref()
+            if w is not None:
+                WorkerBase._worker_set.discard(w)
+
+        self.finished.connect(on_finished)
         QThreadPool.globalInstance().start(self)
 
 
