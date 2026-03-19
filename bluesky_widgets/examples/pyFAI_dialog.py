@@ -491,9 +491,7 @@ Debye-Sherrer rings images without a priori knowledge of your setup.
 You will need to provide a calibrant or a "d-spacing" file containing the
 spacing of Miller plans in Angstrom (in decreasing order).
 %s or search in the American Mineralogist database:
-http://rruff.geo.arizona.edu/AMS/amcsd.php""" % str(
-    pyFAI.calibrant.ALL_CALIBRANTS
-)
+http://rruff.geo.arizona.edu/AMS/amcsd.php""" % str(pyFAI.calibrant.ALL_CALIBRANTS)
 
 epilog = """The output of this program is a "PONI" file containing the
 detector description and the 6 refined parameters (distance, center, rotation)
