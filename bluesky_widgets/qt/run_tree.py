@@ -1,6 +1,6 @@
 from collections import abc
 
-from databroker.core import BlueskyEventStream
+from bluesky_tiled_plugins import BlueskyEventStream
 from qtpy import QtCore
 from qtpy.QtCore import QAbstractItemModel, QModelIndex, Qt
 from qtpy.QtWidgets import QAbstractItemView, QTreeView
