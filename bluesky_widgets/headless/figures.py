@@ -92,9 +92,12 @@ class HeadlessFigures:
             title = figure_spec.title
             if title in titles_tallied:
                 filename = f"{title}-{titles_tallied[title]}"
+                filename = filename.replace('/', 'divide')
+                #filename = filename[:30]
                 titles_tallied[title] += 1
             else:
                 filename = title
+                filename = filename.replace('/', 'divide')
                 titles_tallied[title] = 1
             filename = str(Path(directory, f"{filename}.{format}"))
             figure = self._figures[figure_spec.uuid]
