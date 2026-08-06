@@ -22,6 +22,7 @@ from qtpy.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QProgressBar,
     QPushButton,
     QRadioButton,
     QTableView,
@@ -2940,3 +2941,194 @@ class QtReConsoleMonitor(QWidget):
 
     def __del__(self):
         self.model.stop_console_output_monitoring()
+
+
+class _ReDeviceProgressBar(QWidget):
+    """
+    A single-line progress indicator for one RunEngine status object (typically one device).
+
+    Layout: ``name  [start]  [====== current | elapsed | pct% ======]  -> target (ETA)``.
+    The start position is shown in front of the bar and the target with the estimated time
+    remaining after it. The current position, elapsed time and percentage are drawn on the bar.
+    """
+
+    def __init__(self, name, parent=None):
+        super().__init__(parent)
+
+        self._lb_name = QLabel(f"{name}")
+        self._lb_name.setStyleSheet("font-weight: bold;")
+        self._lb_name.setMinimumWidth(120)
+
+        self._lb_start = QLabel("")
+        self._lb_start.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self._lb_start.setMinimumWidth(90)
+
+        self._lb_end = QLabel("")
+        self._lb_end.setMinimumWidth(170)
+
+        self._progress_bar = QProgressBar()
+        self._progress_bar.setRange(0, 1000)
+        self._progress_bar.setValue(0)
+        self._progress_bar.setTextVisible(True)
+        self._progress_bar.setMinimumWidth(200)
+
+        # Last known values, used to fill in fields omitted from later updates (e.g. the
+        # final "done" update, which may not repeat the position/unit information).
+        self._last = {
+            "precision": None,
+            "unit": None,
+            "initial": None,
+            "current": None,
+            "target": None,
+            "time_elapsed": None,
+            "time_remaining": None,
+        }
+
+        hbox = QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
+        hbox.addWidget(self._lb_name)
+        hbox.addWidget(self._lb_start)
+        hbox.addWidget(self._progress_bar, stretch=1)
+        hbox.addWidget(self._lb_end)
+        self.setLayout(hbox)
+
+    def update_progress(self, msg):
+        # Fall back to the last known value for any field omitted from this update, so the
+        # display keeps its last values (e.g. on the final update) instead of showing "N/A".
+        def coalesce(key):
+            value = msg.get(key)
+            if value is None:
+                value = self._last[key]
+            else:
+                self._last[key] = value
+            return value
+
+        precision = coalesce("precision")
+        unit = coalesce("unit") or ""
+        initial = coalesce("initial")
+        current = coalesce("current")
+        target = coalesce("target")
+        time_elapsed = coalesce("time_elapsed")
+        time_remaining = coalesce("time_remaining")
+        done = bool(msg.get("done"))
+
+        def fmt_pos(value):
+            if value is None:
+                return "N/A"
+            if isinstance(precision, int) and isinstance(value, (int, float)):
+                text = f"{value:.{precision}f}"
+            else:
+                text = f"{value}"
+            return f"{text} {unit}".strip() if unit else text
+
+        # Progress as fraction complete in [0, 1]. Prefer computing it from positions
+        # (matches bluesky's own progress bar). ophyd reports ``fraction`` as the fraction
+        # *remaining*, so convert it when positions are unavailable.
+        progress = None
+        if None not in (initial, current, target):
+            span = abs(target - initial)
+            if span:
+                progress = abs(current - initial) / span
+        if progress is None and msg.get("fraction") is not None:
+            progress = 1.0 - msg["fraction"]
+        if done:
+            progress = 1.0
+            if target is not None:
+                current = target
+
+        if progress is not None:
+            self._progress_bar.setValue(int(max(0.0, min(1.0, progress)) * 1000))
+
+        # Estimate the remaining time if the status object did not report it.
+        if time_remaining is None and time_elapsed is not None and progress:
+            time_remaining = 0.0 if progress >= 1.0 else time_elapsed * (1.0 - progress) / progress
+
+        elapsed_str = "" if time_elapsed is None else f"{time_elapsed:.1f}s"
+        remaining_str = "?" if time_remaining is None else f"{time_remaining:.1f}s"
+
+        bar_text = fmt_pos(current)
+        if elapsed_str:
+            bar_text += f"  |  {elapsed_str}"
+        bar_text += "  |  %p%"
+        self._progress_bar.setFormat(bar_text)
+
+        self._lb_start.setText(fmt_pos(initial))
+        eta = "done" if done or (progress is not None and progress >= 1.0) else f"ETA {remaining_str}"
+        self._lb_end.setText(f"\u2192 {fmt_pos(target)}  ({eta})")
+
+
+class QtReProgressMonitor(QWidget):
+    """
+    Displays live progress bars for RunEngine ``waiting_hook``/watcher updates streamed from
+    RE Manager. One progress bar is shown per device (status object), reporting the start
+    position, target, current position and estimated time remaining. All progress bars are
+    cleared when a completion message is received.
+    """
+
+    def __init__(self, model, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        self.model = model
+
+        # Maps device name -> _ReDeviceProgressBar
+        self._progress_bars = {}
+
+        self._lb_status = QLabel("Waiting for updates\u2026")
+
+        self._bars_layout = QVBoxLayout()
+        self._bars_layout.setAlignment(Qt.AlignTop)
+        bars_container = QWidget()
+        bars_container.setLayout(self._bars_layout)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self._lb_status)
+        vbox.addWidget(bars_container)
+        vbox.addStretch()
+        self.setLayout(vbox)
+
+        self.model.start_re_progress_monitoring()
+        self._start_thread()
+
+    def _start_thread(self):
+        self._thread = FunctionWorker(self.model.re_progress_monitoring_thread)
+        self._thread.returned.connect(self._process_new_progress_update)
+        self._thread.finished.connect(self._finished_receiving_progress_update)
+        self._thread.start()
+
+    def _finished_receiving_progress_update(self):
+        self._start_thread()
+
+    def _process_new_progress_update(self, result):
+        if not result:
+            return
+        _, msg = result
+        if not msg:
+            return
+
+        if msg.get("completed"):
+            self._clear_progress_bars()
+            self._lb_status.setText("Waiting for updates\u2026")
+            return
+
+        name = msg.get("name")
+        if name is None:
+            return
+
+        bar = self._progress_bars.get(name)
+        if bar is None:
+            bar = _ReDeviceProgressBar(name)
+            self._progress_bars[name] = bar
+            self._bars_layout.addWidget(bar)
+
+        bar.update_progress(msg)
+        self._lb_status.setText("Plan is running\u2026")
+
+    def _clear_progress_bars(self):
+        for bar in self._progress_bars.values():
+            self._bars_layout.removeWidget(bar)
+            bar.deleteLater()
+        self._progress_bars = {}
+
+    def __del__(self):
+        self.model.stop_re_progress_monitoring()

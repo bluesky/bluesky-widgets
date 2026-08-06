@@ -13,6 +13,7 @@ from bluesky_widgets.qt.run_engine_client import (
     QtRePlanEditor,
     QtRePlanHistory,
     QtRePlanQueue,
+    QtReProgressMonitor,
     QtReQueueControls,
     QtReRunningPlan,
     QtReStatusMonitor,
@@ -30,11 +31,13 @@ class QtOrganizeQueueWidgets(QSplitter):
         self._frame_2 = QFrame(self)
         self._frame_3 = QFrame(self)
         self._frame_4 = QFrame(self)
+        self._frame_5 = QFrame(self)
 
         self.addWidget(self._frame_1)
         self.addWidget(self._frame_2)
         self.addWidget(self._frame_3)
         self.addWidget(self._frame_4)
+        self.addWidget(self._frame_5)
 
         self._running_plan = QtReRunningPlan(model)
         self._running_plan.monitor_mode = True
@@ -42,6 +45,7 @@ class QtOrganizeQueueWidgets(QSplitter):
         self._plan_queue.monitor_mode = True
         self._plan_history = QtRePlanHistory(model)
         self._plan_history.monitor_mode = True
+        self._progress_monitor = QtReProgressMonitor(model)
         self._console_monitor = QtReConsoleMonitor(model)
 
         vbox = QVBoxLayout()
@@ -61,11 +65,16 @@ class QtOrganizeQueueWidgets(QSplitter):
 
         vbox = QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
-        vbox.addWidget(self._console_monitor)
+        vbox.addWidget(self._progress_monitor)
         self._frame_4.setLayout(vbox)
 
+        vbox = QVBoxLayout()
+        vbox.setContentsMargins(0, 0, 0, 0)
+        vbox.addWidget(self._console_monitor)
+        self._frame_5.setLayout(vbox)
+
         h = self.sizeHint().height()
-        self.setSizes([h, 2 * h, 2 * h, h])
+        self.setSizes([h, 2 * h, 2 * h, h, h])
 
 
 class QtRunEngineManager_Monitor(QWidget):
