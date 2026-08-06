@@ -68,6 +68,7 @@ class RunEngineClient:
         # Address of remote 0MQ socket used to publish RE Manager console output
         self._zmq_info_addr = zmq_info_addr
         self._stop_console_monitor = False
+        self._stop_re_progress_monitor = False
 
         # User name and group are hard coded for now
         self._user_name = user_name
@@ -1365,4 +1366,36 @@ class RunEngineClient:
 
             if self._stop_console_monitor:
                 self._client.console_monitor.disable_wait()
+                break
+
+    # ============================================================================
+    #                RE Manager RunEngine progress (watcher) updates
+
+    def start_re_progress_monitoring(self):
+        self._stop_re_progress_monitor = False
+        self._client.progress_monitor.enable()
+
+    def stop_re_progress_monitoring(self):
+        self._stop_re_progress_monitor = True
+
+    def re_progress_monitoring_thread(self):
+        """
+        Blocks until the next progress update is received and returns it as a ``(time, msg)``
+        tuple. ``msg`` is a dictionary describing a single RunEngine status object (keys such as
+        ``name``, ``initial``, ``current``, ``target``, ``fraction``, ``time_remaining``) or a
+        completion message ``{"completed": True}``. Returns ``None`` when monitoring is stopped.
+        """
+        while True:
+            try:
+                payload = self._client.progress_monitor.next_msg(timeout=0.2)
+                time, msg = payload.get("time", None), payload.get("msg", None)
+                return time, msg
+
+            except self._client.RequestTimeoutError:
+                pass
+            except Exception as ex:
+                print(f"Exception occurred: {ex}")
+
+            if self._stop_re_progress_monitor:
+                self._client.progress_monitor.disable_wait()
                 break
