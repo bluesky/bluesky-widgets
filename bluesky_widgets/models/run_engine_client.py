@@ -1371,25 +1371,32 @@ class RunEngineClient:
     # ============================================================================
     #                RE Manager RunEngine progress (watcher) updates
 
+    # Key used by RE Manager to stream device progress ('waiting_hook'/watcher updates)
+    #   on the info topic.
+    _device_progress_key = "device_progress"
+
     def start_re_progress_monitoring(self):
         self._stop_re_progress_monitor = False
-        self._client.progress_monitor.enable()
+        self._client.system_info_monitor.enable()
 
     def stop_re_progress_monitoring(self):
         self._stop_re_progress_monitor = True
 
     def re_progress_monitoring_thread(self):
         """
-        Blocks until the next progress update is received and returns it as a ``(time, msg)``
-        tuple. ``msg`` is a dictionary describing a single RunEngine status object (keys such as
-        ``name``, ``initial``, ``current``, ``target``, ``fraction``, ``time_remaining``) or a
+        Blocks until the next device progress update is received on the info topic and returns
+        it as a ``(time, msg)`` tuple. RE Manager streams device progress under the
+        ``device_progress`` key; messages published under other keys (e.g. ``status``) are
+        ignored. ``msg`` is a dictionary describing a single RunEngine status object (keys such
+        as ``name``, ``initial``, ``current``, ``target``, ``fraction``, ``time_remaining``) or a
         completion message ``{"completed": True}``. Returns ``None`` when monitoring is stopped.
         """
         while True:
             try:
-                payload = self._client.progress_monitor.next_msg(timeout=0.2)
+                payload = self._client.system_info_monitor.next_msg(timeout=0.2)
                 time, msg = payload.get("time", None), payload.get("msg", None)
-                return time, msg
+                if isinstance(msg, dict) and (self._device_progress_key in msg):
+                    return time, msg[self._device_progress_key]
 
             except self._client.RequestTimeoutError:
                 pass
@@ -1397,5 +1404,5 @@ class RunEngineClient:
                 print(f"Exception occurred: {ex}")
 
             if self._stop_re_progress_monitor:
-                self._client.progress_monitor.disable_wait()
+                self._client.system_info_monitor.disable_wait()
                 break

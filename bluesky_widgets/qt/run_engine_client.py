@@ -3057,7 +3057,7 @@ class _ReDeviceProgressBar(QWidget):
         self._lb_end.setText(f"\u2192 {fmt_pos(target)}  ({eta})")
 
 
-class QtReProgressMonitor(QWidget):
+class QtReWaitingHookMonitor(QWidget):
     """
     Displays live progress bars for RunEngine ``waiting_hook``/watcher updates streamed from
     RE Manager. One progress bar is shown per device (status object), reporting the start
@@ -3122,7 +3122,7 @@ class QtReProgressMonitor(QWidget):
             self._bars_layout.addWidget(bar)
 
         bar.update_progress(msg)
-        self._lb_status.setText("Plan is running\u2026")
+        self._lb_status.setText("Watching device progress\u2026")
 
     def _clear_progress_bars(self):
         for bar in self._progress_bars.values():

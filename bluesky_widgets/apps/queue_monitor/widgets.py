@@ -13,7 +13,7 @@ from bluesky_widgets.qt.run_engine_client import (
     QtRePlanEditor,
     QtRePlanHistory,
     QtRePlanQueue,
-    QtReProgressMonitor,
+    QtReWaitingHookMonitor,
     QtReQueueControls,
     QtReRunningPlan,
     QtReStatusMonitor,
@@ -45,7 +45,7 @@ class QtOrganizeQueueWidgets(QSplitter):
         self._plan_queue.monitor_mode = True
         self._plan_history = QtRePlanHistory(model)
         self._plan_history.monitor_mode = True
-        self._progress_monitor = QtReProgressMonitor(model)
+        self._progress_monitor = QtReWaitingHookMonitor(model)
         self._console_monitor = QtReConsoleMonitor(model)
 
         vbox = QVBoxLayout()
