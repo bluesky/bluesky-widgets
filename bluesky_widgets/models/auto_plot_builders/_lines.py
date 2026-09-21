@@ -178,43 +178,45 @@ class AutoLines(AutoPlotter):
 
         if ndims == 1:
             (x_key,) = dim_fields
-            key = (stream_name, x_key, (tuple(columns),))
-            try:
-                lines_instances = self._lines_instances[key]
-            except KeyError:
-                lines_instances = []
-                axes_list = []
-                for y_key in columns:
-                    dtype = descriptor["data_keys"][y_key]["dtype"]
-                    if dtype not in ("number", "integer"):
-                        warn("Omitting {} from plot because dtype is {}" "".format(y_key, dtype))
-                        continue
-                    axes = Axes(x_label=x_key, title=y_key)
-                    axes_list.append(axes)
-                    lines_kwargs = {}
-                    if self.max_runs is not None:
-                        lines_kwargs["max_runs"] = self.max_runs
-                    lines = Lines(
-                        x=x_key,
-                        ys=(y_key,),
-                        needs_streams=(stream_name,),
-                        axes=axes,
-                        **lines_kwargs,
-                    )
-                    lines_instances.append(lines)
-                if not axes_list:
-                    return
-                title = ", ".join((str(lines.ys[0]) for lines in lines_instances)) + f" vs. {x_key}"
-                if len(title) > 15:
-                    short_title = title[:15] + "..."
-                else:
-                    short_title = title
-                figure = Figure(axes_list, title=title, short_title=short_title)
-                self._lines_instances[key] = lines_instances
-                self.plot_builders.extend(lines_instances)
-                self.figures.append(figure)
-            for lines in lines_instances:
-                lines.add_run(run, **kwargs)
+            if stream_name != 'baseline':
+
+                key = (stream_name, x_key, (tuple(columns),))
+                try:
+                    lines_instances = self._lines_instances[key]
+                except KeyError:
+                    lines_instances = []
+                    axes_list = []
+                    for y_key in columns:
+                        dtype = descriptor["data_keys"][y_key]["dtype"]
+                        if dtype not in ("number", "integer"):
+                            warn("Omitting {} from plot because dtype is {}" "".format(y_key, dtype))
+                            continue
+                        axes = Axes(x_label=x_key, title=y_key)
+                        axes_list.append(axes)
+                        lines_kwargs = {}
+                        if self.max_runs is not None:
+                            lines_kwargs["max_runs"] = self.max_runs
+                        lines = Lines(
+                            x=x_key,
+                            ys=(y_key,),
+                            needs_streams=(stream_name,),
+                            axes=axes,
+                            **lines_kwargs,
+                        )
+                        lines_instances.append(lines)
+                    if not axes_list:
+                        return
+                    title = ", ".join((str(lines.ys[0]) for lines in lines_instances)) + f" vs. {x_key}"
+                    if len(title) > 15:
+                        short_title = title[:15] + "..."
+                    else:
+                        short_title = title
+                    figure = Figure(axes_list, title=title, short_title=short_title)
+                    self._lines_instances[key] = lines_instances
+                    self.plot_builders.extend(lines_instances)
+                    self.figures.append(figure)
+                for lines in lines_instances:
+                    lines.add_run(run, **kwargs)
 
         elif ndims == 2:
             return []
