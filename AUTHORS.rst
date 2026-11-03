@@ -5,7 +5,7 @@ Credits
 Maintainer
 ----------
 
-* Brookhaven National Laboratory <dallan@bnl.gov>
+* Brookhaven National Laboratory <jwlodek@bnl.gov>
 
 Contributors
 ------------

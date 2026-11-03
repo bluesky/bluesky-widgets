@@ -31,6 +31,8 @@ venv/
 *.manifest
 *.spec
 
+**/_version.py
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -83,3 +85,8 @@ target/
 Untitled*.ipynb
 
 dask-worker-space/
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+pixi.lock

@@ -1,3 +1,0 @@
-PySide2
-qtpy
-matplotlib

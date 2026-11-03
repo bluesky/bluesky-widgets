@@ -1,0 +1,42 @@
+name: pre-commit
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    # pull requests are a duplicate of a branch push if within the same repo.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+
+    name: Check code style
+
+    runs-on: ubuntu-latest
+
+    env:
+      python_env: py313
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need this to get version number from last tag
+          fetch-depth: 0
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          environments: ${{ env.python_env }}
+
+      - name: Install dev dependencies
+        run: |
+          set -vxeuo pipefail
+          pixi install --environment=${{ env.python_env }}
+          pixi list --environment=${{ env.python_env }}
+
+      - name: Run pre-commit
+        run: |
+          pixi run --environment=${{ env.python_env }} pre-commit run --all-files
