@@ -1,24 +1,135 @@
-[tool.black]
-line-length = 115
-target-version = ['py37']
-include = '\.pyi?$'
-exclude = '''
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
 
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | \.pytest_cache
-    | _build
-    | buck-out
-    | build
-    | dist
-    | docs
-  )/
-  | versioneer.py
-)
-'''
+[project]
+name = "bluesky-widgets"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+description = "Toolbox of widgets for visualizing streaming data"
+dependencies = [
+    "bluesky-live>=0.0.7",
+    "numpy",
+    "suitcase-utils<=0.5.3",
+]
+dynamic = ["version"]
+license = { file = "LICENSE" }
+readme = "README.rst"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+examples = [
+    "bluesky",
+    "databroker<2",  # examples use databroker._drivers, removed in 2.0
+    "intake<2",  # databroker 1.x is incompatible with intake 2
+    "ophyd>=1.5.3",
+    "pyzmq",
+    "suitcase-msgpack",
+]
+jupyter = [
+    "ipywidgets",
+    "ipympl",
+    "matplotlib",
+]
+pyqt5 = [
+    "PyQt5",
+    "qtpy",
+    "matplotlib",
+]
+pyside6 = [
+    "PySide6",
+    "qtpy",
+    "matplotlib",
+]
+complete = [
+    "bluesky-widgets[examples,jupyter,pyqt5]",
+]
+dev = [
+    "bluesky-widgets[examples,jupyter,pyqt5]",
+    "bluesky-kafka",
+    "bluesky-tiled-plugins",
+    "build",
+    "coverage",
+    "ipython",
+    "numpydoc",
+    "pre-commit",
+    "pytest",
+    "pytest-qt",
+    "pyyaml",
+    "ruff",
+    "sphinx",
+    "sphinx-copybutton",
+    "sphinx_rtd_theme",
+    "twine",
+]
+
+[project.scripts]
+queue-monitor = "bluesky_widgets.apps.queue_monitor.main:main"
+
+[project.urls]
+GitHub = "https://github.com/bluesky/bluesky-widgets"
+
+[[project.authors]] # Further authors may be added by duplicating this section
+name = "Brookhaven National Laboratory"
+email = "dallan@bnl.gov"
+
+[tool.setuptools.packages.find]
+include = ["bluesky_widgets*"]
+
+[tool.setuptools_scm]
+version_file = "bluesky_widgets/_version.py"
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+log_cli_level = "WARNING"
+testpaths = ["bluesky_widgets"]
+
+[tool.coverage.run]
+source = ["bluesky_widgets"]
+omit = [
+    "*/tests/*",
+    "*/_tests/*",
+    "*/_version.py",
+]
+
+[tool.coverage.report]
+exclude_lines = ["if __name__ == '__main__':"]
+
+[tool.ruff]
+line-length = 115
+target-version = "py311"
+exclude = [
+    "docs/source/conf.py",
+    "bluesky_widgets/_version.py",
+    "bluesky_widgets/examples/pyFAI_dialog.py",
+]
+
+[tool.ruff.lint]
+select = [
+    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "F",   # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+]
+unfixable = [
+    "F401",
+    "UP006",  # ignore non-PEP 585 generic annotations (e.g. typing.List -> list)
+    "UP007",  # e.g. typing.Union[int, float] -> int | float
+    "UP045",  # e.g. typing.Optional[int] -> int | None
+]
+ignore = [
+    "B905",   # adding strict=False to every zip call is just noise
+    "C408",   # errors due to using dict()
+    "B011",   # do not use 'assert False' error
+]
